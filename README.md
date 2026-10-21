@@ -21,3 +21,8 @@
 - النصوص والدلائل في `src/data.js`، والتصاميم في `src/build.js` (خانتا «الموعد» و«المكان» في البوستر).
 - `node src/build.js` لتوليد الصور (يتطلب Playwright)، ثم `python3 src/make_pdf.py` لتوليد ملف PDF.
 - الخطوط: Cairo وLalezar وPoppins (رخصة SIL OFL) في `assets/fonts/`.
+
+## النسخة الباستيلية
+مجلد `designs-pastel/` يحتوي على نفس التصاميم بخلفية فاتحة بألوان باستيلية ناعمة (أوفر في حبر الطباعة)، مع ملفاتها:
+`الأسبوع-العربي-للكيمياء-للطباعة-A4-باستيل.pdf` و`الأسبوع-العربي-للكيمياء-الملف-الكامل-باستيل.pdf`.
+لإعادة توليدها: `THEME=pastel node src/build.js` ثم `python3 src/make_pdf.py designs-pastel`.

@@ -1,13 +1,15 @@
 // يولّد تصاميم «الأسبوع العربي للكيمياء» كصور PNG.
 // التشغيل: node src/build.js ثم python3 src/make_pdf.py لملف PDF الكامل
+// النسخة الباستيلية: THEME=pastel node src/build.js ثم python3 src/make_pdf.py designs-pastel
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 const { CATEGORIES, STATES, ELEMENTS, SUBLEVELS, shells, clues } = require('./data');
 
 const ROOT = path.join(__dirname, '..');
-const OUT = path.join(ROOT, 'designs');
-const HTML_DIR = path.join(ROOT, 'build', 'html');
+const THEME = process.env.THEME || 'dark';
+const OUT = path.join(ROOT, THEME === 'pastel' ? 'designs-pastel' : 'designs');
+const HTML_DIR = path.join(ROOT, 'build', 'html', THEME);
 const FONTS = path.join(ROOT, 'assets', 'fonts');
 const TITLE = 'الأسبوع العربي للكيمياء';
 const SCALE = 2;
@@ -453,6 +455,40 @@ function answerKeyHtml() {
   return page(CARD_W, CARD_H, body, css);
 }
 
+// ---------- النسخة الباستيلية: خلفية فاتحة ناعمة ونصوص داكنة ----------
+const PASTEL_SWAPS = [
+  ['background:#0e2233', 'background:#f7f3fb'],
+  ['linear-gradient(160deg,#10283b 0%,#13324a 45%,#0f2638 100%)', 'linear-gradient(160deg,#fdf6ee 0%,#f4effd 50%,#eaf7f3 100%)'],
+  ['color:#f4f7fb', 'color:#26384d'],
+  ['#a8c8d6', '#6b8193'],
+  ['--ts:#1f6b5b', '--ts:#a9e3d1'], ['--ts:#5b47a8', '--ts:#d3c8fa'], ['--ts:#2f6f8f', '--ts:#b5dcec'],
+  ['#ffffff 0%,#b8f0de 45%,#7fcbe9 100%', '#3fae90 0%,#3f9cc4 55%,#7a6bd4 100%'],
+  ['drop-shadow(0 6px 0 #1f5d73) drop-shadow(0 12px 0 #184a5d)', 'drop-shadow(0 6px 0 #c4e9df) drop-shadow(0 12px 0 #b0dcd3)'],
+  ['#6a55b8', '#d3c8fa'],
+  ['rgba(255,255,255,.16),rgba(255,255,255,.06)', 'rgba(255,255,255,.92),rgba(255,255,255,.7)'],
+  ['rgba(255,255,255,.11),rgba(255,255,255,.05)', 'rgba(255,255,255,.92),rgba(255,255,255,.72)'],
+  ['background:rgba(255,255,255,.08)', 'background:rgba(255,255,255,.75)'],
+  ['background:rgba(255,255,255,.07)', 'background:rgba(255,255,255,.75)'],
+  ['background:rgba(255,255,255,.1)', 'background:rgba(255,255,255,.85)'],
+  ['rgba(0,0,0,.', 'rgba(90,100,150,.'],
+  ["'white'", "'%235a6a90'"],
+  ['stroke="rgba(255,255,255,.28)"', 'stroke="rgba(70,90,140,.35)"'],
+  ['stop-color="rgba(255,255,255,.75)"', 'stop-color="rgba(80,95,150,.6)"'],
+  ['stop-color="rgba(255,255,255,.1)"', 'stop-color="rgba(80,95,150,.08)"'],
+  ['stroke="rgba(255,255,255,.7)"', 'stroke="rgba(80,95,150,.55)"'],
+  ['fill="rgba(255,255,255,.75)"', 'fill="rgba(80,95,150,.45)"'],
+  ['stroke="rgba(255,255,255,.6)"', 'stroke="rgba(80,95,150,.5)"'],
+];
+const PASTEL_TEXT = ['#eaf6f2', '#d6ebf3', '#e7f1f6', '#cfe6ee', '#d9e7ef', '#d9ecf4', '#eef6fa', '#f4f8fb', '#cfe2ea', '#d6e8ef', '#c9f3e5'];
+const PASTEL_CSS = `.cl .pt b{color:#2b3a5c!important}.glow{opacity:.45!important}`;
+function pastel(html) {
+  for (const [a, b] of PASTEL_SWAPS) html = html.split(a).join(b);
+  for (const t of PASTEL_TEXT) html = html.split(t).join('#34495e');
+  html = html.replace(/color:#fff(?=[;}"])/g, 'color:#2b3a5c');
+  html = html.replace(/border:(\d+px) (solid|dashed) rgba\(255,255,255,\.\d+\)/g, 'border:$1 $2 rgba(60,80,130,.14)');
+  return html.replace('</style>', PASTEL_CSS + '</style>');
+}
+
 // ======================= التوليد =======================
 async function main() {
   const pages = [
@@ -478,7 +514,7 @@ async function main() {
   for (const p of pages) {
     if (only && !p.file.includes(only)) continue;
     const htmlPath = path.join(HTML_DIR, p.file.replace(/\//g, '_').replace('.png', '.html'));
-    fs.writeFileSync(htmlPath, p.html);
+    fs.writeFileSync(htmlPath, THEME === 'pastel' ? pastel(p.html) : p.html);
     const ctx = await browser.newContext({ viewport: { width: p.w, height: p.h }, deviceScaleFactor: SCALE });
     const pg = await ctx.newPage();
     await pg.goto('file://' + htmlPath);

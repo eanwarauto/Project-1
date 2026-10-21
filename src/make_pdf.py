@@ -1,11 +1,13 @@
 # يولّد ملفي PDF من الصور:
 #   1) الملف الكامل: كل تصميم في صفحة (للعرض والمشاركة)
 #   2) ملف الطباعة A4: البوستر والغلاف ومفتاح الإجابات كل منها في ورقة، و4 بطاقات في كل ورقة مع خطوط قصّ
-# التشغيل: python3 src/make_pdf.py
+# التشغيل: python3 src/make_pdf.py [designs-pastel]
+import sys
 from pathlib import Path
 from PIL import Image, ImageDraw
 
-root = Path(__file__).resolve().parent.parent / 'designs'
+root = Path(__file__).resolve().parent.parent / (sys.argv[1] if len(sys.argv) > 1 else 'designs')
+suffix = '-باستيل' if 'pastel' in root.name else ''
 singles = sorted(root.glob('0[12]-*.png'))
 answers = sorted(root.glob('03-*.png'))
 elements = sorted((root / 'elements').glob('*.png'))
@@ -13,7 +15,7 @@ questions = sorted((root / 'questions').glob('*.png'))
 
 # 1) الملف الكامل
 pages = [Image.open(f).convert('RGB') for f in singles + elements + questions + answers]
-full = root / 'الأسبوع-العربي-للكيمياء-الملف-الكامل.pdf'
+full = root / f'الأسبوع-العربي-للكيمياء-الملف-الكامل{suffix}.pdf'
 pages[0].save(full, save_all=True, append_images=pages[1:], resolution=144, quality=90)
 print(f'✓ {full.name} — {len(pages)} صفحة')
 
@@ -72,6 +74,6 @@ def grid_pages(paths):
     return out
 
 print_pages = [single_page(p) for p in singles] + grid_pages(elements) + grid_pages(questions) + [single_page(p) for p in answers]
-pr = root / 'الأسبوع-العربي-للكيمياء-للطباعة-A4.pdf'
+pr = root / f'الأسبوع-العربي-للكيمياء-للطباعة-A4{suffix}.pdf'
 print_pages[0].save(pr, save_all=True, append_images=print_pages[1:], resolution=DPI, quality=88)
 print(f'✓ {pr.name} — {len(print_pages)} ورقة A4')
