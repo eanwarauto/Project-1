@@ -167,9 +167,23 @@ const ELEMENTS = [
     ] },
 ];
 
+// بطاقات يكون فيها جواب سؤال «هل» بـ«لا»: state = حالة خاطئة، z = عدد ذري خاطئ يُسأل عنه
+const NO = {
+  1: { z: 2 }, 2: { state: 'solid' }, 4: { z: 5 }, 6: { state: 'gas' }, 8: { z: 6 },
+  11: { state: 'gas' }, 13: { z: 14 }, 15: { z: 16 }, 17: { state: 'solid' }, 19: { z: 20 },
+  21: { state: 'gas', z: 20 },
+};
+
 // دلائل بطاقة «من أنا؟»: أربع معلومات عن العنصر، ثم سؤالان بـ«هل» تجيب عنهما بقية الطالبات بنعم أو لا
 function clues(el) {
-  return [...el.facts, `هل حالتي الفيزيائية ${STATES[el.state]}؟`, `هل عددي الذري ${el.z}؟`];
+  const no = NO[el.z] || {};
+  return [...el.facts, `هل حالتي الفيزيائية ${STATES[no.state || el.state]}؟`, `هل عددي الذري ${no.z || el.z}؟`];
+}
+
+// جوابا سؤالي «هل» (الدليل الخامس والسادس) لمفتاح الإجابات
+function yesNo(el) {
+  const no = NO[el.z] || {};
+  return [no.state ? 'لا' : 'نعم', no.z ? 'لا' : 'نعم'];
 }
 
 // التوزيع الإلكتروني حسب المستويات الفرعية (يُعرض للسكانديوم بدل مستويات الطاقة الرئيسية)
@@ -189,4 +203,4 @@ function shells(z) {
   return out;
 }
 
-module.exports = { CATEGORIES, STATES, ELEMENTS, SUBLEVELS, shells, clues };
+module.exports = { CATEGORIES, STATES, ELEMENTS, SUBLEVELS, shells, clues, yesNo };

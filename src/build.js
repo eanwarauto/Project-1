@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
-const { CATEGORIES, STATES, ELEMENTS, SUBLEVELS, shells, clues } = require('./data');
+const { CATEGORIES, STATES, ELEMENTS, SUBLEVELS, shells, clues, yesNo } = require('./data');
 
 const ROOT = path.join(__dirname, '..');
 const THEME = process.env.THEME || 'dark';
@@ -434,6 +434,8 @@ function answerKeyHtml() {
   .it .mini b{font-family:Pop;font-weight:800;font-size:44px;margin-top:8px}
   .it small{display:block;font-family:Pop,Cairo;font-weight:800;font-size:22px;color:#a8c8d6}
   .it strong{display:block;font-family:Pop,Cairo;font-weight:900;font-size:34px;line-height:1.25;color:#fff}
+  .it .yn{display:flex;gap:14px;margin-top:4px;font-family:Pop,Cairo;font-weight:700;font-size:21px;color:#a8c8d6}
+  .it .yn b{color:#6fd6b5}.it .yn b.no{color:#ff9f8c}
   .foot{margin-top:24px;font-family:Pop,Cairo;font-weight:800;font-size:24px;color:#a8c8d6}
   `;
   const body = `
@@ -448,9 +450,10 @@ function answerKeyHtml() {
     <div class="grid">${ELEMENTS.map(el => {
       const c = CATEGORIES[el.cat].color;
       return `<div class="it"><div class="mini" style="background:${tileBg(c)};box-shadow:${tileShadow(c, 6)}"><i>${el.z}</i><b>${el.sym}</b></div>
-        <div><small>البطاقة ${el.z}</small><strong>${el.ar}</strong></div></div>`;
+        <div><small>البطاقة ${el.z}</small><strong>${el.ar}</strong>
+        <div class="yn">${yesNo(el).map((v, i) => `<span>د${i + 5}: <b class="${v === 'لا' ? 'no' : ''}">${v}</b></span>`).join('')}</div></div></div>`;
     }).join('')}</div>
-    <div class="foot">رقم البطاقة يساوي العدد الذري للعنصر</div>
+    <div class="foot">رقم البطاقة يساوي العدد الذري للعنصر • د5 ود6: جواب سؤالي «هل» في الدليلين الخامس والسادس</div>
   </div>`;
   return page(CARD_W, CARD_H, body, css);
 }
