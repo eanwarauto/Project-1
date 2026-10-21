@@ -229,33 +229,73 @@ const BOOK_CSS = COMMON_CSS + `
 `;
 const binding = `<div class="bind"><i style="top:22%"></i><i style="top:76%"></i></div>`;
 
+// غلاف بطابع الجواز الكويتي: كحلي بملمس جلدي وكتابة ذهبية (بشعار كيميائي خاص بالنشاط، لا بالشعار الرسمي)
+const GOLD = 'linear-gradient(180deg,#f8e7b0 0%,#e2bf6e 45%,#b8893a 70%,#f0d58f 100%)';
+function laurel(side) {
+  // غصن زيتون على جانب واحد: أوراق مائلة على قوس من أسفل الشعار إلى جانبه
+  const cx = 200, cy = 190, r = 148;
+  return Array.from({ length: 8 }, (_, i) => {
+    const deg = 100 + i * 17;                       // من الأسفل إلى الأعلى على الجانب الأيسر
+    const a = (side < 0 ? deg : 180 - deg) * Math.PI / 180;
+    const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+    const rot = (side < 0 ? deg : 180 - deg) + (side < 0 ? -25 : 25);
+    const leaf = (dx, extra) => `<ellipse cx="${(x + dx).toFixed(1)}" cy="${y.toFixed(1)}" rx="9" ry="22" transform="rotate(${(rot + extra).toFixed(1)} ${(x + dx).toFixed(1)} ${y.toFixed(1)})" fill="url(#gold)"/>`;
+    return leaf(0, 0) + leaf(side * -14, side * 40);
+  }).join('') + `<path d="${side < 0 ? 'M174 337 A148 148 0 0 1 77 77' : 'M226 337 A148 148 0 0 0 323 77'}" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>`;
+}
+function goldEmblem(size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 400 400">
+    <defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e7b0"/><stop offset=".45" stop-color="#e2bf6e"/><stop offset=".7" stop-color="#b8893a"/><stop offset="1" stop-color="#f0d58f"/></linearGradient></defs>
+    <g filter="drop-shadow(0 3px 2px rgba(0,0,0,.45))">
+      <path d="M168 352 L200 336 L232 352" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      ${laurel(-1)}${laurel(1)}
+      <circle cx="200" cy="190" r="118" fill="none" stroke="url(#gold)" stroke-width="8"/>
+      <circle cx="200" cy="190" r="104" fill="none" stroke="url(#gold)" stroke-width="3"/>
+      ${[0, 60, 120].map(r => `<ellipse cx="200" cy="190" rx="86" ry="30" fill="none" stroke="url(#gold)" stroke-width="6" transform="rotate(${r} 200 190)"/>`).join('')}
+      <circle cx="200" cy="190" r="20" fill="url(#gold)"/>
+      ${[[286, 190], [157, 115.5], [157, 264.5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9" fill="url(#gold)"/>`).join('')}
+      <path d="M200 40 L208 58 L228 60 L213 73 L218 93 L200 82 L182 93 L187 73 L172 60 L192 58 Z" fill="url(#gold)"/>
+    </g></svg>`;
+}
+function chipMark(size) {
+  return `<svg width="${size * 1.5}" height="${size}" viewBox="0 0 96 64"><g fill="none" stroke="url(#gold2)" stroke-width="4">
+    <defs><linearGradient id="gold2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8e7b0"/><stop offset=".5" stop-color="#d9b25f"/><stop offset="1" stop-color="#f0d58f"/></linearGradient></defs>
+    <rect x="4" y="4" width="88" height="56" rx="4"/><circle cx="48" cy="32" r="14"/><path d="M4 32 H34 M62 32 H92"/></g></svg>`;
+}
 function coverHtml() {
   const css = BOOK_CSS + `
-  .wrap{align-items:center;text-align:center}
-  .emb{margin-top:80px;width:360px;height:360px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.25),rgba(255,255,255,.05));border:6px double rgba(255,255,255,.55)}
-  .lat{font-family:Pop;font-weight:700;font-size:26px;letter-spacing:10px;color:#a8c8d6;margin-top:34px;direction:ltr}
-  .t{--ts:#5b47a8;font-size:116px;line-height:1.1;margin-top:10px}
-  .sub{font-size:60px;color:#c9f3e5;text-shadow:0 4px 0 #1f6b5b;margin-top:4px}
-  .fields{margin-top:auto;width:100%;padding:24px 34px 30px;text-align:right}
-  .fields .f{display:flex;align-items:flex-end;gap:16px;font-family:Pop,Cairo;font-weight:800;font-size:34px;color:#3d5568;margin-top:10px}
-  .fields .f i{flex:1;height:62px;border-bottom:3px dotted #7a8e9c}
+  .leather{position:absolute;inset:0;background:
+    radial-gradient(900px 700px at 50% 30%,#22386a 0%,#16264a 55%,#0f1b36 100%)}
+  .leather::after{content:"";position:absolute;inset:0;opacity:.35;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 .9 0'/></filter><rect width='240' height='240' filter='url(%23n)'/></svg>`)}")}
+  .frame{position:absolute;inset:34px 130px 34px 34px;border:3px solid rgba(226,191,110,.55);border-radius:18px}
+  .frame::after{content:"";position:absolute;inset:10px;border:1.5px solid rgba(226,191,110,.35);border-radius:12px}
+  .wrap{align-items:center;text-align:center;padding-top:96px}
+  .g{background:${GOLD};-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 1px rgba(0,0,0,.5))}
+  .top{font-family:Kufi,Cairo;font-weight:700;font-size:44px}
+  .ttl{font-family:Lalezar;font-size:118px;line-height:1.1;margin-top:18px}
+  .emb{margin-top:40px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.4))}
+  .sub{font-family:Ruqaa;font-weight:700;font-size:58px;margin-top:16px}
+  .lat{font-family:Pop;font-weight:700;font-size:40px;letter-spacing:12px;margin-top:6px;direction:ltr}
+  .chip{margin-top:36px}
+  .plate{margin-top:auto;width:100%;border-radius:20px;padding:20px 30px 26px;background:#fbf6e8;border:4px solid #d9b25f;
+    box-shadow:0 10px 24px rgba(0,0,0,.35), inset 0 0 0 3px #f7ecd0;text-align:right}
+  .plate .f{display:flex;align-items:flex-end;gap:16px;font-family:Pop,Cairo;font-weight:800;font-size:32px;color:#6b5320;margin-top:8px}
+  .plate .f i{flex:1;height:58px;border-bottom:3px dotted #b89a5a}
+  .bind{background:rgba(0,0,0,.25);border-left:3px dashed rgba(226,191,110,.45)}
+  .bind i{background:rgba(226,191,110,.5)}
   `;
   const body = `
-  <div class="glow" style="width:560px;height:560px;background:#b7a2ff;top:100px;left:160px;opacity:.38"></div>
-  <div class="glow" style="width:380px;height:380px;background:#6fd6b5;bottom:120px;left:-120px;opacity:.3"></div>
+  <div class="leather"></div><div class="frame"></div>
   ${binding}
   <div class="wrap">
-    <span class="pill" style="font-size:28px">🧪 ${TITLE}</span>
-    <div class="emb">${decoAtom(270, '#ffc47e')}</div>
-    <div class="lat">CHEMICAL PASSPORT</div>
-    <h1 class="title3d t">${NAME}</h1>
-    <div class="ruqaa sub">${SUB}</div>
-    <div style="display:flex;gap:18px;margin-top:56px">${STATIONS.map(s => `<div style="width:62px;height:62px;border-radius:50%;background:${tileBg(s.color)};box-shadow:${tileShadow(s.color, 4)};display:flex;align-items:center;justify-content:center;font-family:Pop;font-weight:800;font-size:28px;color:#13293d">${s.n}</div>`).join('')}</div>
-    <div class="fields paper">
-      <div class="f">الاسم<i></i></div>
-      <div class="f">الصف<i></i></div>
-    </div>
+    <div class="g top">الأسبوع العربي للكيمياء</div>
+    <div class="g ttl">${NAME}</div>
+    <div class="emb">${goldEmblem(450)}</div>
+    <div class="g sub">${SUB}</div>
+    <div class="g lat">CHEMICAL PASSPORT</div>
+    <div class="chip">${chipMark(60)}</div>
+    <div class="plate"><div class="f">الاسم<i></i></div><div class="f">الصف<i></i></div></div>
   </div>`;
   return P(CARD_W, CARD_H, body, css);
 }
