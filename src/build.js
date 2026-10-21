@@ -530,4 +530,6 @@ async function main() {
   await browser.close();
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
+
+module.exports = { page, tileBg, tileShadow, lighten, darken, decoAtom, flask, molecule, pastel, fontUrl, TITLE, THEME, SCALE, CARD_W, CARD_H };
