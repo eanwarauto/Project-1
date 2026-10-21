@@ -82,10 +82,13 @@ const GOLD = '#b8962a', LILAC_DARK = '#8a6cc4', LILAC_SOFT = '#ece3fa';
 const page = (w, h, css, body) => `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>
 @font-face{font-family:Lalezar;src:url(${fontUrl('lalezar-arabic-400-normal.woff2')})}
 @font-face{font-family:Cairo;font-weight:800;src:url(${fontUrl('cairo-arabic-800-normal.woff2')})}
+@font-face{font-family:Pop;font-weight:500;src:url(${fontUrl('poppins-latin-500-normal.woff2')})}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:${w}px;height:${h}px;overflow:hidden;background:#fff}
 .frame{position:absolute;inset:34px;border:5px solid ${PINK_MID};border-radius:30px}
 .frame2{position:absolute;inset:48px;border:3px dashed ${YELLOW};border-radius:22px}
+.credit{position:absolute;bottom:54px;left:0;right:0;text-align:center;direction:ltr;
+  font-family:Pop;font-weight:500;font-size:17px;letter-spacing:1.5px;color:#000}
 .band{position:absolute;left:34px;right:34px;height:16px;background:${PINK_SOFT}}
 .d{position:absolute}
 .title{position:absolute;top:84px;left:50%;transform:translateX(-50%);
@@ -101,6 +104,7 @@ ${css}
 <div class="band" style="top:34px;border-radius:30px 30px 0 0"></div>
 <div class="band" style="bottom:34px;border-radius:0 0 30px 30px"></div>
 ${body}
+<div class="credit">ENG.7IKAYA</div>
 </body></html>`;
 
 // كلمات مفتاحية متناثرة ومائلة مثل الملصقات: [x, y, النص, اللون, الميلان]
@@ -123,11 +127,10 @@ const GROUP_WORDS = [
   [70, 760, 'درجة الحجب', 'lilac', 5],
   [930, 820, 'جذب النواة', 'mint', -6],
   [85, 1120, 'طاقة التأين', 'gold', -4],
-  [935, 1180, 'الخاصية الفلزية', 'pink', 7],
   [110, 1440, 'إلكترونات التكافؤ', 'mint', 6],
 ];
 const groupPage = page(W, H, STICKER_CSS + `
-.atoms{position:absolute;top:370px;bottom:72px;left:0;right:0;
+.atoms{position:absolute;top:370px;bottom:86px;left:0;right:0;
   display:flex;flex-direction:column;align-items:center;justify-content:space-between}`, `
 <div class="title">ترند الفصفصة</div>
 <div class="sub">${magnifier}اكتشف التدرج خلال المجموعة</div>
@@ -142,11 +145,9 @@ ${flask(1010, 1400, 100, '#f7c4dc', 6)}${tubes(950, 1560, 150)}${star(290, 1610,
 // ---- بالعرض: خلال الدورة (ثلاث ذرات بمستويين، تقترب المستويات من النواة من اليسار لليمين) ----
 const PERIOD_GAPS = [66, 52, 40];
 const PERIOD_WORDS = [
-  [120, 780, 'الشحنة النووية', 'pink', -6],
-  [470, 830, 'جذب النواة', 'mint', 5],
-  [770, 760, 'نصف القطر الذري', 'gold', -4],
-  [1110, 830, 'طاقة التأين', 'lilac', 6],
-  [1400, 770, 'الخاصية الفلزية', 'pink', -7],
+  [180, 800, 'جذب النواة', 'mint', 5],
+  [680, 770, 'نصف القطر الذري', 'gold', -4],
+  [1300, 800, 'طاقة التأين', 'lilac', 6],
   [300, 1010, 'عدد مستويات الطاقة', 'gold', 4],
   [700, 1040, 'درجة الحجب', 'pink', -5],
   [1000, 1010, 'إلكترونات التكافؤ', 'mint', 5],
@@ -164,7 +165,7 @@ ${PERIOD_WORDS.map(sticker).join('')}
 ${atomIcon(100, 76, 150)}${hexMol(1510, 80, 150)}
 ${heart(330, 120, 32)}${star(1400, 120, 34, 12)}
 ${star(600, 480, 30, -10)}${heart(1150, 500, 30, PINK_MID, 12)}
-${tubes(90, 1000, 150)}${flask(1500, 990, 95, YELLOW_SOFT, 8)}${star(1340, 1100, 30, 10)}${heart(1230, 1120, 28)}`);
+${tubes(90, 1000, 150)}${flask(1500, 990, 95, YELLOW_SOFT, 8)}${star(1340, 1100, 30, 10)}${heart(1000, 830, 28)}`);
 
 const PAGES = [
   { name: 'ترند-الفصفصة-A4', w: W, h: H, html: groupPage },
