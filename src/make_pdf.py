@@ -77,3 +77,9 @@ print_pages = [single_page(p) for p in singles] + grid_pages(elements) + grid_pa
 pr = root / f'الأسبوع-العربي-للكيمياء-للطباعة-A4{suffix}.pdf'
 print_pages[0].save(pr, save_all=True, append_images=print_pages[1:], resolution=DPI, quality=88)
 print(f'✓ {pr.name} — {len(print_pages)} ورقة A4')
+
+# 3) نسخة خفيفة للمراجعة على الجوال (نفس أوراق الطباعة بدقة أقل واسم إنجليزي بسيط)
+small = [p.resize((p.width // 2, p.height // 2), Image.LANCZOS) for p in print_pages]
+rv = root / ('Chemistry-Week-Pastel-Review.pdf' if suffix else 'Chemistry-Week-Review.pdf')
+small[0].save(rv, save_all=True, append_images=small[1:], resolution=DPI // 2, quality=80)
+print(f'✓ {rv.name} — {rv.stat().st_size // 1024} KB')
