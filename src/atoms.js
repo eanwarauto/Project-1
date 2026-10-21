@@ -1,5 +1,5 @@
 // يولّد بوستر «ترند الفصفصة» بمقاس A4: ثلاث ذرات بالطول (نواة + مستويين، ثلاثة، أربعة)
-// مع كلمات مفتاحية لتدرج الخواص خلال المجموعة، ونسخة بالعرض لثلاث ذرات بمستويين خلال الدورة.
+// مع كلمات مفتاحية متناثرة، ونسخة بالعرض لثلاث ذرات بمستويين خلال الدورة.
 // التشغيل: node src/atoms.js
 const fs = require('fs');
 const path = require('path');
@@ -95,8 +95,6 @@ html,body{width:${w}px;height:${h}px;overflow:hidden;background:#fff}
 .sub{position:absolute;top:262px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;
   padding:6px 34px 10px;border-radius:999px;background:${YELLOW_SOFT};border:3px solid ${YELLOW};
   font-family:Lalezar;font-size:46px;color:${INK};white-space:nowrap}
-.chip{font-family:Cairo;font-weight:800;font-size:31px;line-height:1.35;text-align:center;color:${INK};
-  background:var(--s);border:3px solid var(--c);border-radius:24px;padding:14px 12px}
 ${css}
 </style></head><body>
 <div class="frame"></div><div class="frame2"></div>
@@ -105,76 +103,68 @@ ${css}
 ${body}
 </body></html>`;
 
-// ---- بالطول: خلال المجموعة (مستويان، ثلاثة، أربعة) ----
-const GROUP_TRENDS = [
-  { side: 'right', head: 'يزداد', color: PINK, soft: PINK_SOFT,
-    words: ['عدد مستويات الطاقة', 'نصف القطر الذري', 'درجة الحجب', 'الخاصية الفلزية'] },
-  { side: 'left', head: 'يقل', color: GOLD, soft: YELLOW_SOFT,
-    words: ['جذب النواة لإلكترونات التكافؤ', 'طاقة التأين', 'السالبية الكهربائية'] },
-];
-const trendColumn = t => `<div class="trend ${t.side}" style="--c:${t.color};--s:${t.soft}">
-  <div class="head">${t.head}</div>
-  <svg class="shaft" viewBox="0 0 40 100" preserveAspectRatio="none"><rect x="14" y="0" width="12" height="100" rx="6" fill="${t.color}" opacity=".35"/></svg>
-  <div class="words">${t.words.map(w => `<div class="chip">${w}</div>`).join('')}</div>
-  <svg class="tip" width="90" height="70" viewBox="0 0 90 70"><path d="M8 8h74L45 64z" fill="${t.color}" stroke="${t.color}" stroke-width="8" stroke-linejoin="round"/></svg>
-</div>`;
+// كلمات مفتاحية متناثرة ومائلة مثل الملصقات: [x, y, النص, اللون, الميلان]
+const STICKER_COLORS = {
+  pink: [PINK, PINK_SOFT], gold: [GOLD, YELLOW_SOFT], lilac: [LILAC_DARK, LILAC_SOFT], mint: ['#3f9c84', '#d7f2e9'],
+};
+const sticker = ([x, y, text, color, rot]) => {
+  const [c, s] = STICKER_COLORS[color];
+  return `<div class="sticker" style="left:${x}px;top:${y}px;--c:${c};--s:${s};transform:rotate(${rot}deg)">${text}</div>`;
+};
+const STICKER_CSS = `
+.sticker{position:absolute;max-width:270px;font-family:Cairo;font-weight:800;font-size:31px;line-height:1.35;
+  text-align:center;color:${INK};background:var(--s);border:3px solid var(--c);border-radius:22px;
+  padding:12px 22px;box-shadow:5px 6px 0 var(--c)}`;
 
-const groupPage = page(W, H, `
+// ---- بالطول: خلال المجموعة (مستويان، ثلاثة، أربعة) ----
+const GROUP_WORDS = [
+  [90, 400, 'عدد مستويات الطاقة', 'pink', -7],
+  [905, 430, 'نصف القطر الذري', 'gold', 6],
+  [70, 760, 'درجة الحجب', 'lilac', 5],
+  [930, 820, 'جذب النواة', 'mint', -6],
+  [85, 1120, 'طاقة التأين', 'gold', -4],
+  [935, 1180, 'الخاصية الفلزية', 'pink', 7],
+  [110, 1440, 'إلكترونات التكافؤ', 'mint', 6],
+];
+const groupPage = page(W, H, STICKER_CSS + `
 .atoms{position:absolute;top:370px;bottom:72px;left:0;right:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:space-between}
-.trend{position:absolute;top:380px;bottom:80px;width:270px;display:flex;flex-direction:column;align-items:center}
-.trend.right{right:78px}.trend.left{left:78px}
-.head{position:relative;z-index:1;font-family:Lalezar;font-size:62px;line-height:1.2;color:#fff;background:var(--c);
-  padding:0 44px 6px;border-radius:999px;box-shadow:0 6px 0 var(--s)}
-.shaft{position:absolute;top:60px;bottom:50px;left:115px;width:40px;height:calc(100% - 110px)}
-.words{position:relative;flex:1;display:flex;flex-direction:column;justify-content:space-around;width:100%}
-.tip{position:relative}`, `
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between}`, `
 <div class="title">ترند الفصفصة</div>
 <div class="sub">${magnifier}اكتشف التدرج خلال المجموعة</div>
 <div class="atoms">${[2, 3, 4].map(n => atom(n)).join('')}</div>
-${GROUP_TRENDS.map(trendColumn).join('')}
+${GROUP_WORDS.map(sticker).join('')}
 ${atomIcon(88, 80, 140)}${hexMol(1010, 84, 140)}
 ${heart(110, 250, 30)}${star(1090, 250, 32, 12)}
-${star(390, 1660, 30, -10)}${heart(820, 1662, 28, PINK_MID, 10)}`);
+${flask(150, 560, 90, YELLOW_SOFT, -8)}${star(300, 650, 30, 10)}${heart(1050, 640, 30, PINK_MID, 12)}
+${heart(260, 960, 30)}${molecule(1000, 990, 110, 15)}${star(240, 1310, 32, -10)}
+${flask(1010, 1400, 100, '#f7c4dc', 6)}${tubes(950, 1560, 150)}${star(290, 1610, 30, 14)}${heart(160, 1630, 28, PINK_MID, -10)}`);
 
-// ---- بالعرض: خلال الدورة (ثلاث ذرات بمستويين، تتقلص قليلاً من اليسار لليمين) ----
-const PERIOD_TRENDS = [
-  { head: 'يزداد', color: PINK, soft: PINK_SOFT,
-    words: ['الشحنة النووية', 'جذب النواة لإلكترونات التكافؤ', 'طاقة التأين', 'السالبية الكهربائية'] },
-  { head: 'يقل', color: GOLD, soft: YELLOW_SOFT, words: ['نصف القطر الذري', 'الخاصية الفلزية'] },
-  { head: 'ثابت', color: LILAC_DARK, soft: LILAC_SOFT, words: ['عدد مستويات الطاقة', 'درجة الحجب'] },
+// ---- بالعرض: خلال الدورة (ثلاث ذرات بمستويين، تقترب المستويات من النواة من اليسار لليمين) ----
+const PERIOD_GAPS = [66, 52, 40];
+const PERIOD_WORDS = [
+  [120, 780, 'الشحنة النووية', 'pink', -6],
+  [470, 830, 'جذب النواة', 'mint', 5],
+  [770, 760, 'نصف القطر الذري', 'gold', -4],
+  [1110, 830, 'طاقة التأين', 'lilac', 6],
+  [1400, 770, 'الخاصية الفلزية', 'pink', -7],
+  [300, 1010, 'عدد مستويات الطاقة', 'gold', 4],
+  [700, 1040, 'درجة الحجب', 'pink', -5],
+  [1000, 1010, 'إلكترونات التكافؤ', 'mint', 5],
 ];
-const trendRow = t => `<div class="row" style="--c:${t.color};--s:${t.soft}">
-  <div class="head">${t.head}</div>
-  <div class="words">${t.words.map(w => `<div class="chip">${w}</div>`).join('')}</div>
-  ${t.head === 'ثابت'
-    ? `<svg class="tip" width="70" height="60" viewBox="0 0 70 60"><path d="M6 20h58M6 40h58" stroke="${t.color}" stroke-width="10" stroke-linecap="round"/></svg>`
-    : `<svg class="tip" width="70" height="80" viewBox="0 0 70 80"><path d="M8 8v64l56-32z" fill="${t.color}" stroke="${t.color}" stroke-width="8" stroke-linejoin="round"/></svg>`}
-</div>`;
-
 const PW = H, PH = W;
-const periodPage = page(PW, PH, `
+const periodPage = page(PW, PH, STICKER_CSS + `
 .title{top:72px;font-size:92px}
 .sub{top:236px;font-size:42px}
-.atoms{position:absolute;top:320px;left:190px;right:190px;height:360px;direction:ltr;
-  display:flex;align-items:center;justify-content:space-between}
-.rows{position:absolute;top:710px;bottom:78px;left:90px;right:90px;direction:ltr;
-  display:flex;flex-direction:column;justify-content:space-between}
-.row{position:relative;display:flex;align-items:center;gap:22px;padding:0 0 0 0}
-.row::before{content:'';position:absolute;left:150px;right:40px;top:50%;height:12px;margin-top:-6px;
-  border-radius:6px;background:var(--c);opacity:.35}
-.head{position:relative;width:150px;text-align:center;font-family:Lalezar;font-size:52px;line-height:1.25;color:#fff;
-  background:var(--c);padding:0 0 6px;border-radius:999px;box-shadow:0 6px 0 var(--s)}
-.words{position:relative;flex:1;display:flex;justify-content:space-around;gap:18px;direction:rtl}
-.chip{font-size:29px;padding:10px 22px;white-space:nowrap}
-.tip{position:relative;flex:none}`, `
+.atoms{position:absolute;top:320px;left:190px;right:190px;height:400px;direction:ltr;
+  display:flex;align-items:center;justify-content:space-between}`, `
 <div class="title">ترند الفصفصة</div>
 <div class="sub">${magnifier}اكتشف التدرج خلال الدورة</div>
-<div class="atoms">${[58, 54, 50].map(g => atom(2, g)).join('')}</div>
-<div class="rows">${PERIOD_TRENDS.map(trendRow).join('')}</div>
+<div class="atoms">${PERIOD_GAPS.map(g => atom(2, g)).join('')}</div>
+${PERIOD_WORDS.map(sticker).join('')}
 ${atomIcon(100, 76, 150)}${hexMol(1510, 80, 150)}
 ${heart(330, 120, 32)}${star(1400, 120, 34, 12)}
-${star(560, 470, 30, -10)}${heart(1160, 470, 30, PINK_MID, 12)}`);
+${star(600, 480, 30, -10)}${heart(1150, 500, 30, PINK_MID, 12)}
+${tubes(90, 1000, 150)}${flask(1500, 990, 95, YELLOW_SOFT, 8)}${star(1340, 1100, 30, 10)}${heart(1230, 1120, 28)}`);
 
 const PAGES = [
   { name: 'ترند-الفصفصة-A4', w: W, h: H, html: groupPage },
