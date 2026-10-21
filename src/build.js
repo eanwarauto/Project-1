@@ -199,27 +199,24 @@ const LEGEND_CSS = `
 // ======================= 1) البوستر الإعلاني =======================
 function posterHtml() {
   const css = MINI_CSS + LEGEND_CSS + `
-  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:70px 60px 56px}
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:70px 60px 70px}
   .top{display:flex;gap:16px}
   .t1{--ts:#1f6b5b;font-size:132px;margin-top:22px;text-align:center}
   .t1 .l2{display:block;font-size:156px;color:#c9f3e5;--ts:#2f6f8f;
     background:linear-gradient(180deg,#ffffff 0%,#b8f0de 45%,#7fcbe9 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 6px 0 #1f5d73) drop-shadow(0 12px 0 #184a5d) drop-shadow(0 26px 30px rgba(0,0,0,.45));text-shadow:none}
   .sub{font-family:Pop,Cairo;font-weight:700;font-size:32px;color:#d6ebf3;margin-top:14px;text-align:center}
-  .stage{margin-top:30px;perspective:1400px}
+  .stage{margin-top:auto;perspective:1400px}
   .stage .ptable{transform:rotateX(26deg) rotateZ(0deg);transform-origin:50% 60%}
-  .banner{margin-top:28px;width:100%;display:flex;align-items:center;gap:34px;padding:24px 36px;border-radius:40px;
+  .banner{margin-top:auto;width:100%;display:flex;align-items:center;gap:34px;padding:24px 36px;border-radius:40px;
     background:linear-gradient(135deg,rgba(183,162,255,.32),rgba(111,214,181,.22));border:2px solid rgba(255,255,255,.22);
     box-shadow:0 22px 50px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.25)}
   .qm{width:136px;height:136px;flex:none;border-radius:38px;display:flex;align-items:center;justify-content:center;
     font-family:Lalezar;font-size:136px;color:#13293d;padding-top:26px;background:${tileBg('#ffc47e')};box-shadow:${tileShadow('#ffc47e', 12)};transform:rotate(-8deg)}
   .btxt h2{font-family:Lalezar;font-weight:400;font-size:66px;line-height:1;color:#fff;text-shadow:0 4px 0 #6a55b8,0 8px 18px rgba(0,0,0,.35)}
   .btxt p{font-family:Pop,Cairo;font-weight:700;font-size:26px;color:#e7f1f6;margin-top:12px;line-height:1.5}
-  .info{margin-top:22px;display:flex;gap:22px;width:100%}
-  .info div{flex:1;border-radius:26px;padding:18px 24px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.28);
-    font-family:Pop,Cairo;font-weight:800;font-size:28px;color:#cfe6ee}
-  .info b{color:#ffc47e}
   .foot{margin-top:auto;font-family:Pop,Cairo;font-weight:800;font-size:28px;color:#a8c8d6;letter-spacing:0}
+  .t1{margin-bottom:0}
   `;
   const body = `
   <div class="glow" style="width:420px;height:420px;background:#6fd6b5;top:120px;left:-120px"></div>
@@ -241,7 +238,6 @@ function posterHtml() {
       <div class="btxt"><h2>نشاط: من أنا؟</h2>
         <p>21 لغزاً عن العناصر من الهيدروجين حتى السكانديوم<br>دلائل متتالية… والأسرع يفوز بأعلى النقاط!</p></div>
     </div>
-    <div class="info"><div><b>الموعد:</b> ..........................</div><div><b>المكان:</b> ..........................</div></div>
     <div class="foot">شارك • فكّر • اكتشف</div>
   </div>`;
   return page(1080, 1350, body, css);
@@ -305,32 +301,6 @@ const POINTS = [6, 5, 4, 3, 2, 1];
 const pointsWord = p => (p > 2 ? 'نقاط' : p === 2 ? 'نقطتان' : 'نقطة');
 const sup = n => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
 
-// مخطط مربعات المستويات الفرعية (للسكانديوم)
-function orbitalDiagram(sub, color) {
-  const box = 48, gapIn = 0, gapOut = 22;
-  const groups = sub.map(([name, e]) => ({ name, e, k: { s: 1, p: 3, d: 5, f: 7 }[name[1]] }));
-  const W = groups.reduce((a, g) => a + g.k * box, 0) + gapOut * (groups.length - 1);
-  const H = 150;
-  let x = 0, svg = '';
-  const arrow = (cx, up) => {
-    const y1 = up ? 64 : 26, y2 = up ? 26 : 64, h = up ? -1 : 1;
-    return `<line x1="${cx}" y1="${y1}" x2="${cx}" y2="${y2}" stroke="#13293d" stroke-width="4" stroke-linecap="round"/>
-      <path d="M${cx - 7} ${y2 - h * 9} L${cx} ${y2} L${cx + 7} ${y2 - h * 9}" fill="none" stroke="#13293d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
-  };
-  for (const g of groups) {
-    for (let b = 0; b < g.k; b++) {
-      const bx = x + b * box;
-      svg += `<rect x="${bx + 1}" y="16" width="${box - 2}" height="${box + 10}" rx="8" fill="${lighten(color, .55)}" stroke="${darken(color, .3)}" stroke-width="2"/>`;
-      const ups = Math.min(g.e, g.k), downs = Math.max(0, g.e - g.k);
-      if (b < ups) svg += arrow(bx + box / 2 - (b < downs ? 9 : 0), true);
-      if (b < downs) svg += arrow(bx + box / 2 + 9, false);
-    }
-    svg += `<text x="${x + g.k * box / 2}" y="${H - 34}" text-anchor="middle" font-family="Pop" font-weight="800" font-size="30" fill="#ffffff">${g.name}${sup(g.e)}</text>`;
-    x += g.k * box + gapOut;
-  }
-  return `<svg width="${W}" height="${H - 20}" viewBox="0 -4 ${W} ${H - 16}" direction="ltr">${svg}</svg>`;
-}
-
 // ======================= 3) بطاقة العنصر =======================
 function elementHtml(el) {
   const cat = CATEGORIES[el.cat];
@@ -355,8 +325,6 @@ function elementHtml(el) {
   .tile .catp{margin-top:14px;font-family:Pop,Cairo;font-weight:800;font-size:28px;padding:4px 26px;border-radius:999px;background:rgba(19,41,61,.12);border:2px solid rgba(19,41,61,.18)}
   .visual{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
   .bohr{transform:perspective(1100px) rotateX(14deg);filter:drop-shadow(0 30px 40px rgba(0,0,0,.35))}
-  .orb{padding:26px 28px 6px;border-radius:32px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15)}
-  .orbt{font-family:Pop,Cairo;font-weight:800;font-size:26px;color:#a8c8d6}
   .chips{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .chip{border-radius:28px;padding:14px 22px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);
     box-shadow:0 14px 30px rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.12);display:flex;align-items:center;gap:18px}
@@ -367,9 +335,7 @@ function elementHtml(el) {
   .chip b.ltr{font-family:Pop;font-weight:700;direction:ltr;text-align:right}
   .chip sup{font-size:.6em;line-height:0}
   `;
-  const visual = sub
-    ? `<div class="orbt">التوزيع الإلكتروني حسب المستويات الفرعية</div><div class="orb">${orbitalDiagram(sub, c)}</div>`
-    : `<div class="bohr">${bohr(el.z, c, 400)}</div>`;
+  const visual = `<div class="bohr">${bohr(el.z, c, 400)}</div>`;
   const body = `
   <div class="glow" style="width:600px;height:600px;background:${c};top:180px;left:240px;opacity:.36"></div>
   <div class="glow" style="width:420px;height:420px;background:#7fcbe9;bottom:200px;left:-60px;opacity:.22"></div>
@@ -452,11 +418,47 @@ function questionHtml(el) {
   return page(CARD_W, CARD_H, body, css);
 }
 
+// ======================= 5) مفتاح الإجابات (للمعلمة) =======================
+function answerKeyHtml() {
+  const css = `
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:56px 56px 50px}
+  .t{--ts:#1f6b5b;font-size:104px;margin-top:26px}
+  .s{font-family:Pop,Cairo;font-weight:800;font-size:30px;color:#d9ecf4;margin-top:6px}
+  .grid{flex:1;width:100%;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:16px;margin-top:34px}
+  .it{display:flex;align-items:center;gap:16px;padding:12px 16px;border-radius:26px;background:rgba(255,255,255,.08);
+    border:2px solid rgba(255,255,255,.15);box-shadow:0 12px 26px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.12)}
+  .it .mini{flex:none;position:relative;width:96px;height:96px;border-radius:22px;color:#13293d;display:flex;align-items:center;justify-content:center}
+  .it .mini i{position:absolute;top:6px;left:10px;font-style:normal;font-family:Pop;font-weight:800;font-size:17px}
+  .it .mini b{font-family:Pop;font-weight:800;font-size:44px;margin-top:8px}
+  .it small{display:block;font-family:Pop,Cairo;font-weight:800;font-size:22px;color:#a8c8d6}
+  .it strong{display:block;font-family:Pop,Cairo;font-weight:900;font-size:34px;line-height:1.25;color:#fff}
+  .foot{margin-top:24px;font-family:Pop,Cairo;font-weight:800;font-size:24px;color:#a8c8d6}
+  `;
+  const body = `
+  <div class="glow" style="width:520px;height:520px;background:#6fd6b5;top:-120px;left:-120px;opacity:.3"></div>
+  <div class="glow" style="width:480px;height:480px;background:#b7a2ff;bottom:-100px;right:-100px;opacity:.3"></div>
+  <div style="position:absolute;top:40px;left:40px;transform:rotate(-14deg);opacity:.9">${decoAtom(150, '#6fd6b5')}</div>
+  <div style="position:absolute;top:60px;right:46px;transform:rotate(12deg);opacity:.9">${flask(96, '#b7a2ff')}</div>
+  <div class="wrap">
+    <span class="pill" style="font-size:28px">🧪 ${TITLE}</span>
+    <h1 class="title3d t">مفتاح الإجابات</h1>
+    <div class="s">نشاط «من أنا؟» — للمعلمة فقط</div>
+    <div class="grid">${ELEMENTS.map(el => {
+      const c = CATEGORIES[el.cat].color;
+      return `<div class="it"><div class="mini" style="background:${tileBg(c)};box-shadow:${tileShadow(c, 6)}"><i>${el.z}</i><b>${el.sym}</b></div>
+        <div><small>البطاقة ${el.z}</small><strong>${el.ar}</strong></div></div>`;
+    }).join('')}</div>
+    <div class="foot">رقم البطاقة يساوي العدد الذري للعنصر</div>
+  </div>`;
+  return page(CARD_W, CARD_H, body, css);
+}
+
 // ======================= التوليد =======================
 async function main() {
   const pages = [
     { file: '01-البوستر-الإعلاني.png', html: posterHtml(), w: 1080, h: 1350 },
     { file: '02-نشاط-من-أنا.png', html: whoAmIHtml(), w: 1080, h: 1350 },
+    { file: '03-مفتاح-الإجابات.png', html: answerKeyHtml(), w: CARD_W, h: CARD_H },
   ];
   for (const el of ELEMENTS) {
     const n = String(el.z).padStart(2, '0');
