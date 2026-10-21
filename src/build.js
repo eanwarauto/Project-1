@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
-const { CATEGORIES, STATES, ELEMENTS, shells } = require('./data');
+const { CATEGORIES, STATES, ELEMENTS, SUBLEVELS, shells, clues } = require('./data');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'designs');
@@ -266,20 +266,20 @@ function whoAmIHtml() {
     border:2px solid rgba(255,255,255,.15);box-shadow:0 14px 30px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.12)}
   .st .n{flex:none;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Pop;font-weight:800;font-size:32px;color:#13293d}
   .st p{font-family:Pop,Cairo;font-weight:700;font-size:27px;line-height:1.45;color:#eef6fa}
-  .pts{margin-top:24px;display:flex;gap:16px;align-items:flex-end;direction:rtl}
-  .pts div{width:118px;border-radius:22px 22px 14px 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:12px;color:#13293d}
+  .pts{margin-top:24px;display:flex;gap:14px;align-items:flex-end;direction:rtl}
+  .pts div{width:112px;border-radius:22px 22px 14px 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:12px;color:#13293d}
   .pts b{font-family:Pop;font-weight:800;font-size:40px;line-height:1}
   .pts span{font-family:Pop,Cairo;font-weight:800;font-size:19px}
   .foot{margin-top:auto;font-family:Pop,Cairo;font-weight:800;font-size:28px;color:#a8c8d6}
   `;
   const stepColors = ['#6fd6b5', '#ffc47e', '#b7a2ff', '#ff9f8c'];
   const steps = [
-    'يقرأ المقدّم الدليل الأول، ثم يكشف الدلائل واحداً تلو الآخر.',
-    'كل دليل يقرّبك أكثر من العنصر المجهول بين العناصر 1 إلى 21.',
-    'ارفع يدك فور معرفتك العنصر، وقل اسمه ورمزه الكيميائي.',
-    'كلما أجبت مبكراً حصلت على نقاط أكثر!',
+    'اقرئي الدليل الأول في بطاقتكِ، ثم انتقلي إلى الدليل التالي واحداً تلو الآخر.',
+    'كل دليل يقرّبكِ أكثر من العنصر المجهول بين العناصر 1 إلى 21.',
+    'عندما تعرفين العنصر، اكتبي اسمه ورمزه في خانة «إجابتي».',
+    'كلما عرفتِ الإجابة من دليل أبكر حصلتِ على نقاط أكثر!',
   ];
-  const ptsColors = ['#6fd6b5', '#7fcbe9', '#b7a2ff', '#ffc47e', '#ff9f8c'];
+  const ptsColors = ['#6fd6b5', '#7fcbe9', '#b7a2ff', '#ffc47e', '#ff9f8c', '#f6a8c9'];
   const body = `
   <div class="glow" style="width:520px;height:520px;background:#b7a2ff;top:140px;left:280px;opacity:.35"></div>
   <div class="ring" style="width:520px;height:520px;top:110px;left:280px"></div>
@@ -293,123 +293,163 @@ function whoAmIHtml() {
     <h1 class="title3d t">من أنا؟</h1>
     <div class="s">تحدّي عناصر الجدول الدوري من 1 إلى 21</div>
     <div class="steps">${steps.map((s, i) => `<div class="st"><div class="n" style="background:${tileBg(stepColors[i])};box-shadow:${tileShadow(stepColors[i], 5)}">${i + 1}</div><p>${s}</p></div>`).join('')}</div>
-    <div class="pts">${[5, 4, 3, 2, 1].map((p, i) => `<div style="height:${64 + p * 14}px;background:${tileBg(ptsColors[i])};box-shadow:${tileShadow(ptsColors[i], 7)}"><b>${p}</b><span>${['الدليل 1', 'الدليل 2', 'الدليل 3', 'الدليل 4', 'الدليل 5'][i]}</span></div>`).join('')}</div>
-    <div class="foot">نقاطك تتناقص مع كل دليل جديد… كن الأسرع!</div>
+    <div class="pts">${POINTS.map((p, i) => `<div style="height:${64 + p * 12}px;background:${tileBg(ptsColors[i])};box-shadow:${tileShadow(ptsColors[i], 7)}"><b>${p}</b><span>الدليل ${i + 1}</span></div>`).join('')}</div>
+    <div class="foot">نقاطكِ تتناقص مع كل دليل جديد… كوني الأسرع!</div>
   </div>`;
   return page(1080, 1350, body, css);
+}
+
+// البطاقات بنسبة A6 (ربع ورقة A4) لتُطبع 4 بطاقات في الورقة الواحدة
+const CARD_W = 1080, CARD_H = 1527;
+const POINTS = [6, 5, 4, 3, 2, 1];
+const pointsWord = p => (p > 2 ? 'نقاط' : p === 2 ? 'نقطتان' : 'نقطة');
+const sup = n => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
+
+// مخطط مربعات المستويات الفرعية (للسكانديوم)
+function orbitalDiagram(sub, color) {
+  const box = 48, gapIn = 0, gapOut = 22;
+  const groups = sub.map(([name, e]) => ({ name, e, k: { s: 1, p: 3, d: 5, f: 7 }[name[1]] }));
+  const W = groups.reduce((a, g) => a + g.k * box, 0) + gapOut * (groups.length - 1);
+  const H = 150;
+  let x = 0, svg = '';
+  const arrow = (cx, up) => {
+    const y1 = up ? 64 : 26, y2 = up ? 26 : 64, h = up ? -1 : 1;
+    return `<line x1="${cx}" y1="${y1}" x2="${cx}" y2="${y2}" stroke="#13293d" stroke-width="4" stroke-linecap="round"/>
+      <path d="M${cx - 7} ${y2 - h * 9} L${cx} ${y2} L${cx + 7} ${y2 - h * 9}" fill="none" stroke="#13293d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  };
+  for (const g of groups) {
+    for (let b = 0; b < g.k; b++) {
+      const bx = x + b * box;
+      svg += `<rect x="${bx + 1}" y="16" width="${box - 2}" height="${box + 10}" rx="8" fill="${lighten(color, .55)}" stroke="${darken(color, .3)}" stroke-width="2"/>`;
+      const ups = Math.min(g.e, g.k), downs = Math.max(0, g.e - g.k);
+      if (b < ups) svg += arrow(bx + box / 2 - (b < downs ? 9 : 0), true);
+      if (b < downs) svg += arrow(bx + box / 2 + 9, false);
+    }
+    svg += `<text x="${x + g.k * box / 2}" y="${H - 34}" text-anchor="middle" font-family="Pop" font-weight="800" font-size="30" fill="#ffffff">${g.name}${sup(g.e)}</text>`;
+    x += g.k * box + gapOut;
+  }
+  return `<svg width="${W}" height="${H - 20}" viewBox="0 -4 ${W} ${H - 16}" direction="ltr">${svg}</svg>`;
 }
 
 // ======================= 3) بطاقة العنصر =======================
 function elementHtml(el) {
   const cat = CATEGORIES[el.cat];
   const c = cat.color;
+  const sub = SUBLEVELS[el.z];
+  const config = sub
+    ? sub.map(([n, e]) => `${n}<sup>${e}</sup>`).join(' ')
+    : shells(el.z).join(' , ');
   const css = `
-  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 60px 50px}
-  .hd{display:flex;justify-content:space-between;align-items:center}
-  .idx{font-family:Pop;font-weight:700;font-size:26px;color:#a8c8d6;direction:ltr}
-  .main{flex:1;display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:10px}
-  .tilebox{perspective:1300px}
-  .tile{position:relative;width:440px;height:520px;border-radius:56px;color:#13293d;transform:rotateY(-14deg) rotateX(8deg);
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:56px 60px 54px}
+  .hd{width:100%;display:flex;justify-content:space-between;align-items:center}
+  .idx{font-family:Pop;font-weight:700;font-size:28px;color:#a8c8d6;direction:ltr}
+  .tilebox{perspective:1400px;margin-top:40px}
+  .tile{position:relative;width:560px;height:600px;border-radius:64px;color:#13293d;transform:rotateY(-10deg) rotateX(8deg);
     display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .tile .z{position:absolute;top:28px;left:36px;font-family:Pop;font-weight:800;font-size:46px;opacity:.85}
-  .tile .ic{position:absolute;top:30px;right:34px;opacity:.75}
-  .tile .sym{font-family:Pop;font-weight:800;font-size:${el.sym.length > 1 ? 210 : 240}px;line-height:1;margin-top:40px;
+  .tile .z{position:absolute;top:30px;left:40px;font-family:Pop;font-weight:800;font-size:54px;opacity:.85}
+  .tile .ic{position:absolute;top:34px;right:38px;opacity:.75}
+  .tile .sym{font-family:Pop;font-weight:800;font-size:${el.sym.length > 1 ? 250 : 280}px;line-height:1;margin-top:46px;
     text-shadow:0 3px 0 rgba(255,255,255,.55),0 10px 18px rgba(0,0,0,.18)}
-  .tile .ar{font-family:Pop,Cairo;font-weight:900;font-size:66px;line-height:1.2;margin-top:8px}
-  .tile .en{font-family:Pop;font-weight:500;font-size:26px;opacity:.7;direction:ltr}
-  .tile .catp{margin-top:14px;font-family:Pop,Cairo;font-weight:800;font-size:24px;padding:4px 22px;border-radius:999px;background:rgba(19,41,61,.12);border:2px solid rgba(19,41,61,.18)}
-  .bohr{transform:perspective(1100px) rotateY(18deg) rotateX(10deg);filter:drop-shadow(0 30px 40px rgba(0,0,0,.35))}
-  .chips{display:flex;gap:18px;margin-top:16px}
-  .chip{flex:1;border-radius:28px;padding:16px 22px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);
-    box-shadow:0 14px 30px rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.12);display:flex;align-items:center;gap:16px}
-  .chip .ico{flex:none;width:70px;height:70px;border-radius:22px;display:flex;align-items:center;justify-content:center}
-  .chip small{display:block;font-family:Pop,Cairo;font-weight:700;font-size:21px;color:#a8c8d6}
-  .chip b{display:block;font-family:Pop,Cairo;font-weight:900;font-size:33px;color:#fff;line-height:1.3}
+  .tile .ar{font-family:Pop,Cairo;font-weight:900;font-size:80px;line-height:1.2;margin-top:6px}
+  .tile .en{font-family:Pop;font-weight:500;font-size:30px;opacity:.7;direction:ltr}
+  .tile .catp{margin-top:14px;font-family:Pop,Cairo;font-weight:800;font-size:28px;padding:4px 26px;border-radius:999px;background:rgba(19,41,61,.12);border:2px solid rgba(19,41,61,.18)}
+  .visual{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+  .bohr{transform:perspective(1100px) rotateX(14deg);filter:drop-shadow(0 30px 40px rgba(0,0,0,.35))}
+  .orb{padding:26px 28px 6px;border-radius:32px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15)}
+  .orbt{font-family:Pop,Cairo;font-weight:800;font-size:26px;color:#a8c8d6}
+  .chips{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .chip{border-radius:28px;padding:14px 22px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);
+    box-shadow:0 14px 30px rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.12);display:flex;align-items:center;gap:18px}
+  .chip.wide{grid-column:1/-1}
+  .chip .ico{flex:none;width:76px;height:76px;border-radius:22px;display:flex;align-items:center;justify-content:center}
+  .chip small{display:block;font-family:Pop,Cairo;font-weight:700;font-size:24px;color:#a8c8d6}
+  .chip b{display:block;font-family:Pop,Cairo;font-weight:900;font-size:38px;color:#fff;line-height:1.3}
   .chip b.ltr{font-family:Pop;font-weight:700;direction:ltr;text-align:right}
+  .chip sup{font-size:.6em;line-height:0}
   `;
+  const visual = sub
+    ? `<div class="orbt">التوزيع الإلكتروني حسب المستويات الفرعية</div><div class="orb">${orbitalDiagram(sub, c)}</div>`
+    : `<div class="bohr">${bohr(el.z, c, 400)}</div>`;
   const body = `
-  <div class="glow" style="width:560px;height:560px;background:${c};top:200px;right:120px;opacity:.38"></div>
-  <div class="glow" style="width:360px;height:360px;background:#7fcbe9;bottom:60px;left:40px;opacity:.25"></div>
-  <div class="sphere" style="--c:${c};--cd:${darken(c, .45)};width:54px;height:54px;top:150px;left:120px"></div>
-  <div class="sphere" style="--c:#ffc47e;--cd:#b8743a;width:30px;height:30px;bottom:250px;right:40px"></div>
+  <div class="glow" style="width:600px;height:600px;background:${c};top:180px;left:240px;opacity:.36"></div>
+  <div class="glow" style="width:420px;height:420px;background:#7fcbe9;bottom:200px;left:-60px;opacity:.22"></div>
+  <div class="sphere" style="--c:${c};--cd:${darken(c, .45)};width:60px;height:60px;top:240px;left:90px"></div>
+  <div class="sphere" style="--c:#ffc47e;--cd:#b8743a;width:36px;height:36px;top:620px;right:70px"></div>
+  <div style="position:absolute;top:720px;left:40px;transform:rotate(-14deg);opacity:.85">${decoAtom(140, c)}</div>
   <div class="wrap">
-    <div class="hd"><span class="pill" style="font-size:27px">🧪 ${TITLE}</span><span class="idx">${el.z} / 21</span></div>
-    <div class="main">
-      <div class="tilebox"><div class="tile" style="background:${tileBg(c)};box-shadow:${tileShadow(c, 22)}">
-        <span class="z">${el.z}</span><span class="ic">${stateIcon(el.state, 54)}</span>
-        <div class="sym">${el.sym}</div><div class="ar">${el.ar}</div><div class="en">${el.en}</div><div class="catp">${cat.ar}</div>
-      </div></div>
-      <div class="bohr">${bohr(el.z, c, 440)}</div>
-    </div>
+    <div class="hd"><span class="pill" style="font-size:28px">🧪 ${TITLE}</span><span class="idx">${el.z} / 21</span></div>
+    <div class="tilebox"><div class="tile" style="background:${tileBg(c)};box-shadow:${tileShadow(c, 24)}">
+      <span class="z">${el.z}</span><span class="ic">${stateIcon(el.state, 60)}</span>
+      <div class="sym">${el.sym}</div><div class="ar">${el.ar}</div><div class="en">${el.en}</div><div class="catp">${cat.ar}</div>
+    </div></div>
+    <div class="visual">${visual}</div>
     <div class="chips">
-      <div class="chip"><div class="ico" style="background:${tileBg(c)};box-shadow:${tileShadow(c, 5)}">${stateIcon(el.state, 46)}</div>
+      <div class="chip"><div class="ico" style="background:${tileBg(c)};box-shadow:${tileShadow(c, 5)}">${stateIcon(el.state, 50)}</div>
         <div><small>الحالة الفيزيائية</small><b>${STATES[el.state]}</b></div></div>
-      <div class="chip"><div class="ico" style="background:${tileBg('#7fcbe9')};box-shadow:${tileShadow('#7fcbe9', 5)};font-family:Pop;font-weight:800;font-size:34px;color:#13293d">Z</div>
+      <div class="chip"><div class="ico" style="background:${tileBg('#7fcbe9')};box-shadow:${tileShadow('#7fcbe9', 5)};font-family:Pop;font-weight:800;font-size:36px;color:#13293d">Z</div>
         <div><small>العدد الذري</small><b class="ltr">${el.z}</b></div></div>
-      <div class="chip"><div class="ico" style="background:${tileBg('#b7a2ff')};box-shadow:${tileShadow('#b7a2ff', 5)}">${decoAtom(52, '#ffffff')}</div>
-        <div><small>التوزيع الإلكتروني</small><b class="ltr">${shells(el.z).join(' , ')}</b></div></div>
+      <div class="chip wide"><div class="ico" style="background:${tileBg('#b7a2ff')};box-shadow:${tileShadow('#b7a2ff', 5)}">${decoAtom(56, '#ffffff')}</div>
+        <div><small>${sub ? 'التوزيع الإلكتروني (المستويات الفرعية)' : 'التوزيع الإلكتروني'}</small><b class="ltr">${config}</b></div></div>
     </div>
   </div>`;
-  return page(1080, 1080, body, css);
+  return page(CARD_W, CARD_H, body, css);
 }
 
-// ======================= 4) بطاقة الأسئلة =======================
+// ======================= 4) بطاقة الأسئلة (للطالبة — بدون إجابة) =======================
+const CARD_ACCENTS = ['#6fd6b5', '#7fcbe9', '#b7a2ff', '#ffc47e', '#ff9f8c', '#f6a8c9'];
 function questionHtml(el) {
-  const cat = CATEGORIES[el.cat];
-  const c = cat.color;
-  const clueColors = ['#6fd6b5', '#7fcbe9', '#b7a2ff', '#ffc47e', '#ff9f8c'];
-  const ord = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس'];
+  // لون البطاقة يتبدّل حسب رقمها، لا حسب تصنيف العنصر، حتى لا يكشف الإجابة
+  const c = CARD_ACCENTS[(el.z - 1) % CARD_ACCENTS.length];
+  const clueColors = ['#6fd6b5', '#7fcbe9', '#b7a2ff', '#ffc47e', '#ff9f8c', '#f6a8c9'];
+  const ord = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
   const css = `
-  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 60px 50px}
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 56px 50px}
   .hd{display:flex;justify-content:space-between;align-items:center}
-  .no{font-family:Pop,Cairo;font-weight:900;font-size:28px;color:#13293d;padding:10px 26px;border-radius:999px;background:${tileBg(c)};box-shadow:${tileShadow(c, 5)}}
-  .ttl{display:flex;align-items:center;justify-content:center;gap:26px;margin-top:10px}
-  .ttl h1{--ts:#5b47a8;font-size:104px}
-  .mq{width:106px;height:106px;border-radius:30px;display:flex;align-items:center;justify-content:center;font-family:Lalezar;font-size:104px;
-    color:#13293d;padding-top:20px;transform:rotate(-8deg);background:${tileBg('#b7a2ff')};box-shadow:${tileShadow('#b7a2ff', 12)}}
-  .lead{text-align:center;font-family:Pop,Cairo;font-weight:700;font-size:26px;color:#a8c8d6;margin-top:4px}
-  .clues{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;margin:22px 0}
-  .cl{display:flex;align-items:center;gap:22px;padding:12px 22px;border-radius:32px;
+  .no{font-family:Pop,Cairo;font-weight:900;font-size:32px;color:#13293d;padding:10px 28px;border-radius:999px;background:${tileBg(c)};box-shadow:${tileShadow(c, 5)}}
+  .ttl{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:14px}
+  .ttl h1{--ts:#5b47a8;font-size:100px}
+  .mq{width:100px;height:100px;border-radius:28px;display:flex;align-items:center;justify-content:center;font-family:Lalezar;font-size:98px;
+    color:#13293d;padding-top:18px;transform:rotate(-8deg);background:${tileBg('#b7a2ff')};box-shadow:${tileShadow('#b7a2ff', 11)}}
+  .lead{text-align:center;font-family:Pop,Cairo;font-weight:700;font-size:27px;color:#a8c8d6;margin-top:2px}
+  .clues{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;margin:20px 0}
+  .cl{display:flex;align-items:center;gap:18px;padding:12px 20px;border-radius:30px;
     background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.05));border:2px solid rgba(255,255,255,.15);
-    box-shadow:0 14px 30px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.12)}
-  .cl .n{flex:none;width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 12px 26px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.12)}
+  .cl .n{flex:none;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     font-family:Pop;font-weight:800;font-size:32px;color:#13293d}
   .cl .tx{flex:1}
-  .cl .tx small{display:block;font-family:Pop,Cairo;font-weight:800;font-size:18px;color:#a8c8d6}
-  .cl .tx p{font-family:Pop,Cairo;font-weight:700;font-size:27px;line-height:1.42;color:#f4f8fb}
-  .cl .pt{flex:none;width:84px;text-align:center;border-radius:22px;padding:8px 0;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.18)}
+  .cl .tx small{display:block;font-family:Pop,Cairo;font-weight:800;font-size:20px;color:#a8c8d6;margin-bottom:4px}
+  .cl .tx p{font-family:Pop,Cairo;font-weight:700;font-size:32px;line-height:1.4;color:#f4f8fb}
+  .cl .pt{flex:none;width:84px;text-align:center;border-radius:20px;padding:6px 0;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.18)}
   .cl .pt b{display:block;font-family:Pop;font-weight:800;font-size:34px;line-height:1.1}
-  .cl .pt span{font-family:Pop,Cairo;font-weight:800;font-size:17px;color:#cfe2ea}
-  .ans{display:flex;align-items:center;gap:26px;padding:16px 30px;border-radius:34px;
-    background:linear-gradient(135deg,${c}55,rgba(255,255,255,.06));border:2px dashed ${lighten(c, .3)}}
-  .ans .lab{font-family:Pop,Cairo;font-weight:900;font-size:30px;color:#fff}
-  .ans .mini{width:108px;height:108px;flex:none;border-radius:28px;position:relative;color:#13293d;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .ans .mini i{position:absolute;top:8px;left:12px;font-style:normal;font-family:Pop;font-weight:800;font-size:18px}
-  .ans .mini b{font-family:Pop;font-weight:800;font-size:54px;line-height:1;margin-top:10px}
-  .ans .nm{font-family:Pop,Cairo;font-weight:900;font-size:50px;color:#fff;line-height:1.1}
-  .ans .meta{font-family:Pop,Cairo;font-weight:700;font-size:24px;color:#d6e8ef}
+  .cl .pt span{font-family:Pop,Cairo;font-weight:800;font-size:18px;color:#cfe2ea}
+  .ans{border-radius:32px;padding:20px 30px 26px;background:#fbfdfe;border:4px solid ${c};box-shadow:0 14px 30px rgba(0,0,0,.3)}
+  .ans .lab{font-family:Pop,Cairo;font-weight:900;font-size:32px;color:#13293d}
+  .ans .row{display:flex;gap:30px;margin-top:14px}
+  .ans .f{flex:1;display:flex;align-items:flex-end;gap:14px;font-family:Pop,Cairo;font-weight:800;font-size:27px;color:#3d5568}
+  .ans .f.sm{flex:.55}
+  .ans .f i{flex:1;height:52px;border-bottom:3px dotted #7a8e9c}
   `;
   const body = `
   <div class="glow" style="width:480px;height:480px;background:#b7a2ff;top:-60px;left:300px;opacity:.35"></div>
-  <div class="glow" style="width:420px;height:420px;background:${c};bottom:-80px;right:-60px;opacity:.35"></div>
-  <div style="position:absolute;top:150px;left:30px;transform:rotate(-16deg);opacity:.9;filter:drop-shadow(0 18px 24px rgba(0,0,0,.4))">${decoAtom(150, c)}</div>
-  <div style="position:absolute;top:150px;right:40px;transform:rotate(14deg);opacity:.9;filter:drop-shadow(0 18px 24px rgba(0,0,0,.4))">${flask(100, c)}</div>
+  <div class="glow" style="width:420px;height:420px;background:${c};bottom:-80px;right:-60px;opacity:.3"></div>
+  <div style="position:absolute;top:150px;left:26px;transform:rotate(-16deg);opacity:.9;filter:drop-shadow(0 18px 24px rgba(0,0,0,.4))">${decoAtom(140, c)}</div>
+  <div style="position:absolute;top:140px;right:36px;transform:rotate(14deg);opacity:.9;filter:drop-shadow(0 18px 24px rgba(0,0,0,.4))">${flask(96, c)}</div>
   <div class="wrap">
     <div class="hd"><span class="pill" style="font-size:26px">🧪 ${TITLE}</span><span class="no">البطاقة ${el.z}</span></div>
     <div class="ttl"><div class="mq">؟</div><h1 class="title3d">من أنا؟</h1></div>
-    <div class="lead">اقرأ الدلائل واحداً تلو الآخر حتى تصل إلى العنصر</div>
-    <div class="clues">${el.clues.map((t, i) => `
+    <div class="lead">اقرئي الدلائل واحداً تلو الآخر حتى تصلي إلى العنصر</div>
+    <div class="clues">${clues(el).map((t, i) => `
       <div class="cl"><div class="n" style="background:${tileBg(clueColors[i])};box-shadow:${tileShadow(clueColors[i], 6)}">${i + 1}</div>
         <div class="tx"><small>الدليل ${ord[i]}</small><p>${t}</p></div>
-        <div class="pt"><b style="color:${clueColors[i]}">${5 - i}</b><span>${5 - i > 2 ? 'نقاط' : (5 - i === 2 ? 'نقطتان' : 'نقطة')}</span></div></div>`).join('')}
+        <div class="pt"><b style="color:${clueColors[i]}">${POINTS[i]}</b><span>${pointsWord(POINTS[i])}</span></div></div>`).join('')}
     </div>
     <div class="ans">
-      <div class="lab">الإجابة:</div>
-      <div class="mini" style="background:${tileBg(c)};box-shadow:${tileShadow(c, 8)}"><i>${el.z}</i><b>${el.sym}</b></div>
-      <div><div class="nm">${el.ar}</div><div class="meta">${cat.ar} • الحالة: ${STATES[el.state]} • العدد الذري: ${el.z}</div></div>
+      <div class="lab">✍️ إجابتي:</div>
+      <div class="row"><div class="f">اسم العنصر<i></i></div><div class="f sm">الرمز<i></i></div></div>
     </div>
   </div>`;
-  return page(1080, 1350, body, css);
+  return page(CARD_W, CARD_H, body, css);
 }
 
 // ======================= التوليد =======================
@@ -420,11 +460,11 @@ async function main() {
   ];
   for (const el of ELEMENTS) {
     const n = String(el.z).padStart(2, '0');
-    pages.push({ file: `elements/${n}-${el.sym}-${el.ar}.png`, html: elementHtml(el), w: 1080, h: 1080 });
+    pages.push({ file: `elements/${n}-${el.sym}-${el.ar}.png`, html: elementHtml(el), w: CARD_W, h: CARD_H });
   }
   for (const el of ELEMENTS) {
     const n = String(el.z).padStart(2, '0');
-    pages.push({ file: `questions/${n}-${el.sym}-${el.ar}-أسئلة.png`, html: questionHtml(el), w: 1080, h: 1350 });
+    pages.push({ file: `questions/${n}-${el.sym}-${el.ar}-أسئلة.png`, html: questionHtml(el), w: CARD_W, h: CARD_H });
   }
   const only = process.argv[2];
 
