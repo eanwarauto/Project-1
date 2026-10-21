@@ -1,4 +1,5 @@
-// يولّد ورقة نشاط «ترند الفصفصة» بمقاس A4: ثلاث ذرات بالطول (نواة + مستويين، ثلاثة، أربعة).
+// يولّد بوستر «ترند الفصفصة» بمقاس A4: ثلاث ذرات بالطول (نواة + مستويين، ثلاثة، أربعة)
+// مع كلمات مفتاحية لتدرج الخواص خلال المجموعة.
 // التشغيل: node src/atoms.js
 const fs = require('fs');
 const path = require('path');
@@ -15,7 +16,7 @@ const YELLOW = '#f6dc6b', YELLOW_SOFT = '#fbf0b8', LILAC = '#c9b3ec', INK = '#2b
 const fontUrl = f => 'data:font/woff2;base64,' + fs.readFileSync(path.join(FONTS, f)).toString('base64');
 
 // ---------- الذرة: نواة + مستويات طاقة ----------
-const NUCLEUS_R = 48, GAP = 56;
+const NUCLEUS_R = 46, GAP = 50;
 function atom(levels) {
   const r = NUCLEUS_R + levels * GAP + 6, size = r * 2;
   const rings = Array.from({ length: levels }, (_, i) =>
@@ -75,41 +76,63 @@ const hexMol = (x, y, s = 150) => `<svg class="d" style="left:${x}px;top:${y}px"
 
 // ---------- الصفحة ----------
 const ATOM_LEVELS = [2, 3, 4];
+
+// كلمات مفتاحية للتدرج من أعلى المجموعة إلى أسفلها
+const TRENDS = [
+  { side: 'right', head: 'يزداد', color: PINK, soft: PINK_SOFT,
+    words: ['عدد مستويات الطاقة', 'نصف القطر الذري', 'درجة الحجب', 'الخاصية الفلزية'] },
+  { side: 'left', head: 'يقل', color: '#b8962a', soft: YELLOW_SOFT,
+    words: ['جذب النواة لإلكترونات التكافؤ', 'طاقة التأين', 'السالبية الكهربائية'] },
+];
+const trendColumn = t => `<div class="trend ${t.side}" style="--c:${t.color};--s:${t.soft}">
+  <div class="head">${t.head}</div>
+  <svg class="shaft" viewBox="0 0 40 100" preserveAspectRatio="none"><rect x="14" y="0" width="12" height="100" rx="6" fill="${t.color}" opacity=".35"/></svg>
+  <div class="words">${t.words.map(w => `<div class="chip">${w}</div>`).join('')}</div>
+  <svg class="tip" width="90" height="70" viewBox="0 0 90 70"><path d="M8 8h74L45 64z" fill="${t.color}" stroke="${t.color}" stroke-width="8" stroke-linejoin="round"/></svg>
+</div>`;
+
+const magnifier = `<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5" fill="#fff" stroke="${INK}" stroke-width="2.4"/>
+  <path d="M15 15l6 6" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><path d="M7 8.5a3.5 3.5 0 0 1 3-2.5" stroke="${PINK_MID}" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
+
 const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>
 @font-face{font-family:Lalezar;src:url(${fontUrl('lalezar-arabic-400-normal.woff2')})}
+@font-face{font-family:Cairo;font-weight:800;src:url(${fontUrl('cairo-arabic-800-normal.woff2')})}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:${W}px;height:${H}px;overflow:hidden;background:#fff}
 .frame{position:absolute;inset:34px;border:5px solid ${PINK_MID};border-radius:30px}
 .frame2{position:absolute;inset:48px;border:3px dashed ${YELLOW};border-radius:22px}
 .band{position:absolute;left:34px;right:34px;height:16px;background:${PINK_SOFT}}
 .d{position:absolute}
-.title{position:absolute;top:92px;left:50%;transform:translateX(-50%);
+.title{position:absolute;top:84px;left:50%;transform:translateX(-50%);
   padding:0 60px 8px;border:5px solid ${PINK};border-radius:999px;background:${PINK_SOFT};
-  font-family:Lalezar;font-size:104px;line-height:1.25;color:${PINK};white-space:nowrap;
+  font-family:Lalezar;font-size:100px;line-height:1.25;color:${PINK};white-space:nowrap;
   box-shadow:0 8px 0 ${PINK_MID}}
-.atoms{position:absolute;top:285px;bottom:66px;left:0;right:0;
+.sub{position:absolute;top:262px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;
+  padding:6px 34px 10px;border-radius:999px;background:${YELLOW_SOFT};border:3px solid ${YELLOW};
+  font-family:Lalezar;font-size:46px;color:${INK};white-space:nowrap}
+.atoms{position:absolute;top:370px;bottom:72px;left:0;right:0;
   display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+.trend{position:absolute;top:380px;bottom:80px;width:270px;display:flex;flex-direction:column;align-items:center}
+.trend.right{right:78px}.trend.left{left:78px}
+.head{position:relative;z-index:1;font-family:Lalezar;font-size:62px;line-height:1.2;color:#fff;background:var(--c);
+  padding:0 44px 6px;border-radius:999px;box-shadow:0 6px 0 var(--s)}
+.shaft{position:absolute;top:60px;bottom:50px;left:115px;width:40px;height:calc(100% - 110px)}
+.words{position:relative;flex:1;display:flex;flex-direction:column;justify-content:space-around;width:100%}
+.chip{font-family:Cairo;font-weight:800;font-size:31px;line-height:1.35;text-align:center;color:${INK};
+  background:var(--s);border:3px solid var(--c);border-radius:24px;padding:14px 12px}
+.tip{position:relative}
 </style></head><body>
 <div class="frame"></div><div class="frame2"></div>
 <div class="band" style="top:34px;border-radius:30px 30px 0 0"></div>
 <div class="band" style="bottom:34px;border-radius:0 0 30px 30px"></div>
 <div class="title">ترند الفصفصة</div>
+<div class="sub">${magnifier}اكتشف التدرج خلال المجموعة</div>
 <div class="atoms">${ATOM_LEVELS.map(atom).join('')}</div>
+${TRENDS.map(trendColumn).join('')}
 
-${atomIcon(95, 88)}${hexMol(1000, 90)}
-${heart(130, 240, 30)}${star(1060, 245, 32, 12)}
-
-${flask(110, 360, 120, YELLOW_SOFT, -8)}${heart(250, 440, 30)}${star(150, 560, 30, -10)}
-${molecule(1010, 380, 120, 15)}${heart(960, 560, 30, PINK_MID, 12)}${star(1080, 560, 34)}
-
-${heart(90, 760, 34, PINK_MID, -12)}${sparkle(200, 840, 15)}${star(240, 960, 34, 8)}
-${flask(1010, 760, 130, '#f7c4dc', 6)}${heart(950, 960, 32)}${star(1110, 960, 30, -12)}
-
-${star(110, 1180, 32)}${heart(130, 1290, 30, PINK_MID, 10)}
-${atomIcon(990, 1180, 130)}${sparkle(1110, 1340, 20)}
-
-${tubes(80, 1470)}${heart(240, 1620, 30)}
-${molecule(1010, 1480, 120, -20)}${star(980, 1640, 32, 14)}${heart(1120, 1620, 28, PINK_MID, -10)}
+${atomIcon(88, 80, 140)}${hexMol(1010, 84, 140)}
+${heart(110, 250, 30)}${star(1090, 250, 32, 12)}
+${star(390, 1660, 30, -10)}${heart(820, 1662, 28, PINK_MID, 10)}
 </body></html>`;
 
 (async () => {
