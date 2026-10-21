@@ -234,7 +234,7 @@ function posterHtml() {
     <h1 class="title3d t1">الأسبوع العربي<span class="l2">للكيمياء</span></h1>
     <div class="sub">رحلة ممتعة بين عناصر الجدول الدوري</div>
     <div class="stage">${miniTable(50, 5)}</div>
-    <div style="margin-top:6px">${legend(17)}</div>
+    <div style="margin-top:14px">${legend(24)}</div>
     <div class="banner">
       <div class="qm">؟</div>
       <div class="btxt"><h2>نشاط: من أنا؟</h2>
