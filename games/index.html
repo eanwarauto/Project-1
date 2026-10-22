@@ -41,6 +41,7 @@ bdi.eq,.ltr{direction:ltr;unicode-bidi:isolate}
 .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
 .top h1{font-size:clamp(28px,5vw,44px)}
 .top p{margin:0;color:var(--muted)}
+.top .byline{color:var(--acc);font-weight:800;font-size:17px}
 .score{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-weight:700}
 .score b{font-family:var(--display);font-weight:400;font-size:24px;color:var(--acc);font-variant-numeric:tabular-nums}
 .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -144,6 +145,7 @@ bdi.eq,.ltr{direction:ltr;unicode-bidi:isolate}
     <div>
       <h1>مختبر الخواص الدورية</h1>
       <p>ثلاث تجارب تكتشفين فيها بنفسك كيف تتغيّر الخاصية عبر الدورة وخلال المجموعة.</p>
+      <p class="byline">إعداد: م.انوار الفضلي</p>
     </div>
     <div class="score" aria-live="polite">النقاط <b id="score">0</b></div>
   </header>
