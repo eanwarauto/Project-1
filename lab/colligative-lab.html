@@ -1,0 +1,468 @@
+<title>مختبر الخواص المجمّعة</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: lab bench — a glass stage (live experiment) beside a lab-notebook panel that walks predict → try → record → conclude. */
+:root{
+  --bg:#e6e9ed; --bg2:#f4f6f8; --panel:rgba(255,255,255,.78); --panel-solid:#ffffff; --line:#cdd3da; --ink:#252a31; --muted:#5d6570;
+  --water:#2f7fc1; --water-soft:#bcd9f2; --solute:#c4861c; --heat:#d2553f; --ice:#8fc9ec; --ok:#2e8b57; --bad:#c0392b;
+  --accent:#1f6fa8; --accent-ink:#ffffff; --stage:#eef1f4; --glass:rgba(255,255,255,.55); --shadow:0 10px 30px rgba(40,52,66,.12);
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#171b21; --bg2:#1f252d; --panel:rgba(36,43,52,.82); --panel-solid:#242b34; --line:#3a434f; --ink:#e8ecf1; --muted:#a3adb9;
+  --water:#5aa9e6; --water-soft:#2a4c6b; --solute:#e3a440; --heat:#ef7a63; --ice:#7cc0e8; --ok:#4cc184; --bad:#ef6b5b;
+  --accent:#5aa9e6; --accent-ink:#0f1720; --stage:#1c2229; --glass:rgba(255,255,255,.08); --shadow:0 10px 30px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171b21; --bg2:#1f252d; --panel:rgba(36,43,52,.82); --panel-solid:#242b34; --line:#3a434f; --ink:#e8ecf1; --muted:#a3adb9;
+  --water:#5aa9e6; --water-soft:#2a4c6b; --solute:#e3a440; --heat:#ef7a63; --ice:#7cc0e8; --ok:#4cc184; --bad:#ef6b5b;
+  --accent:#5aa9e6; --accent-ink:#0f1720; --stage:#1c2229; --glass:rgba(255,255,255,.08); --shadow:0 10px 30px rgba(0,0,0,.35); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:radial-gradient(1200px 500px at 30% -10%,var(--bg2),transparent 70%),var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3.2vw,2.2rem);margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.95rem}
+.score{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 16px;box-shadow:var(--shadow);font-weight:600}
+.score b{font-family:var(--f-mono);font-size:1.1rem}
+.star{color:var(--solute)}
+nav{display:flex;gap:8px;flex-wrap:wrap}
+nav button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:10px 16px;border-radius:12px;cursor:pointer;display:flex;gap:8px;align-items:center}
+nav button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+nav button .st{font-size:.85rem;opacity:.9;letter-spacing:1px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+canvas{width:100%;aspect-ratio:800/560;max-width:100%;border-radius:12px;background:var(--stage);display:block}
+.readouts{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel-solid);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:.92rem;display:flex;gap:6px;align-items:baseline}
+.chip .v{font-family:var(--f-mono);font-weight:600;direction:ltr;unicode-bidi:isolate}
+.chip.ok{border-color:var(--ok);color:var(--ok)} .chip.bad{border-color:var(--bad);color:var(--bad)}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.step h3{font-family:var(--f-display);font-size:1.05rem;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.step h3 .n{width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:inline-grid;place-items:center;font-size:.85rem;font-family:var(--f-mono)}
+.step h3 .got{margin-inline-start:auto;color:var(--solute);font-size:1rem}
+.step p{margin:0 0 8px}
+.lead{background:transparent;border:none;box-shadow:none;padding:0 4px}
+.lead h2{font-family:var(--f-display);margin:0;font-size:1.35rem}
+.lead p{color:var(--muted);margin:4px 0 0}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts button{font:inherit;text-align:start;border:1px solid var(--line);background:var(--panel-solid);color:var(--ink);padding:9px 12px;border-radius:10px;cursor:pointer}
+.opts button:hover:not(:disabled){border-color:var(--accent)}
+.opts button.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--panel-solid))}
+.opts button.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--panel-solid))}
+.opts button:disabled{cursor:default}
+.fb{margin-top:8px;font-size:.93rem;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.fb.ok{background:color-mix(in srgb,var(--ok) 12%,transparent)} .fb.bad{background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.ctrl{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:9px 16px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+label{font-weight:600;font-size:.93rem}
+select{font:inherit;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel-solid);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.math{font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate;font-size:.92rem}
+.small{font-size:.85rem;color:var(--muted)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:center}
+th{color:var(--muted);font-weight:600}
+td{font-family:var(--f-mono)} td.t{font-family:var(--f-body)}
+.empty{color:var(--muted);font-size:.9rem;padding:6px 0}
+.plot{width:100%;height:auto;margin-top:8px}
+.missions{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.missions li{display:flex;gap:8px;align-items:flex-start;font-size:.93rem}
+.missions li .box{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-size:.8rem}
+.missions li.done .box{border-color:var(--ok);background:var(--ok);color:#fff}
+.banner{background:color-mix(in srgb,var(--ok) 14%,var(--panel));border:1px solid var(--ok);border-radius:14px;padding:12px 16px;font-weight:600}
+footer{color:var(--muted);font-size:.85rem;text-align:center}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>مختبر الخواص المجمّعة</h1>
+      <p class="sub">جرّبي بنفسك: أضيفي المذاب، سخّني، برّدي، ورشّي الملح على الجليد، ثم استنتجي القاعدة.</p>
+    </div>
+    <div class="score" aria-live="polite"><span class="star">★</span> النجوم <b id="total">0 / 12</b></div>
+  </header>
+  <nav id="tabs" role="tablist"></nav>
+  <div id="banner" class="banner" hidden>أحسنتِ! جمعتِ كل النجوم وأتممتِ المختبر.</div>
+  <div class="grid">
+    <section class="stage">
+      <canvas id="cv" width="800" height="560" aria-label="محاكاة التجربة"></canvas>
+      <div class="readouts" id="readouts"></div>
+    </section>
+    <section class="panel" id="panel"></section>
+  </div>
+  <footer>النموذج الجزيئي مكبَّر لتوضيح الفكرة، والقيم العددية محسوبة من القوانين والثوابت في كتاب الكيمياء · eng.7ikaya</footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const W = 800, H = 560;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let C = {};
+function readColors(){ const cs = getComputedStyle(document.documentElement);
+  for (const k of ['ink','muted','line','water','water-soft','solute','heat','ice','ok','bad','stage','glass','panel-solid','accent']) C[k] = cs.getPropertyValue('--'+k).trim(); }
+readColors(); matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+function fit(){ const dpr = Math.min(2, window.devicePixelRatio||1); const w = cv.clientWidth||800; cv.width = Math.round(w*dpr); cv.height = Math.round(w*dpr*H/W); }
+addEventListener('resize', fit); fit();
+const iso = h => { const keep=[]; h=h.replace(/<svg[\s\S]*?<\/svg>/g, m=>{keep.push(m); return `\u0000${keep.length-1}\u0000`;}); return iso0(h).replace(/\u0000(\d+)\u0000/g,(m,i)=>keep[+i]); };
+const iso0 = h => h.replace(/((?:[−\-]?\d+(?:\.\d+)?\s?)?°C(?:\/m)?|K_?(?:bp|fp)|ΔT_?(?:bp|fp))/g, m => `<bdi dir="ltr">${m.replace(/_?(bp|fp)$/,'<sub>$1</sub>')}</bdi>`);
+const fmt = (x,d=2) => (x<0?'−':'')+Math.abs(x).toFixed(d);
+const rnd = (a,b) => a + Math.random()*(b-a);
+
+// ------------------------------------------------------------------ progress (per-viewer convenience only)
+const KEY = 'colligative-lab-v1';
+let save = {stars:{vp:[0,0,0],bp:[0,0,0],fp:[0,0,0],salt:[0,0,0]}, rec:{vp:[],bp:[],fp:[]}, pred:{}, missions:[0,0,0]};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.stars) save = Object.assign(save, s); } catch(e){}
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(save)); } catch(e){} }
+
+// ------------------------------------------------------------------ drawing helpers
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function alpha(col,a){ // works for #rrggbb
+  if (col.startsWith('#')) { const n=parseInt(col.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; } return col; }
+function text(t,x,y,{size=18,color=C.ink,align='center',weight=600,font='body',dir='rtl'}={}){
+  ctx.font = `${weight} ${size}px ${font==='mono'?'"IBM Plex Mono",monospace':'"IBM Plex Sans Arabic",Tahoma,sans-serif'}`;
+  ctx.fillStyle=color; ctx.textAlign=align; ctx.direction=dir; ctx.textBaseline='middle'; ctx.fillText(t,x,y); }
+function thermometer(x,y,h,T,tmin,tmax,ticks){
+  const tw=18; rr(x-tw/2,y,tw,h,9); ctx.fillStyle=C['panel-solid']; ctx.fill(); ctx.strokeStyle=C.line; ctx.lineWidth=2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x,y+h+12,17,0,Math.PI*2); ctx.fillStyle=C.heat; ctx.fill();
+  const f = Math.max(0,Math.min(1,(T-tmin)/(tmax-tmin))); const hh=(h-10)*f;
+  ctx.fillStyle=C.heat; ctx.fillRect(x-5,y+h-hh,10,hh+8);
+  ctx.strokeStyle=C.muted; ctx.lineWidth=1;
+  for (const t of ticks){ const yy=y+h-(h-10)*((t-tmin)/(tmax-tmin)); ctx.beginPath(); ctx.moveTo(x+tw/2,yy); ctx.lineTo(x+tw/2+8,yy); ctx.stroke();
+    text(String(t).replace('-','−'),x+tw/2+12,yy,{size:13,color:C.muted,align:'left',font:'mono',dir:'ltr'}); }
+}
+function digital(x,y,T,label){
+  rr(x,y,190,62,12); ctx.fillStyle=C['panel-solid']; ctx.fill(); ctx.strokeStyle=C.line; ctx.lineWidth=1.5; ctx.stroke();
+  text(label,x+95,y+16,{size:13,color:C.muted});
+  text(fmt(T)+' °C',x+95,y+42,{size:26,font:'mono',dir:'ltr'});
+}
+function beaker(x,y,w,h){ ctx.lineWidth=3; ctx.strokeStyle=alpha(C.muted.startsWith('#')?C.muted:'#888',.8);
+  ctx.beginPath(); ctx.moveTo(x-8,y); ctx.lineTo(x,y+6); ctx.lineTo(x,y+h-14); ctx.quadraticCurveTo(x,y+h,x+14,y+h); ctx.lineTo(x+w-14,y+h); ctx.quadraticCurveTo(x+w,y+h,x+w,y+h-14); ctx.lineTo(x+w,y); ctx.stroke(); }
+function liquid(x,y,w,h,col,a=.55){ ctx.beginPath(); ctx.moveTo(x+2,y); ctx.lineTo(x+w-2,y); ctx.lineTo(x+w-2,y+h-14); ctx.quadraticCurveTo(x+w-2,y+h-2,x+w-14,y+h-2); ctx.lineTo(x+14,y+h-2); ctx.quadraticCurveTo(x+2,y+h-2,x+2,y+h-14); ctx.closePath(); ctx.fillStyle=alpha(col,a); ctx.fill(); }
+
+// ------------------------------------------------------------------ stations
+const S = {};
+
+// ---------- 1. vapour pressure
+S.vp = (() => {
+  const F = [{x:60,label:'المذيب النقي'},{x:440,label:'المحلول'}], FW=300, TOP=118, LT=330, BOT=505;
+  let flasks, t=0;
+  function mkFlask(i){ const f={solv:[],sol:[],vap:[],acc:0,ema:0,i};
+    for(let k=0;k<64;k++) f.solv.push({x:rnd(F[i].x+16,F[i].x+FW-16),y:rnd(LT+10,BOT-12),ph:rnd(0,6.3),fr:rnd(1.5,3)});
+    for(let k=0;k<16;k++) f.vap.push({x:rnd(F[i].x+20,F[i].x+FW-20),y:rnd(TOP+20,LT-20),vx:rnd(-90,90),vy:rnd(-90,90)});
+    f.ema=16; return f; }
+  function reset(){ flasks=[mkFlask(0),mkFlask(1)]; }
+  reset();
+  function addSolute(n){ const f=flasks[1]; for(let k=0;k<n && f.sol.length<36;k++) f.sol.push({x:rnd(F[1].x+20,F[1].x+FW-20),y:TOP+10,ty:rnd(LT+4,BOT-14),ph:rnd(0,6.3)}); ui(); }
+  function rate(f){ const s=f.sol.length; return 11*(1-1.55*s/(s+64)); }
+  function update(dt){ t+=dt;
+    for(const f of flasks){ const fx=F[f.i].x;
+      f.acc += rate(f)*dt;
+      while(f.acc>=1){ f.acc-=1; f.vap.push({x:rnd(fx+20,fx+FW-20),y:LT-3,vx:rnd(-70,70),vy:-rnd(60,120),born:t}); }
+      for(let k=f.vap.length-1;k>=0;k--){ const p=f.vap[k]; p.x+=p.vx*dt; p.y+=p.vy*dt;
+        if(p.x<fx+10){p.x=fx+10;p.vx*=-1} if(p.x>fx+FW-10){p.x=fx+FW-10;p.vx*=-1}
+        if(p.y<TOP+10){p.y=TOP+10;p.vy*=-1}
+        if(p.y>LT-2){ if(Math.random()<.5) f.vap.splice(k,1); else {p.y=LT-2;p.vy=-Math.abs(p.vy);} } }
+      for(const s of f.sol){ if(s.y<s.ty) s.y=Math.min(s.ty,s.y+260*dt); }
+      f.ema += (f.vap.length-f.ema)*Math.min(1,dt/2.5);
+    }
+  }
+  function draw(){
+    for(const f of flasks){ const fx=F[f.i].x;
+      // flask body
+      rr(fx,TOP,FW,BOT-TOP,26); ctx.fillStyle=C.glass; ctx.fill(); ctx.strokeStyle=C.muted; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.save(); rr(fx,TOP,FW,BOT-TOP,26); ctx.clip();
+      ctx.fillStyle=alpha(C.water,.18); ctx.fillRect(fx,LT,FW,BOT-LT);
+      ctx.restore();
+      ctx.setLineDash([6,6]); ctx.strokeStyle=alpha(C.water,.7); ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(fx+6,LT); ctx.lineTo(fx+FW-6,LT); ctx.stroke(); ctx.setLineDash([]);
+      for(const p of f.solv){ ctx.beginPath(); ctx.arc(p.x+Math.sin(t*p.fr+p.ph)*3,p.y+Math.cos(t*p.fr+p.ph)*2,6,0,7); ctx.fillStyle=C.water; ctx.fill(); }
+      for(const s of f.sol){ ctx.beginPath(); ctx.arc(s.x+Math.sin(t*2+s.ph)*1.5,s.y,9,0,7); ctx.fillStyle=C.solute; ctx.fill(); ctx.strokeStyle=alpha('#000000',.15); ctx.lineWidth=1; ctx.stroke(); }
+      for(const p of f.vap){ ctx.beginPath(); ctx.arc(p.x,p.y,5.5,0,7); ctx.fillStyle=alpha(C.water,.85); ctx.fill(); }
+      // stopper + gauge
+      rr(fx+FW/2-26,TOP-18,52,22,6); ctx.fillStyle=C.muted; ctx.fill();
+      const cx=fx+FW/2, cy=62, R=36; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fillStyle=C['panel-solid']; ctx.fill(); ctx.strokeStyle=C.line; ctx.lineWidth=2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx,cy,R-8,Math.PI*0.8,Math.PI*2.2); ctx.strokeStyle=alpha(C.water,.35); ctx.lineWidth=5; ctx.stroke();
+      const a=Math.PI*0.8+Math.min(1,f.ema/70)*Math.PI*1.4; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*(R-10),cy+Math.sin(a)*(R-10)); ctx.strokeStyle=C.heat; ctx.lineWidth=3; ctx.stroke();
+      ctx.fillStyle=C.ink; ctx.fillRect(cx-2,TOP-30,4,12);
+      text(F[f.i].label,cx,BOT+26,{size:19});
+    }
+    text('مقياس الضغط',W/2,62,{size:13,color:C.muted});
+  }
+  function readouts(){ const a=Math.round(flasks[0].ema), b=Math.round(flasks[1].ema);
+    return [['جزيئات البخار فوق المذيب النقي',a],['جزيئات البخار فوق المحلول',b],['جسيمات المذاب في المحلول',flasks[1].sol.length]]; }
+  function record(){ const s=flasks[1].sol.length, a=Math.round(flasks[0].ema), b=Math.round(flasks[1].ema);
+    if (save.rec.vp.some(r=>r.s===s)) return 'سجّلتِ هذه الكمية من قبل، غيّري عدد جسيمات المذاب.';
+    save.rec.vp.push({s,a,b}); save.rec.vp.sort((p,q)=>p.s-q.s); return null; }
+  return {reset,update,draw,readouts,record,addSolute,get solute(){return flasks[1].sol.length}};
+})();
+
+// ---------- 2 & 3. heating / cooling bench (shared engine)
+function bench(kind){
+  const BP=[{n:'الماء',T0:100,K:0.512},{n:'الإيثانول',T0:78.5,K:1.19},{n:'البنزين',T0:80.1,K:2.53}];
+  const FP=[{n:'الماء',T0:0,K:1.86},{n:'البنزين',T0:5.5,K:5.12},{n:'حمض الأستيك',T0:16.6,K:3.90}];
+  const list = kind==='bp'?BP:FP;
+  let si=0, grams=0, T, run=false, phase=0, bubbles=[], steam=[], crystals=[], t=0, dots=[];
+  const BX=300,BY=200,BW=230,BH=270,LT=258;
+  const m = () => grams/180;
+  const target = () => kind==='bp' ? list[si].T0 + list[si].K*m() : list[si].T0 - list[si].K*m();
+  function start(){ T = kind==='bp' ? 25 : list[si].T0 + 18; phase=0; crystals=[]; }
+  function mkDots(){ dots=[]; const n=Math.round(m()*22); for(let k=0;k<n;k++) dots.push({x:rnd(BX+14,BX+BW-14),y:rnd(LT+10,BY+BH-12),ph:rnd(0,6)}); }
+  start(); mkDots();
+  function set(nsi,ng,silent){ si=nsi; grams=ng; run=false; start(); mkDots(); if(!silent) ui(); }
+  function toggle(){ run=!run; if(run && phase===2) start(); ui(); }
+  const done = () => phase>=1;
+  function update(dt){ t+=dt; const Tt=target();
+    if(kind==='bp'){
+      if(run){ if(T<Tt){ T=Math.min(Tt,T+dt*(3+(Tt-T)*0.42)); } else phase=1; }
+      else { T=Math.max(25,T-dt*(T-25)*0.07); if(T<Tt-0.5) phase=0; }
+      const boil = run && phase===1;
+      const rateB = boil?26:(run && T>Tt-25?3:0);
+      if(Math.random()<rateB*dt*(reduce?.4:1)) bubbles.push({x:rnd(BX+20,BX+BW-20),y:BY+BH-10,r:rnd(2,4),v:rnd(50,90)});
+      for(let k=bubbles.length-1;k>=0;k--){ const b=bubbles[k]; b.y-=b.v*dt; b.r+=dt*(boil?5:1.5); if(b.y<LT+2) bubbles.splice(k,1); }
+      if(boil && Math.random()<dt*10) steam.push({x:rnd(BX+30,BX+BW-30),y:LT-6,a:.5,r:10});
+      for(let k=steam.length-1;k>=0;k--){ const s=steam[k]; s.y-=40*dt; s.r+=14*dt; s.a-=.22*dt; s.x+=Math.sin(t*2+k)*.4; if(s.a<=0) steam.splice(k,1); }
+    } else {
+      if(run){ if(T>Tt){ T=Math.max(Tt,T-dt*(3+(T-Tt)*0.4)); } else { phase=1; if(crystals.length<70 && Math.random()<dt*18) crystals.push({x:rnd(BX+16,BX+BW-16),y:rnd(LT+8,BY+BH-14),r:0,R:rnd(6,13),a:rnd(0,1)}); } }
+      else { T=Math.min(list[si].T0+18,T+dt*1.2); if(T>Tt+0.3 && crystals.length){ crystals.pop(); } if(T>Tt+0.3) phase=0; }
+      for(const c of crystals) c.r=Math.min(c.R,c.r+dt*10);
+    }
+  }
+  function flake(x,y,r,a){ ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.strokeStyle=alpha('#ffffff',.95); ctx.lineWidth=2;
+    for(let k=0;k<6;k++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r,0); ctx.moveTo(r*.55,0); ctx.lineTo(r*.75,r*.2); ctx.moveTo(r*.55,0); ctx.lineTo(r*.75,-r*.2); ctx.stroke(); }
+    ctx.restore(); }
+  function draw(){
+    const Tt=target(), s=list[si];
+    if(kind==='bp'){
+      rr(BX-30,BY+BH+4,BW+60,26,8); ctx.fillStyle=C.muted; ctx.fill();
+      rr(BX-10,BY+BH+4,BW+20,8,4); ctx.fillStyle= run?C.heat:alpha(C.heat,.25); ctx.fill();
+      if(run){ ctx.fillStyle=alpha(C.heat,.12+.06*Math.sin(t*6)); ctx.fillRect(BX-10,BY+BH-30,BW+20,34); }
+      text('سخّان',BX+BW/2,BY+BH+46,{size:14,color:C.muted});
+    } else {
+      rr(BX-50,BY+40,BW+100,BH+10,18); ctx.fillStyle=alpha(C.ice,.25); ctx.fill(); ctx.strokeStyle=C.muted; ctx.lineWidth=2; ctx.stroke();
+      for(let k=0;k<14;k++){ const x=BX-40+(k%2?BW+70:0)+((k*13)%20), y=BY+60+k*17; rr(x,y,22,18,4); ctx.fillStyle=alpha('#ffffff',.75); ctx.fill(); ctx.strokeStyle=alpha(C.ice,.9); ctx.lineWidth=1; ctx.stroke(); }
+      text('حمّام تبريد (ثلج + ملح)',BX+BW/2,BY+BH+70,{size:14,color:C.muted});
+    }
+    const lc = kind==='fp' && phase===1 ? C.ice : C.water;
+    liquid(BX,LT,BW,BY+BH-LT,lc,kind==='fp'&&phase===1?.5:.32);
+    for(const d of dots){ ctx.beginPath(); ctx.arc(d.x+Math.sin(t*1.5+d.ph)*2,d.y,4.5,0,7); ctx.fillStyle=C.solute; ctx.fill(); }
+    for(const b of bubbles){ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,7); ctx.strokeStyle=alpha('#ffffff',.9); ctx.lineWidth=1.5; ctx.stroke(); }
+    for(const c of crystals) flake(c.x,c.y,c.r,c.a);
+    beaker(BX,BY,BW,BH);
+    for(const st of steam){ ctx.beginPath(); ctx.arc(st.x,st.y,st.r,0,7); ctx.fillStyle=`rgba(200,206,214,${Math.max(0,st.a)})`; ctx.fill(); }
+    // probe thermometer inside beaker
+    ctx.strokeStyle=C.muted; ctx.lineWidth=6; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(BX+BW-40,BY-60); ctx.lineTo(BX+BW-40,BY+BH-40); ctx.stroke(); ctx.lineCap='butt';
+    ctx.beginPath(); ctx.arc(BX+BW-40,BY+BH-36,7,0,7); ctx.fillStyle=C.heat; ctx.fill();
+    // big thermometer + digital
+    const lo = kind==='bp' ? 20 : s.T0-14, hi = kind==='bp' ? Math.max(110,s.T0+10) : s.T0+20;
+    const ticks=[]; const step = kind==='bp'?20:5; for(let v=Math.ceil(lo/step)*step; v<=hi; v+=step) ticks.push(v);
+    thermometer(110,110,330,T,lo,hi,ticks);
+    digital(570,40,T,'قراءة الترمومتر');
+    text(s.n + (grams?' + جلوكوز':' نقي'),BX+BW/2,BY-26,{size:20});
+    const st = kind==='bp' ? (run&&phase===1?'يغلي الآن!':run?'يسخن...':'') : (run&&phase===1?'بدأ التجمد!':run?'يبرد...':'');
+    if(st){ rr(570,112,190,38,19); ctx.fillStyle = phase===1?alpha(kind==='bp'?C.heat:C.water,.18):alpha(C.muted,.12); ctx.fill(); text(st,665,131,{size:17,color:phase===1?(kind==='bp'?C.heat:C.water):C.muted}); }
+  }
+  function readouts(){ const s=list[si], d = kind==='bp'?'درجة غليان':'درجة تجمد';
+    return [['المذيب',s.n,'t'],['m',fmt(m(),2)+' mol/kg'],[d+' المذيب النقي',fmt(s.T0,1)+' °C'], [kind==='bp'?'K_bp':'K_fp',s.K+' °C/m']]; }
+  function record(){ if(!(run && phase===1)) return kind==='bp'?'انتظري حتى يغلي السائل ثم سجّلي.':'انتظري حتى يبدأ التجمد ثم سجّلي.';
+    const s=list[si], mm=+m().toFixed(2), Tt=target(); const arr=save.rec[kind];
+    if(arr.some(r=>r.n===s.n && r.m===mm)) return 'سجّلتِ هذه التجربة من قبل، غيّري الكتلة أو المذيب.';
+    arr.push({n:s.n,m:mm,T:+Tt.toFixed(3),d:+Math.abs(Tt-s.T0).toFixed(3),K:s.K}); return null; }
+  return {update,draw,readouts,record,set,toggle,list,get running(){return run},get si(){return si},get grams(){return grams},get m(){return m()}};
+}
+S.bp = bench('bp'); S.fp = bench('fp');
+
+// ---------- 4. salt on the icy road
+S.salt = (() => {
+  let Tair=-5, sub='salt', g=100, phase=0, pt=0, t=0, patches=[], grains=[], flakes=[], melt=0, carX=-160, carRot=0, result=null;
+  for(let k=0;k<60;k++) flakes.push({x:rnd(0,W),y:rnd(0,200),v:rnd(20,50),r:rnd(1.5,3.5)});
+  function mkPatches(){ patches=[]; for(let k=0;k<13;k++) patches.push({x:60+k*56+rnd(-12,12),y:rnd(300,440),rx:rnd(40,70),ry:rnd(18,30),a:rnd(0,3)}); }
+  mkPatches();
+  const brine = () => { if(sub==='salt'){ const mm=g/58.5; return {m:mm, parts:2*mm, dT:Math.min(21.1,1.86*2*mm), cap:1.86*2*mm>21.1}; }
+    const mm=g/342; return {m:mm, parts:mm, dT:1.86*mm, cap:false}; };
+  const fpB = () => -brine().dT;
+  function set(o,silent){ if(o.Tair!==undefined) Tair=o.Tair; if(o.sub) sub=o.sub; if(o.g!==undefined) g=o.g; if(phase===4){ phase=0; mkPatches(); grains=[]; melt=0; } if(!silent) ui(); }
+  function spray(){ if(phase!==0 && phase!==4) return; mkPatches(); grains=[]; melt=0; carX=-160; carRot=0; result=null; phase=1; pt=0; ui(); }
+  function update(dt){ t+=dt;
+    for(const f of flakes){ f.y+=f.v*dt; f.x+=Math.sin(t+f.r)*8*dt; if(f.y>H){ f.y=-5; f.x=rnd(0,W);} }
+    if(phase===0) return; pt+=dt;
+    const ok = g>0 && fpB() < Tair;
+    if(phase===1){ const tx=-120+pt*380; if(g>0) for(let k=0;k<Math.round(g/40)+1;k++) if(Math.random()<.9) grains.push({x:tx-10+rnd(-10,10),y:rnd(290,450),r:rnd(1.2,2.4)}); if(tx>W+40){phase=2;pt=0;} }
+    else if(phase===2){ if(ok) melt=Math.min(1,pt/2.6); if(pt>2.8){phase=3;pt=0;} }
+    else if(phase===3){ if(ok){ carX+=dt*360; if(carX>W+60) finish(true); }
+      else { if(carX<330) carX+=dt*320; else { carRot+=dt*5; carX+=dt*40; if(carRot>3.6) finish(false);} } }
+  }
+  function finish(ok){ phase=4; result=ok; const st=save.missions;
+    if(ok && sub==='salt' && Tair<=-5) st[0]=1;
+    if(!ok && sub==='sugar' && Tair<=-5 && g>=100) st[1]=1;
+    if(!ok && sub==='salt' && Tair<=-22 && g>=200) st[2]=1;
+    if(st[0]) save.stars.salt[0]=1; if(st[1]&&st[2]) save.stars.salt[1]=1; persist(); ui(); }
+  function draw(){
+    const sky=ctx.createLinearGradient(0,0,0,250); sky.addColorStop(0,alpha(C.water,.28)); sky.addColorStop(1,alpha(C.ice,.12)); ctx.fillStyle=sky; ctx.fillRect(0,0,W,260);
+    for(const f of flakes){ ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,7); ctx.fillStyle=alpha('#ffffff',.9); ctx.fill(); }
+    ctx.fillStyle=alpha(C.muted.startsWith('#')?C.muted:'#666',.9); ctx.fillRect(0,270,W,200);
+    ctx.fillStyle=alpha('#ffffff',.85); for(let x=10;x<W;x+=70) ctx.fillRect(x,366,40,6);
+    ctx.fillStyle=alpha('#ffffff',.75); ctx.fillRect(0,270,W,5); ctx.fillRect(0,465,W,5);
+    for(const p of patches){ const a=(1-melt); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a*.2);
+      ctx.beginPath(); ctx.ellipse(0,0,p.rx,p.ry,0,0,7); ctx.fillStyle = melt>0? alpha(C.water,.35*melt + 0) : 'transparent'; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0,0,p.rx*(1-.35*melt),p.ry*(1-.35*melt),0,0,7); ctx.fillStyle=alpha('#dff2ff',.88*a); ctx.fill(); ctx.strokeStyle=alpha('#ffffff',.9*a); ctx.lineWidth=2; ctx.stroke();
+      ctx.restore(); }
+    for(const q of grains){ ctx.beginPath(); ctx.arc(q.x,q.y,q.r,0,7); ctx.fillStyle= sub==='salt'?'#ffffff':'#f3e3c0'; ctx.fill(); }
+    if(phase===1){ const tx=-120+pt*380; rr(tx-110,300,110,58,8); ctx.fillStyle=C.solute; ctx.fill(); rr(tx,310,46,48,8); ctx.fillStyle=C.heat; ctx.fill(); text(sub==='salt'?'ملح':'سكر',tx-55,329,{size:16,color:'#fff'}); }
+    if(phase>=3){ ctx.save(); ctx.translate(carX,395); ctx.rotate(carRot); rr(-55,-24,110,48,14); ctx.fillStyle=C.water; ctx.fill(); rr(-25,-18,50,36,8); ctx.fillStyle=alpha('#ffffff',.6); ctx.fill();
+      ctx.fillStyle='#222'; for(const [x,y] of [[-38,-28],[30,-28],[-38,22],[30,22]]) ctx.fillRect(x,y,16,7); ctx.restore(); }
+    thermometer(730,40,170,Tair,-30,10,[-30,-20,-10,0,10]);
+    text('حرارة الجو',735,236,{size:13,color:C.muted});
+    rr(24,22,300,96,14); ctx.fillStyle=C['panel-solid']; ctx.fill(); ctx.strokeStyle=C.line; ctx.lineWidth=1.5; ctx.stroke();
+    text('حرارة الجو',250,48,{size:14,color:C.muted}); text(fmt(Tair,0)+' °C',250,78,{size:24,font:'mono',dir:'ltr'});
+    text('تجمد الماء المالح',100,48,{size:14,color:C.muted}); text(g>0?fmt(fpB(),1)+' °C':'0.0 °C',100,78,{size:24,font:'mono',dir:'ltr',color:C.water});
+    if(phase===4){ rr(W/2-150,150,300,56,16); ctx.fillStyle=alpha(result?C.ok:C.bad,.16); ctx.fill(); ctx.strokeStyle=result?C.ok:C.bad; ctx.lineWidth=2; ctx.stroke();
+      text(result?'ذاب الجليد: الطريق آمن ✓':'بقي الجليد: انزلقت السيارة!',W/2,178,{size:20,color:result?C.ok:C.bad}); }
+  }
+  function readouts(){ const b=brine(); return [['المادة',sub==='salt'?'ملح الطعام NaCl':'سكر القصب (سكروز)','t'],['الكتلة لكل 1 kg ماء',g+' g'],
+    ['الجسيمات في المحلول',fmt(b.parts,2)+' mol/kg'],['ΔT_fp',fmt(b.dT,1)+' °C']]; }
+  return {update,draw,readouts,set,spray,get Tair(){return Tair},get sub(){return sub},get g(){return g},get phase(){return phase},brine};
+})();
+
+// ------------------------------------------------------------------ station content (panel)
+const STATIONS = [
+ {id:'vp', tab:'الضغط البخاري', title:'محطة 1: الانخفاض في الضغط البخاري',
+  goal:'دورقان مغلقان عند درجة الحرارة نفسها. راقبي جزيئات الماء وهي تتبخر من السطح، ثم أضيفي مذاباً غير متطاير للدورق الأيمن.',
+  pred:{q:'بعد إضافة المذاب، الضغط البخاري للمحلول مقارنة بالمذيب النقي سيكون:',o:['أكبر','أقل','متساوياً'],a:1,
+        why:'لاحظي مقياس الضغط: عدد جزيئات البخار فوق المحلول أقل، أي أن الضغط البخاري للمحلول أقل من الضغط البخاري للمذيب النقي.'},
+  need:'سجّلي 3 قراءات على الأقل بكميات مختلفة من المذاب (منها قراءة بدون مذاب).',
+  concl:{q:'لماذا يقلّ الضغط البخاري للمحلول عن الضغط البخاري للمذيب النقي؟',
+        o:['لأن المذاب يتبخر مع المذيب فيشغل مكانه','لأن بعض جسيمات المذاب تحلّ محل بعض جزيئات المذيب على السطح فيقلّ عدد الجزيئات التي تنطلق للحالة الغازية','لأن المذاب يرفع درجة حرارة المحلول'],a:1,
+        why:'صحيح: جسيمات المذاب تحلّ محل بعض جزيئات المذيب الموجودة على سطح المحلول، فيقلّ عدد جزيئات المذيب التي يمكنها الانطلاق إلى الحالة الغازية، ويقلّ الضغط البخاري. وكلما زاد عدد جسيمات المذاب زاد الانخفاض.'}},
+ {id:'bp', tab:'درجة الغليان', title:'محطة 2: الارتفاع في درجة الغليان',
+  goal:'أذيبي كتلة من الجلوكوز C₆H₁₂O₆ (الكتلة المولية 180 g/mol) في 1 kg من المذيب، ثم سخّني وراقبي الترمومتر لحظة الغليان.',
+  pred:{q:'ماذا يحدث لدرجة غليان الماء عند إذابة الجلوكوز فيه؟',o:['ترتفع عن 100 °C','تنخفض عن 100 °C','لا تتغير'],a:0,
+        why:'لاحظي الترمومتر: المحلول يغلي عند درجة حرارة أعلى من 100 °C، لأن ضغطه البخاري أقل فيحتاج طاقة حرارية أكبر ليصل إلى الضغط الجوي.'},
+  need:'سجّلي 3 تجارب على الأقل للماء بتراكيز مختلفة، وراقبي الرسم البياني.',
+  concl:{q:'من الرسم البياني لـ ΔTbp مقابل m للماء، ميل الخط المستقيم يساوي:',o:['درجة غليان الماء 100 °C','ثابت الغليان المولالي Kbp = 0.512 °C/m','الكتلة المولية للجلوكوز'],a:1,
+        why:'صحيح: العلاقة خطية طردية ΔTbp = Kbp × m، وميل الخط هو ثابت الغليان المولالي Kbp، وتعتمد قيمته على نوعية المذيب (جرّبي الإيثانول والبنزين ولاحظي اختلاف الميل).'}},
+ {id:'fp', tab:'درجة التجمد', title:'محطة 3: الانخفاض في درجة التجمد',
+  goal:'أذيبي الجلوكوز في 1 kg من المذيب، ثم ضعي الكأس في حمّام التبريد وراقبي اللحظة التي تبدأ فيها البلورات بالتكوّن.',
+  pred:{q:'درجة تجمد محلول الجلوكوز مقارنة بدرجة تجمد الماء النقي (0 °C):',o:['أعلى','أقل','مساوية'],a:1,
+        why:'لاحظي الترمومتر: المحلول لا يتجمد عند 0 °C، بل يحتاج تبريداً أكثر، لأن جسيمات المذاب تعيق ترتيب جزيئات الماء لتكوين الجليد.'},
+  need:'سجّلي 3 تجارب على الأقل للماء بتراكيز مختلفة.',
+  concl:{q:'إذا ضاعفتِ التركيز المولالي للمحلول، فإن الانخفاض في درجة التجمد ΔTfp:',o:['يتضاعف','يقلّ إلى النصف','لا يتغير'],a:0,
+        why:'صحيح: ΔTfp = Kfp × m، فالانخفاض في درجة التجمد يتناسب طردياً مع التركيز المولالي؛ مضاعفة m تضاعف ΔTfp.'}},
+ {id:'salt', tab:'الملح على الجليد', title:'محطة 4: لماذا نرشّ الملح على الطرق؟',
+  goal:'الطريق مغطّى بالجليد. اختاري درجة حرارة الجو والمادة وكميتها، ثم أرسلي شاحنة الرشّ وراقبي ماذا يحدث للجليد وللسيارة.',
+  pred:{q:'إذا رُشّ الملح على جليد درجة حرارته −5 °C، ماذا تتوقعين؟',o:['يذوب الجليد','يزداد الجليد تجمداً','لا يحدث شيء'],a:0,
+        why:'الملح يذوب في طبقة الماء الرقيقة على الجليد فيتكوّن محلول درجة تجمده أقل من −5 °C، فلا يستطيع البقاء صلباً ويذوب.'},
+  need:'أنجزي المهمات الثلاث:',
+  concl:{q:'لماذا يذيب الملح الجليد أفضل من السكر عند استخدام الكتلة نفسها؟',o:['لأن الملح أثقل من السكر','لأن الملح يعطي عدداً أكبر من الجسيمات في المحلول، والخواص المجمعة تعتمد على عدد الجسيمات','لأن السكر يتفاعل مع الجليد'],a:1,
+        why:'صحيح: كتلة الملح المولية صغيرة (58.5 g/mol) وكل وحدة NaCl تعطي جسيمين (Na⁺ و Cl⁻)، بينما السكروز (342 g/mol) يعطي جسيماً واحداً. الخواص المجمعة تعتمد على عدد جسيمات المذاب لا على نوعه.'}},
+];
+const MISSIONS = ['اجعلي الطريق آمناً عند −5 °C باستخدام الملح.','جرّبي السكر (100 g أو أكثر) عند −5 °C ولاحظي النتيجة.','جرّبي 200 g ملح أو أكثر عند −25 °C: هل ينجح؟ (الملح لا يخفض التجمد تحت −21 °C تقريباً)'];
+
+let cur = 'vp';
+const panel = $('#panel'), readEl = $('#readouts');
+function stars(id){ return save.stars[id].reduce((a,b)=>a+b,0); }
+function renderTabs(){ const nav=$('#tabs'); nav.innerHTML='';
+  STATIONS.forEach((s,i)=>{ const b=document.createElement('button'); b.setAttribute('role','tab'); b.id='tab-'+s.id; b.setAttribute('aria-selected',s.id===cur);
+    b.innerHTML=`<span>${i+1}. ${s.tab}</span><span class="st star">${'★'.repeat(stars(s.id))}${'☆'.repeat(3-stars(s.id))}</span>`;
+    b.onclick=()=>{cur=s.id; ui(true);}; nav.appendChild(b); });
+  const tot=STATIONS.reduce((a,s)=>a+stars(s.id),0); $('#total').textContent=`${tot} / 12`; $('#banner').hidden = tot<12; }
+
+function q(opts, sel, ans, onPick){ return `<div class="opts">${opts.map((o,i)=>`<button data-i="${i}" ${sel!==undefined?'disabled':''} class="${sel===undefined?'':(i===ans?'right':(i===sel?'wrong':''))}">${o}</button>`).join('')}</div>`; }
+
+function needMet(id){
+  if(id==='vp'){ const r=save.rec.vp; return r.length>=3 && r.some(x=>x.s===0) && r.some(x=>x.s>0); }
+  if(id==='bp'||id==='fp') return save.rec[id].filter(r=>r.n==='الماء').length>=3;
+  return save.missions[0] && save.missions[1] && save.missions[2];
+}
+function controls(id){
+  if(id==='vp') return `<div class="row"><button class="btn" id="add">+ أضيفي ملعقة مذاب</button><button class="btn ghost" id="rst">ابدئي من جديد</button></div>
+    <p class="small">المذاب غير متطاير وغير إلكتروليتي. انتظري ثوانٍ قليلة حتى يستقر مقياس الضغط ثم سجّلي.</p>`;
+  if(id==='salt'){ const s=S.salt; return `<label for="tair">درجة حرارة الجو: <span class="math" id="tairv">${fmt(s.Tair,0)} °C</span></label>
+    <input type="range" id="tair" min="-25" max="-1" step="1" value="${s.Tair}">
+    <div class="row"><label for="sub">المادة</label><select id="sub"><option value="salt" ${s.sub==='salt'?'selected':''}>ملح الطعام NaCl</option><option value="sugar" ${s.sub==='sugar'?'selected':''}>سكر القصب (سكروز)</option></select></div>
+    <label for="g">الكمية لكل 1 kg من ماء الطريق: <span class="math" id="gv">${s.g} g</span></label>
+    <input type="range" id="g" min="0" max="400" step="10" value="${s.g}">
+    <div class="row"><button class="btn" id="spray" ${s.phase===0||s.phase===4?'':'disabled'}>أرسلي شاحنة الرشّ</button></div>
+    <p class="small math" style="text-align:right">ΔT<sub>fp</sub> = K<sub>fp</sub> × (عدد مولات الجسيمات لكل kg)، و K<sub>fp</sub> للماء = 1.86 °C/m</p>`; }
+  const b=S[id], L=b.list;
+  return `<div class="row"><label for="solv">المذيب</label><select id="solv">${L.map((s,i)=>`<option value="${i}" ${i===b.si?'selected':''}>${s.n}</option>`).join('')}</select></div>
+    <label for="gr">كتلة الجلوكوز في 1 kg من المذيب: <span class="math" id="grv">${b.grams} g</span></label>
+    <input type="range" id="gr" min="0" max="360" step="18" value="${b.grams}">
+    <p class="small"><span class="math" id="mv">m = (${b.grams} g ÷ 180 g/mol) ÷ 1 kg = ${fmt(b.m,2)} mol/kg</span></p>
+    <div class="row"><button class="btn" id="go">${b.running?'إيقاف':(id==='bp'?'ابدئي التسخين':'ابدئي التبريد')}</button><button class="btn ghost" id="rec">سجّلي القراءة</button></div>`;
+}
+function notebook(id){
+  if(id==='salt') return `<ul class="missions">${MISSIONS.map((m,i)=>`<li class="${save.missions[i]?'done':''}"><span class="box">${save.missions[i]?'✓':''}</span><span>${m}</span></li>`).join('')}</ul>`;
+  if(id==='vp'){ const r=save.rec.vp; if(!r.length) return '<p class="empty">لا توجد قراءات بعد. اضغطي «سجّلي القراءة».</p>';
+    return `<div class="tbl"><table><thead><tr><th>جسيمات المذاب</th><th>بخار فوق المذيب النقي</th><th>بخار فوق المحلول</th></tr></thead><tbody>${r.map(x=>`<tr><td>${x.s}</td><td>${x.a}</td><td>${x.b}</td></tr>`).join('')}</tbody></table></div>`; }
+  const r=save.rec[id]; const lab=id==='bp'?['درجة الغليان','ΔTbp']:['درجة التجمد','ΔTfp'];
+  if(!r.length) return '<p class="empty">لا توجد قراءات بعد.</p>';
+  return `<div class="tbl"><table><thead><tr><th>المذيب</th><th>m (mol/kg)</th><th>${lab[0]} (°C)</th><th>${lab[1]} (°C)</th></tr></thead><tbody>${r.map(x=>`<tr><td class="t">${x.n}</td><td>${x.m.toFixed(2)}</td><td>${fmt(x.T,2)}</td><td>${x.d.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>${plot(id)}`;
+}
+function plot(id){ const r=save.rec[id]; const L=S[id].list; const cols=[C.water,C.solute,C.heat];
+  const W2=420,H2=230,l=46,b=34,t=14,rp=14; const xm=2.1, ym=Math.max(1.2,...r.map(x=>x.d))*1.12;
+  const X=v=>l+v/xm*(W2-l-rp), Y=v=>H2-b-v/ym*(H2-b-t);
+  let s=`<svg class="plot" viewBox="0 0 ${W2} ${H2}" role="img" aria-label="رسم بياني"><rect x="0" y="0" width="${W2}" height="${H2}" fill="none"/>`;
+  for(let v=0;v<=2;v+=0.5) s+=`<line x1="${X(v)}" y1="${Y(0)}" x2="${X(v)}" y2="${t}" stroke="${C.line}" stroke-width="1"/><text x="${X(v)}" y="${H2-b+16}" font-size="11" fill="${C.muted}" text-anchor="middle" font-family="IBM Plex Mono">${v}</text>`;
+  const ys = ym>8?2:ym>3?1:0.5; for(let v=0;v<=ym;v+=ys) s+=`<line x1="${l}" y1="${Y(v)}" x2="${W2-rp}" y2="${Y(v)}" stroke="${C.line}" stroke-width="1"/><text x="${l-6}" y="${Y(v)+4}" font-size="11" fill="${C.muted}" text-anchor="end" font-family="IBM Plex Mono">${v}</text>`;
+  s+=`<text x="${(l+W2)/2}" y="${H2-4}" font-size="12" fill="${C.muted}" text-anchor="middle">m (mol/kg)</text><text x="12" y="${t+4}" font-size="12" fill="${C.muted}" text-anchor="start">${id==='bp'?'ΔTbp':'ΔTfp'} (°C)</text>`;
+  let leg=''; L.forEach((sv,i)=>{ const pts=r.filter(x=>x.n===sv.n); if(!pts.length) return;
+    const sxx=pts.reduce((a,p)=>a+p.m*p.m,0), sxy=pts.reduce((a,p)=>a+p.m*p.d,0);
+    if(pts.length>=2 && sxx>0){ const k=sxy/sxx; s+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(2)}" y2="${Y(k*2)}" stroke="${cols[i]}" stroke-width="2" opacity=".7"/>`; leg+=`<span class="chip"><span style="color:${cols[i]}">●</span>${sv.n}: الميل <span class="v">${k.toFixed(3)}</span></span>`; }
+    for(const p of pts) s+=`<circle cx="${X(p.m)}" cy="${Y(p.d)}" r="5" fill="${cols[i]}"/>`; });
+  return s+`</svg><div class="readouts">${leg}</div>`; }
+
+function ui(full){
+  const st=STATIONS.find(s=>s.id===cur);
+  renderTabs();
+  if(full || !panel.dataset.id || panel.dataset.id!==cur){ panel.dataset.id=cur; }
+  const p=save.pred[cur], sp=save.stars[cur];
+  const predDone = p!==undefined, showWhy = predDone && (cur==='vp'? save.rec.vp.some(x=>x.s>0) : cur==='salt'? S.salt.phase===4 || save.missions[0] : save.rec[cur].length>0);
+  const cdone = save.concl && save.concl[cur]!==undefined ? save.concl[cur] : undefined;
+  panel.innerHTML = iso(`
+   <div class="step lead"><h2>${st.title}</h2><p>${st.goal}</p></div>
+   <div class="step"><h3><span class="n">1</span>توقّعي قبل التجربة<span class="got">${sp[0]?'★':''}</span></h3><p>${st.pred.q}</p>${q(st.pred.o,p,st.pred.a)}
+     ${predDone?(showWhy?`<div class="fb ${p===st.pred.a?'ok':'bad'}">${p===st.pred.a?'توقعك صحيح! ':'توقعك لم يتحقق. '}${st.pred.why}</div>`:'<div class="fb">سجّلتِ توقعك. أجري التجربة وقارني.</div>'):''}</div>
+   <div class="step"><h3><span class="n">2</span>جرّبي</h3><div class="ctrl">${controls(cur)}</div><div class="fb" id="msg" hidden></div></div>
+   <div class="step"><h3><span class="n">3</span>سجّلي في دفتر المختبر<span class="got">${sp[1]?'★':''}</span></h3><p class="small">${st.need}</p>${cur==='vp'?'<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="rec">سجّلي القراءة</button></div>':''}${notebook(cur)}</div>
+   <div class="step"><h3><span class="n">4</span>استنتجي<span class="got">${sp[2]?'★':''}</span></h3>${needMet(cur)?`<p>${st.concl.q}</p>${q(st.concl.o,sp[2]?st.concl.a:undefined,st.concl.a)}${sp[2]?`<div class="fb ok">${st.concl.why}</div>`:''}<div id="cfb"></div>`:'<p class="small">أكملي خطوة التسجيل أولاً ليظهر سؤال الاستنتاج.</p>'}</div>`);
+  // wire
+  panel.querySelectorAll('.step:nth-of-type(2) .opts button').forEach(b=>b.onclick=()=>{ save.pred[cur]=+b.dataset.i; if(+b.dataset.i===st.pred.a) sp[0]=1; persist(); ui(); });
+  const co=panel.querySelectorAll('.step:nth-of-type(5) .opts button');
+  co.forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; if(i===st.concl.a){ sp[2]=1; persist(); ui(); } else { b.classList.add('wrong'); b.disabled=true; $('#cfb').innerHTML='<div class="fb bad">ليست هذه الإجابة. ارجعي إلى ملاحظاتك في دفتر المختبر وحاولي مرة أخرى.</div>'; } });
+  const msg=t=>{ const m=$('#msg'); m.hidden=!t; m.textContent=t||''; };
+  const recBtn=$('#rec'); if(recBtn) recBtn.onclick=()=>{ const e=S[cur].record(); if(e){ msg(e); return; } if(needMet(cur)) sp[1]=1; persist(); ui(); };
+  if(cur==='vp'){ $('#add').onclick=()=>S.vp.addSolute(6); $('#rst').onclick=()=>{ S.vp.reset(); ui(); }; }
+  else if(cur==='salt'){ $('#tair').oninput=e=>{ S.salt.set({Tair:+e.target.value},true); $('#tairv').textContent=fmt(S.salt.Tair,0)+' °C'; }; $('#tair').onchange=()=>ui(); $('#sub').onchange=e=>S.salt.set({sub:e.target.value}); $('#g').oninput=e=>{ S.salt.set({g:+e.target.value},true); $('#gv').textContent=S.salt.g+' g'; }; $('#g').onchange=()=>ui(); $('#spray').onclick=()=>S.salt.spray(); }
+  else { const b=S[cur]; $('#solv').onchange=e=>b.set(+e.target.value,b.grams); $('#gr').oninput=e=>{ b.set(b.si,+e.target.value,true); $('#grv').textContent=b.grams+' g'; $('#mv').textContent=`m = (${b.grams} g ÷ 180 g/mol) ÷ 1 kg = ${fmt(b.m,2)} mol/kg`; $('#go').textContent=cur==='bp'?'ابدئي التسخين':'ابدئي التبريد'; }; $('#gr').onchange=()=>ui(); $('#go').onclick=()=>b.toggle(); }
+  if(cur==='salt' && save.missions.every(Boolean)) sp[1]=1;
+}
+
+function drawReadouts(){ const r=S[cur].readouts(); const key=JSON.stringify(r); if(drawReadouts.k===key) return; drawReadouts.k=key;
+  readEl.innerHTML=r.map(([k,v,tt])=>`<span class="chip">${iso(k)}: <span class="v"${tt?' style="font-family:var(--f-body)"':''}>${v}</span></span>`).join(''); }
+
+let last=performance.now();
+function loop(now){ const dt=Math.min(0.05,(now-last)/1000); last=now;
+  S[cur].update(dt);
+  const sx=cv.width/W; ctx.setTransform(sx,0,0,sx,0,0); ctx.clearRect(0,0,W,H);
+  S[cur].draw(); drawReadouts();
+  if(cur==='salt' && S.salt.phase===4 && !loop.salted){ loop.salted=true; ui(); } if(S.salt.phase!==4) loop.salted=false;
+  requestAnimationFrame(loop); }
+ui(true); requestAnimationFrame(loop);
+})();
+</script>
