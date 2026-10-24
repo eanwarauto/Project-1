@@ -900,6 +900,8 @@ function renderFrame(t) {
       ctx.restore();
     }
   }
+  // اسم صاحبة الحساب أسفل اليسار
+  txt('eng.7ikaya', 14, H - 12, 12, { font: 'Pop', weight: '800', dir: 'ltr', align: 'left', color: '#fff', sw: 3, shadow: false });
   const fade = Math.max(1 - seg(t, 0, .4), seg(t, DURATION - .6, DURATION));
   if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${fade})`; ctx.fillRect(0, 0, W, H); }
 }
