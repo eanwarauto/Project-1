@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>الخواص المجمعة</title>
+<style>
+@font-face{font-family:Cairo;font-weight:700;src:url(../../assets/fonts/cairo-arabic-700-normal.woff2)}
+@font-face{font-family:Cairo;font-weight:800;src:url(../../assets/fonts/cairo-arabic-800-normal.woff2)}
+@font-face{font-family:Cairo;font-weight:900;src:url(../../assets/fonts/cairo-arabic-900-normal.woff2)}
+@font-face{font-family:Lalezar;src:url(../../assets/fonts/lalezar-arabic-400-normal.woff2)}
+@font-face{font-family:Lalezar;src:url(../../assets/fonts/lalezar-latin-400-normal.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:Pop;font-weight:800;src:url(../../assets/fonts/poppins-latin-800-normal.woff2)}
+html,body{margin:0;background:#111}
+canvas{display:block;width:100vw;height:auto}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// فيديو كرتوني قصير عن «الخواص المجمعة».
+// كل إطار يُرسم من الزمن t فقط (بدون عشوائية حقيقية)، فيمكن تصديره إطاراً إطاراً.
+// التشغيل في المتصفح: يعرض الفيديو مباشرة. التصدير: node src/colligative-video/render.js
+const W = 1280, H = 720, S = 1.5, FPS = 30, TAU = Math.PI * 2;
+const cv = document.getElementById('c');
+cv.width = W * S; cv.height = H * S;
+const ctx = cv.getContext('2d');
+
+// ---------- الجدول الزمني (بالثواني) ----------
+const SCENES = [
+  { name: 'intro', start: 0, end: 8 },
+  { name: 'idea', start: 8, end: 19 },
+  { name: 'vapor', start: 19, end: 38 },
+  { name: 'boil', start: 38, end: 56 },
+  { name: 'freeze', start: 56, end: 74 },
+  { name: 'summary', start: 74, end: 92 },
+];
+const DURATION = 92;
+
+// ---------- أدوات ----------
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eio = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const eout = t => 1 - Math.pow(1 - t, 3);
+const back = t => { const c1 = 1.9, c3 = c1 + 1; return t <= 0 ? 0 : 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+const pop = (t, a, d = .45) => back(seg(t, a, a + d));
+function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+const INK = '#1d2b4f';
+const PAL = {
+  water: { light: '#bfe6ff', fill: '#4fb3ff', dark: '#1f72c9' },
+  h: { light: '#ffffff', fill: '#e9f5ff', dark: '#a9c8e6' },
+  solute: { light: '#ffe2a1', fill: '#ffb238', dark: '#e07000' },
+  sugar: { light: '#ffffff', fill: '#ffd6ec', dark: '#e58bb8' },
+  na: { light: '#e6d4ff', fill: '#b37cff', dark: '#7445d6' },
+  cl: { light: '#d2ffd9', fill: '#4fd27a', dark: '#1f9a4a' },
+  ice: { light: '#ffffff', fill: '#bfefff', dark: '#6cc3e8' },
+};
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+// ---------- الشخصيات (الجزيئات الكرتونية) ----------
+function ball(x, y, r, p) {
+  const g = ctx.createRadialGradient(x - r * .35, y - r * .45, r * .1, x, y, r * 1.05);
+  g.addColorStop(0, p.light); g.addColorStop(.5, p.fill); g.addColorStop(1, p.dark);
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = Math.max(2, r * .13); ctx.strokeStyle = INK; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x - r * .38, y - r * .45, r * .22, r * .12, -.6, 0, TAU);
+  ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fill();
+}
+
+function face(x, y, r, t, seed, mood, look) {
+  const lw = Math.max(1.5, r * .09);
+  ctx.lineWidth = lw; ctx.strokeStyle = INK; ctx.lineCap = 'round';
+  const blink = ((t * .45 + seed * .37) % 3.3) < .13 || mood === 'sleep';
+  const ex = r * .33, ey = -r * .02, ew = r * .19, eh = r * .25;
+  const lx = look ? look[0] : 0, ly = look ? look[1] : 0;
+  for (const s of [-1, 1]) {
+    const cx = x + s * ex, cy = y + ey;
+    if (blink) {
+      ctx.beginPath(); ctx.moveTo(cx - ew, cy); ctx.quadraticCurveTo(cx, cy + eh * .7, cx + ew, cy); ctx.stroke();
+    } else if (mood === 'happy2') {
+      ctx.beginPath(); ctx.moveTo(cx - ew, cy + eh * .3); ctx.quadraticCurveTo(cx, cy - eh * .9, cx + ew, cy + eh * .3); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.ellipse(cx, cy, ew, eh, 0, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx + lx * ew * .35, cy + ly * eh * .35 + eh * .1, ew * .58, 0, TAU); ctx.fillStyle = INK; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + lx * ew * .35 - ew * .2, cy + ly * eh * .35 - eh * .1, ew * .2, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill();
+    }
+    if (mood === 'angry') {
+      ctx.beginPath(); ctx.moveTo(cx - s * ew * 1.1, cy - eh * 1.5); ctx.lineTo(cx + s * ew * .9, cy - eh * 1.0); ctx.stroke();
+    }
+  }
+  ctx.fillStyle = 'rgba(255,105,140,.45)';
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * r * .58, y + r * .28, r * .14, r * .08, 0, 0, TAU); ctx.fill(); }
+  const my = y + r * .38;
+  ctx.beginPath();
+  if (mood === 'excited' || mood === 'hot') {
+    ctx.ellipse(x, my, r * .16, r * .14, 0, 0, TAU); ctx.fillStyle = '#7a1630'; ctx.fill(); ctx.stroke();
+  } else if (mood === 'cold') {
+    const n = 5, w = r * .4;
+    for (let i = 0; i <= n; i++) { const px = x - w / 2 + w * i / n, py = my + (i % 2 ? -1 : 1) * r * .05 + Math.sin(t * 40 + seed) * r * .02; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.stroke();
+  } else if (mood === 'angry') {
+    ctx.moveTo(x - r * .18, my + r * .06); ctx.quadraticCurveTo(x, my - r * .08, x + r * .18, my + r * .06); ctx.stroke();
+  } else {
+    ctx.arc(x, my - r * .1, r * .2, .15 * Math.PI, .85 * Math.PI); ctx.stroke();
+  }
+  if (mood === 'hot') { // قطرة عرق
+    ctx.beginPath(); ctx.moveTo(x + r * .75, y - r * .55); ctx.quadraticCurveTo(x + r * .95, y - r * .2, x + r * .75, y - r * .15);
+    ctx.quadraticCurveTo(x + r * .55, y - r * .2, x + r * .75, y - r * .55); ctx.fillStyle = '#9fe0ff'; ctx.fill(); ctx.lineWidth = lw * .7; ctx.stroke();
+  }
+}
+
+// type: water | solute | sugar | na | cl
+function mol(x, y, r, o = {}) {
+  const t = o.t || 0, seed = o.seed || 0, type = o.type || 'water';
+  const sc = o.scale === undefined ? 1 : o.scale;
+  if (sc <= .01) return;
+  ctx.save();
+  if (o.alpha !== undefined) ctx.globalAlpha *= o.alpha;
+  const shiver = o.mood === 'cold' ? Math.sin(t * 50 + seed) * r * .05 : 0;
+  ctx.translate(x + shiver, y);
+  ctx.rotate((o.rot || 0) + Math.sin(t * 2.2 + seed) * .08);
+  ctx.scale(sc, sc * (1 + Math.sin(t * 5 + seed * 3) * .03));
+  if (type === 'water') {
+    const hp = o.frozen ? PAL.ice : PAL.h;
+    for (const s of [-1, 1]) { const a = -Math.PI / 2 + s * .95; ball(Math.cos(a) * r * .95, Math.sin(a) * r * .95, r * .46, hp); }
+    ball(0, 0, r, o.frozen ? PAL.ice : PAL.water);
+  } else if (type === 'sugar') {
+    ctx.save(); ctx.rotate(.12); rr(-r, -r, r * 2, r * 2, r * .35);
+    const g = ctx.createLinearGradient(-r, -r, r, r); g.addColorStop(0, '#fff'); g.addColorStop(1, PAL.sugar.dark);
+    ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = r * .13; ctx.strokeStyle = INK; ctx.stroke(); ctx.restore();
+  } else {
+    ball(0, 0, r, PAL[type]);
+  }
+  face(0, type === 'water' ? r * .05 : 0, r, t, seed, o.mood || 'happy', o.look);
+  if (type === 'na' || type === 'cl') {
+    ctx.save(); ctx.translate(r * .72, -r * .72);
+    ctx.beginPath(); ctx.arc(0, 0, r * .32, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = r * .08; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r * .16, 0); ctx.lineTo(r * .16, 0);
+    if (type === 'na') { ctx.moveTo(0, -r * .16); ctx.lineTo(0, r * .16); }
+    ctx.lineWidth = r * .09; ctx.stroke(); ctx.restore();
+  }
+  ctx.restore();
+}
+
+// جسيمات تتجول داخل صندوق بحركة ناعمة (مواضع أساسية موزعة + تذبذب)
+function makeParts(n, seed, cols) {
+  const R = rng(seed), out = [];
+  cols = cols || Math.ceil(Math.sqrt(n * 1.6));
+  const rows = Math.ceil(n / cols);
+  for (let i = 0; i < n; i++) {
+    const c = i % cols, rw = Math.floor(i / cols);
+    out.push({
+      u: (c + .5 + (R() - .5) * .5) / cols, v: (rw + .5 + (R() - .5) * .5) / rows,
+      f1: .6 + R() * .9, f2: .5 + R() * .9, p1: R() * TAU, p2: R() * TAU, seed: R() * 100,
+    });
+  }
+  return out;
+}
+function wpos(p, t, box, amp = 1) {
+  const u = clamp(p.u + amp * (.09 * Math.sin(t * p.f1 + p.p1) + .05 * Math.sin(t * p.f2 * 1.7 + p.p2)));
+  const v = clamp(p.v + amp * (.09 * Math.cos(t * p.f2 + p.p2) + .05 * Math.sin(t * p.f1 * 1.3 + p.p1)));
+  return [box.x + u * box.w, box.y + v * box.h];
+}
+
+// ---------- النصوص ----------
+function txt(s, x, y, size, o = {}) {
+  const font = o.font || 'Lalezar', weight = o.weight || '';
+  ctx.save();
+  if (o.alpha !== undefined) ctx.globalAlpha *= o.alpha;
+  ctx.font = `${weight} ${size}px ${font}`;
+  ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle'; ctx.direction = o.dir || 'rtl';
+  ctx.lineJoin = 'round';
+  const lines = String(s).split('\n'), lh = size * (o.lh || 1.25);
+  lines.forEach((ln, i) => {
+    const yy = y + (i - (lines.length - 1) / 2) * lh;
+    if (o.stroke !== false) {
+      ctx.lineWidth = o.sw || size * .16; ctx.strokeStyle = o.stroke || INK;
+      if (o.shadow !== false) { ctx.fillStyle = o.stroke || INK; ctx.strokeText(ln, x, yy + size * .07); ctx.fillText(ln, x, yy + size * .07); }
+      ctx.strokeText(ln, x, yy);
+    }
+    ctx.fillStyle = o.color || '#fff'; ctx.fillText(ln, x, yy);
+  });
+  ctx.restore();
+}
+function measure(s, size, font = 'Lalezar', weight = '') {
+  ctx.save(); ctx.font = `${weight} ${size}px ${font}`;
+  const w = Math.max(...String(s).split('\n').map(l => ctx.measureText(l).width)); ctx.restore(); return w;
+}
+
+// بطاقة نص بأسلوب الكرتون
+function card(s, x, y, size, o = {}) {
+  const font = o.font || 'Cairo', weight = o.weight || '900';
+  const lines = String(s).split('\n').length;
+  const w = measure(s, size, font, weight) + size * 1.4, h = size * 1.35 * lines + size * .7;
+  ctx.save();
+  ctx.translate(x, y); const sc = o.scale === undefined ? 1 : o.scale; ctx.scale(sc, sc);
+  if (o.alpha !== undefined) ctx.globalAlpha *= o.alpha;
+  rr(-w / 2 + 5, -h / 2 + 7, w, h, h * .32 > 26 ? 26 : h * .32); ctx.fillStyle = INK; ctx.fill();
+  rr(-w / 2, -h / 2, w, h, h * .32 > 26 ? 26 : h * .32); ctx.fillStyle = o.bg || '#fff'; ctx.fill();
+  ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+  txt(s, 0, size * .02, size, { font, weight, color: o.color || INK, stroke: false, lh: 1.35 });
+  ctx.restore();
+}
+
+// تعليق أسفل الشاشة يظهر بين a و b
+function caption(s, t, a, b, o = {}) {
+  const pin = seg(t, a, a + .35), pout = seg(t, b - .3, b);
+  if (pin <= 0 || pout >= 1) return;
+  card(s, W / 2, (o.y || 662) + (1 - eout(pin)) * 40 + eio(pout) * 40, o.size || 27,
+    { alpha: pin * (1 - pout), bg: o.bg || '#fffdf3', color: o.color });
+}
+
+function heading(s, t, color, num) {
+  const p = pop(t, .15, .55);
+  ctx.save(); ctx.translate(W / 2, 58); ctx.scale(p, p);
+  const nw = num ? 62 : 0, w = measure(s, 50) + 70 + nw;
+  rr(-w / 2 + 6, -38, w, 80, 40); ctx.fillStyle = INK; ctx.fill();
+  rr(-w / 2, -44, w, 80, 40); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+  txt(s, -nw / 2, -2, 50, { color: '#fff' });
+  if (num) {
+    ctx.beginPath(); ctx.arc(w / 2 - 40, -4, 28, 0, TAU); ctx.fillStyle = '#ffd84a'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+    txt(String(num), w / 2 - 40, -2, 36, { font: 'Pop', weight: '800', dir: 'ltr', color: INK, stroke: false });
+  }
+  ctx.restore();
+}
+
+function arrow(x1, y1, x2, y2, color, w = 8, head = 22) {
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const [c, lw] of [[INK, w + 6], [color, w]]) {
+    ctx.strokeStyle = c; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .5, y2 - Math.sin(a) * head * .5); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - Math.cos(a - .5) * head, y2 - Math.sin(a - .5) * head);
+  ctx.lineTo(x2 - Math.cos(a + .5) * head, y2 - Math.sin(a + .5) * head); ctx.closePath();
+  ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.restore();
+}
+
+function burst(x, y, r, t, color = '#ffd84a') {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(t * .8);
+  ctx.beginPath();
+  for (let i = 0; i < 24; i++) { const a = i / 24 * TAU, rr2 = i % 2 ? r * .72 : r; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- الخلفيات ----------
+function background(t, c1, c2, deco = 'bubbles') {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, c1); g.addColorStop(1, c2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const R = rng(7);
+  for (let i = 0; i < 22; i++) {
+    const x = R() * W, sp = 12 + R() * 25, r = 6 + R() * 26, ph = R() * H;
+    const y = H + 40 - ((t * sp + ph) % (H + 80));
+    ctx.beginPath();
+    if (deco === 'snow') {
+      const sy = ((t * sp * 1.4 + ph) % (H + 80)) - 40, sx = x + Math.sin(t + i) * 20;
+      ctx.arc(sx, sy, r * .25 + 2, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill();
+    } else {
+      ctx.arc(x + Math.sin(t * .7 + i) * 12, y, r, 0, TAU);
+      ctx.fillStyle = 'rgba(255,255,255,.10)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.stroke();
+    }
+  }
+  // نقاط خفيفة بنمط الكرتون
+  ctx.fillStyle = 'rgba(255,255,255,.06)';
+  for (let y = 20; y < H; y += 40) for (let x = (y / 40 % 2) * 20; x < W; x += 40) { ctx.beginPath(); ctx.arc(x, y, 2.5, 0, TAU); ctx.fill(); }
+}
+
+// ---------- أدوات المختبر ----------
+// كأس زجاجية: (x,y) أعلى المنتصف
+function beakerBack(x, y, w, h) {
+  rr(x - w / 2, y, w, h, 26); ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fill();
+}
+function beakerLiquid(x, y, w, h, level, t, color = 'rgba(79,179,255,.45)') {
+  ctx.save(); rr(x - w / 2, y, w, h, 26); ctx.clip();
+  const top = y + h * (1 - level);
+  ctx.beginPath(); ctx.moveTo(x - w / 2 - 5, y + h + 5);
+  for (let i = 0; i <= 30; i++) { const px = x - w / 2 + w * i / 30; ctx.lineTo(px, top + Math.sin(t * 3 + i * .7) * 3.5); }
+  ctx.lineTo(x + w / 2 + 5, y + h + 5); ctx.closePath();
+  ctx.fillStyle = color; ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.7)';
+  ctx.beginPath(); for (let i = 0; i <= 30; i++) { const px = x - w / 2 + w * i / 30, py = top + Math.sin(t * 3 + i * .7) * 3.5; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke();
+  ctx.restore();
+  return top;
+}
+function beakerFront(x, y, w, h) {
+  rr(x - w / 2, y, w, h, 26); ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.stroke();
+  // لمعة الزجاج
+  ctx.beginPath(); ctx.moveTo(x - w / 2 + 18, y + 24); ctx.lineTo(x - w / 2 + 18, y + h - 30);
+  ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineCap = 'round'; ctx.stroke();
+  // تدريجات
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(29,43,79,.35)';
+  for (let i = 1; i < 5; i++) { const yy = y + h * i / 5; ctx.beginPath(); ctx.moveTo(x + w / 2 - 26, yy); ctx.lineTo(x + w / 2 - 8, yy); ctx.stroke(); }
+  // الحافة
+  rr(x - w / 2 - 12, y - 10, w + 24, 18, 9); ctx.fillStyle = '#e8f3ff'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+}
+function tag(s, x, y, color, sc = 1) {
+  if (sc <= 0) return;
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+  const w = measure(s, 30, 'Cairo', '900') + 44;
+  rr(-w / 2 + 4, -22, w, 48, 24); ctx.fillStyle = INK; ctx.fill();
+  rr(-w / 2, -26, w, 48, 24); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+  txt(s, 0, -3, 30, { font: 'Cairo', weight: '900', color: '#fff', sw: 6, shadow: false });
+  ctx.restore();
+}
+
+function gauge(x, y, r, val, label) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x + 4, y + 6, r, 0, TAU); ctx.fillStyle = INK; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+  const a0 = Math.PI * .75, a1 = Math.PI * 2.25;
+  const cols = ['#4fd27a', '#ffd84a', '#ff9f43', '#ff5d6c'];
+  cols.forEach((c, i) => { ctx.beginPath(); ctx.arc(x, y, r * .74, lerp(a0, a1, i / 4), lerp(a0, a1, (i + 1) / 4)); ctx.lineWidth = r * .2; ctx.strokeStyle = c; ctx.stroke(); });
+  const a = lerp(a0, a1, clamp(val));
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * r * .78, y + Math.sin(a) * r * .78);
+  ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, r * .14, 0, TAU); ctx.fillStyle = '#ff5d6c'; ctx.fill(); ctx.lineWidth = 3; ctx.stroke();
+  ctx.restore();
+}
+
+// ميزان حرارة: (x, yTop) ، الطول h ، المدى [lo,hi]
+function thermo(x, y, h, T, lo, hi, marks = []) {
+  ctx.save();
+  const bulbY = y + h + 16, frac = clamp((T - lo) / (hi - lo));
+  rr(x - 17 + 4, y + 4, 34, h + 10, 17); ctx.fillStyle = INK; ctx.fill();
+  rr(x - 17, y, 34, h + 10, 17); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+  const colTop = y + 10 + (h - 10) * (1 - frac);
+  rr(x - 8, colTop, 16, bulbY - colTop, 8); ctx.fillStyle = '#ff4d5e'; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, bulbY, 27, 0, TAU); ctx.fillStyle = '#ff4d5e'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x - 9, bulbY - 9, 7, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fill();
+  for (const m of marks) {
+    const yy = y + 10 + (h - 10) * (1 - (m.v - lo) / (hi - lo));
+    ctx.beginPath(); ctx.moveTo(x + 17, yy); ctx.lineTo(x + 30, yy); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+    txt(m.label, x + 36, yy, 20, { font: 'Pop', weight: '800', align: 'left', dir: 'ltr', color: m.color || INK, stroke: false });
+  }
+  ctx.restore();
+  return t2y => y + 10 + (h - 10) * (1 - (t2y - lo) / (hi - lo));
+}
+function tempLabel(T, x, y, color = '#ff4d5e') {
+  const s = (Math.round(T * 10) / 10).toFixed(T % 1 && Math.abs(T) < 10 ? 1 : 0) + '°C';
+  const w = 118;
+  ctx.save();
+  rr(x - w / 2 + 4, y - 22, w, 46, 14); ctx.fillStyle = INK; ctx.fill();
+  rr(x - w / 2, y - 26, w, 46, 14); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+  txt(s, x, -3 + y, 28, { font: 'Pop', weight: '800', dir: 'ltr', color, stroke: false });
+  ctx.restore();
+}
+
+function flame(x, y, s, t, on = 1) {
+  if (on <= 0) return;
+  ctx.save(); ctx.translate(x, y); ctx.scale(s * on, s * on * (1 + Math.sin(t * 18) * .07 + Math.sin(t * 11) * .05));
+  for (const [c, k] of [['#ff5d3a', 1], ['#ffa23a', .72], ['#ffe35a', .42]]) {
+    ctx.beginPath(); ctx.moveTo(0, -60 * k);
+    ctx.bezierCurveTo(28 * k, -26 * k, 30 * k, 4 * k, 0, 10 * k);
+    ctx.bezierCurveTo(-30 * k, 4 * k, -28 * k, -26 * k, 0, -60 * k);
+    ctx.fillStyle = c; ctx.fill(); if (k === 1) { ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+function steam(x, y, t, k) {
+  if (k <= 0) return;
+  ctx.save();
+  for (let i = 0; i < 5; i++) {
+    const ph = (t * .6 + i / 5) % 1, yy = y - ph * 120, xx = x + (i - 2) * 26 + Math.sin(t * 2 + i) * 10;
+    ctx.globalAlpha = k * (1 - ph) * .85;
+    ctx.beginPath(); ctx.arc(xx, yy, 14 + ph * 20, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ================== المشاهد ==================
+
+// ---- 1) المقدمة ----
+const introMols = makeParts(9, 11, 9);
+function sceneIntro(t) {
+  background(t, '#58c4ff', '#2b6fd6');
+  // جزيئات تقفز من الأسفل
+  introMols.forEach((p, i) => {
+    const a = .1 + i * .12, k = back(seg(t, a, a + .7));
+    const x = 90 + i * 137, y = lerp(H + 80, 600 - Math.abs(Math.sin(t * 3 + i)) * 26, k);
+    mol(x, y, 34, { t, seed: p.seed, type: i % 3 === 1 ? 'solute' : 'water', mood: i % 2 ? 'happy' : 'excited', look: [0, -1] });
+  });
+  // العنوان
+  const p = pop(t, .7, .7);
+  ctx.save(); ctx.translate(W / 2, 205 + Math.sin(t * 2) * 6); ctx.scale(p, p); ctx.rotate(Math.sin(t * 1.5) * .015);
+  burst(0, 4, 330, t * .3, '#8fd4ff');
+  txt('الخواص المجمعة', 0, 0, 128, { color: '#ffd84a', sw: 20 });
+  ctx.restore();
+  card('خواص تعتمد على عدد جسيمات المذاب… لا على نوعها!', W / 2, 340, 30, { scale: pop(t, 2.4, .5) });
+  const items = [
+    { s: 'انخفاض\nالضغط البخاري', c: '#ff7a59', icon: 'gauge' },
+    { s: 'ارتفاع\nدرجة الغليان', c: '#ff4d6d', icon: 'up' },
+    { s: 'انخفاض\nدرجة التجمد', c: '#3db8f5', icon: 'down' },
+  ];
+  items.forEach((it, i) => {
+    const k = pop(t, 3.6 + i * .6, .5);
+    if (k <= 0) return;
+    const x = W / 2 + (1 - i) * 330, y = 460;
+    ctx.save(); ctx.translate(x, y + Math.sin(t * 2.5 + i) * 4); ctx.scale(k, k);
+    rr(-150 + 5, -60 + 7, 300, 120, 28); ctx.fillStyle = INK; ctx.fill();
+    rr(-150, -60, 300, 120, 28); ctx.fillStyle = it.c; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    txt(it.s, 35, 0, 30, { font: 'Cairo', weight: '900', sw: 6, lh: 1.15 });
+    if (it.icon === 'gauge') gauge(-102, 0, 34, .3 + .1 * Math.sin(t * 3));
+    else arrow(-102, it.icon === 'up' ? 35 : -35, -102, it.icon === 'up' ? -38 : 38, '#fff', 10, 26);
+    txt(String(i + 1), 128, -44, 30, { font: 'Pop', weight: '800', dir: 'ltr', color: '#ffd84a', sw: 7 });
+    ctx.restore();
+  });
+}
+
+// ---- 2) الفكرة الأساسية ----
+const ideaPure = makeParts(9, 21, 3), ideaSolW = makeParts(9, 22, 3), ideaSolS = makeParts(5, 23, 3);
+const SOLUTE_DROPS = [1.6, 2.2, 2.8, 3.4, 4.0];
+function sceneIdea(t) {
+  background(t, '#7fd8c4', '#2a9d8f');
+  heading('الفكرة الأساسية', t, '#ff7a59');
+  // المرحلة أ: ماء نقي مقابل محلول
+  const outA = eio(seg(t, 5.6, 6.1));
+  if (outA < 1) {
+    ctx.save(); ctx.globalAlpha = 1 - outA; ctx.translate(0, outA * 30);
+    const box = (x) => ({ x: x - 105, y: 300, w: 210, h: 200 });
+    for (const [x, kind] of [[880, 'pure'], [400, 'sol']]) {
+      const bx = x, by = 230, bw = 270, bh = 290;
+      beakerBack(bx, by, bw, bh); beakerLiquid(bx, by, bw, bh, .85, t);
+      const bb = box(x);
+      (kind === 'pure' ? ideaPure : ideaSolW).forEach(p => { const [px, py] = wpos(p, t, bb); mol(px, py, 22, { t, seed: p.seed }); });
+      if (kind === 'sol') {
+        ideaSolS.forEach((p, i) => {
+          const d = SOLUTE_DROPS[i];
+          if (t < d) return;
+          const [px, py] = wpos(p, t, bb);
+          const fall = eout(seg(t, d, d + .7));
+          mol(lerp(px, px, fall), lerp(150, py, fall), 22, { t, seed: p.seed, type: 'solute', mood: 'excited', scale: pop(t, d, .3) });
+        });
+      }
+      beakerFront(bx, by, bw, bh);
+      tag(kind === 'pure' ? 'ماء نقي' : 'محلول', bx, 560, kind === 'pure' ? '#3d8bfd' : '#ff9f1c', pop(t, kind === 'pure' ? .5 : .9));
+    }
+    // ملعقة
+    const sp = seg(t, 1.2, 4.6);
+    if (sp > 0 && sp < 1) {
+      ctx.save(); ctx.translate(400 + Math.sin(sp * 30) * 10, 150); ctx.rotate(.5 + Math.sin(sp * 30) * .15);
+      rr(0, -9, 150, 18, 9); ctx.fillStyle = '#c9d6e8'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(-22, 0, 34, 22, 0, 0, TAU); ctx.fillStyle = '#e4ecf7'; ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    const cnt = SOLUTE_DROPS.filter(d => t >= d).length;
+    if (cnt) {
+      const k = pop(t, SOLUTE_DROPS[cnt - 1], .3);
+      ctx.save(); ctx.translate(150, 360); ctx.scale(.85 + .15 * k, .85 + .15 * k);
+      burst(0, 0, 62, t, '#ffd84a'); txt(String(cnt), 0, 4, 58, { font: 'Pop', weight: '800', dir: 'ltr', color: '#ff7a59', sw: 9 });
+      ctx.restore();
+      txt('جسيمات المذاب', 150, 440, 26, { font: 'Cairo', weight: '900', sw: 6 });
+    }
+    ctx.restore();
+  }
+  caption('المحلول = مذيب (الماء) + مذاب', t, .4, 3.3);
+  caption('الخواص المجمعة يهمها عدد جسيمات المذاب… لا نوعها!', t, 3.3, 6);
+  caption('السكر يبقى جسيماً واحداً… أما الملح فيتفكك إلى أيونين!', t, 6.5, 11);
+
+  // المرحلة ب: سكر مقابل ملح
+  const inB = eout(seg(t, 6, 6.5));
+  if (inB > 0) {
+    ctx.save(); ctx.globalAlpha = inB; ctx.translate(0, (1 - inB) * 30);
+    const L = [{ x: 880, kind: 'sugar', name: 'سكر' }, { x: 400, kind: 'salt', name: 'ملح الطعام NaCl' }];
+    for (const c of L) {
+      const by = 300, bw = 250, bh = 210;
+      beakerBack(c.x, by, bw, bh); const top = beakerLiquid(c.x, by, bw, bh, .78, t);
+      const drop = 6.9, land = 7.6, f = eio(seg(t, drop, land));
+      const y = lerp(185, top + 70, f);
+      if (c.kind === 'sugar') {
+        mol(c.x, y + Math.sin(t * 2) * 5, 30, { t, seed: 3, type: 'sugar', mood: f >= 1 ? 'happy' : 'excited' });
+      } else {
+        const sp = eout(seg(t, land, land + .6));
+        const dx = lerp(25, 72, sp);
+        mol(c.x + dx, y + Math.sin(t * 2.4) * 5 + sp * 18, 27, { t, seed: 5, type: 'cl', mood: sp > 0 ? 'happy2' : 'excited' });
+        mol(c.x - dx, y + Math.cos(t * 2.4) * 5 - sp * 10, 24, { t, seed: 6, type: 'na', mood: sp > 0 ? 'happy2' : 'excited' });
+        if (sp > 0 && sp < 1) burst(c.x, y, 30 + sp * 40, t, `rgba(255,216,74,${1 - sp})`);
+      }
+      beakerFront(c.x, by, bw, bh);
+      tag(c.name, c.x, 245 - (1 - pop(t, 6.3)) * 10, c.kind === 'salt' ? '#7445d6' : '#e05d9a', pop(t, 6.3));
+      const k = pop(t, 8.1, .45);
+      if (k > 0) {
+        const s = c.kind === 'salt' ? 'يعطي جسيمين' : 'يعطي جسيماً واحداً';
+        card(s, c.x, 565, 28, { scale: k, bg: c.kind === 'salt' ? '#fff0b8' : '#fff' });
+      }
+    }
+    const k2 = pop(t, 9.1, .5);
+    if (k2 > 0) {
+      ctx.save(); ctx.translate(640, 405); ctx.scale(k2, k2); ctx.rotate(-.08);
+      burst(0, 0, 92, t, '#ff5d6c');
+      txt('تأثير\nأكبر!', 0, 2, 38, { color: '#fff', sw: 8, lh: 1 });
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+}
+
+// ---- 3) انخفاض الضغط البخاري ----
+const VAP = {
+  pure: { liquid: makeParts(10, 31, 5), vapor: makeParts(7, 32, 4), spawns: [1.4, 2.6, 3.8, 5, 6.3, 7.6, 9] },
+  sol: { liquid: makeParts(6, 33, 4), vapor: makeParts(3, 34, 3), spawns: [2.4, 5.6, 8.7] },
+};
+const SURF_SOLUTES = [-.34, -.02, .3];
+function vaporJar(t, cx, d, label, color, isSol) {
+  const top = 225, bot = 565, w = 300, h = bot - top, surf = 405;
+  beakerBack(cx, top, w, h);
+  beakerLiquid(cx, top, w, h, (bot - surf) / h, t, 'rgba(79,179,255,.5)');
+  const lbox = { x: cx - 120, y: surf + 40, w: 240, h: bot - surf - 70 };
+  d.liquid.forEach(p => { const [x, y] = wpos(p, t, lbox); mol(x, y, 17, { t, seed: p.seed, look: [0, -1] }); });
+  if (isSol) {
+    // جسيمات المذاب تحتل جزءاً من السطح
+    SURF_SOLUTES.forEach((u, i) => {
+      const x = cx + u * w + Math.sin(t * 1.5 + i) * 6, y = surf + 12 + Math.sin(t * 2 + i) * 3;
+      if (t > 7 && t < 12.5) {
+        const pr = (t * 1.6 + i * .3) % 1;
+        ctx.beginPath(); ctx.arc(x, y, 22 + pr * 22, 0, TAU); ctx.lineWidth = 4; ctx.strokeStyle = `rgba(255,93,108,${1 - pr})`; ctx.stroke();
+      }
+      mol(x, y, 21, { t, seed: 40 + i, type: 'solute', mood: t > 7 && t < 12.5 ? 'angry' : 'happy' });
+    });
+  }
+  const vbox = { x: cx - 115, y: top + 35, w: 230, h: surf - top - 80 };
+  let vp = 0;
+  d.vapor.forEach((p, i) => {
+    const s0 = d.spawns[i]; if (t < s0) return;
+    const k = eout(seg(t, s0, s0 + 1)); vp += k;
+    const [tx, ty] = wpos(p, t, vbox, 1.4);
+    const sx = cx + (p.u - .5) * w * .6;
+    mol(lerp(sx, tx, k), lerp(surf + 15, ty, k), 16, { t, seed: p.seed, mood: 'excited', look: [0, -1], scale: .6 + .4 * k });
+    if (k < 1) {
+      ctx.save(); ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx + s * 14, surf); ctx.lineTo(lerp(sx, tx, k) + s * 10, lerp(surf + 15, ty, k) + 28); ctx.stroke(); }
+      ctx.restore();
+    }
+  });
+  beakerFront(cx, top, w, h);
+  // الغطاء والمقياس
+  ctx.beginPath(); ctx.moveTo(cx, top - 12); ctx.lineTo(cx, 175); ctx.lineWidth = 10; ctx.strokeStyle = INK; ctx.stroke();
+  rr(cx - w / 2 - 16, top - 26, w + 32, 26, 10); ctx.fillStyle = '#8fa6c6'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+  gauge(cx, 150, 42, vp / 8);
+  tag(label, cx + (isSol ? -210 : 210), 300, color);
+  return vp / 8;
+}
+function sceneVapor(t) {
+  background(t, '#a99bff', '#5b4bd1');
+  heading('انخفاض الضغط البخاري', t, '#ff7a59', 1);
+  const pv = vaporJar(t, 880, VAP.pure, 'ماء نقي', '#3d8bfd', false);
+  const sv = vaporJar(t, 400, VAP.sol, 'محلول', '#ff9f1c', true);
+  // المقارنة
+  const k = pop(t, 13, .5);
+  if (k > 0) {
+    ctx.save(); ctx.translate(640, 330); ctx.scale(k, k);
+    burst(0, 0, 70, t, '#ffd84a');
+    txt('<', 0, 8, 96, { font: 'Pop', weight: '800', dir: 'ltr', color: '#ff5d6c', sw: 12 });
+    ctx.restore();
+    arrow(400 + 72, 118, 400 + 72, 188, '#ff5d6c', 9, 24);
+  }
+  caption('في الإناء المغلق تهرب بعض جزيئات الماء من السطح وتضغط على الغطاء\nهذا هو الضغط البخاري', t, .5, 6.8);
+  caption('في المحلول: جسيمات المذاب تحتل جزءاً من السطح\nفتهرب جزيئات أقل', t, 6.8, 12.8);
+  caption('الضغط البخاري للمحلول أقل من الضغط البخاري للماء النقي', t, 12.8, 19, { bg: '#fff0b8' });
+}
+
+// ---- 4) ارتفاع درجة الغليان ----
+function boilTemp(t, isSol) {
+  let T = lerp(25, 100, eio(seg(t, 1, 6.5)));
+  if (isSol) T += 2 * eio(seg(t, 8.5, 11));
+  return T;
+}
+function boilSide(t, cx, label, color, isSol) {
+  const T = boilTemp(t, isSol);
+  const boilStart = isSol ? 11 : 6.5, boil = seg(t, boilStart, boilStart + .8);
+  const bx = cx, by = 280, bw = 210, bh = 210;
+  // الحامل واللهب
+  flame(bx, 572, 1, t + (isSol ? 1.3 : 0), eout(seg(t, .3, .9)));
+  rr(bx - 90, 512, 180, 14, 7); ctx.fillStyle = '#8fa6c6'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(bx + s * 80, 524); ctx.lineTo(bx + s * 95, 600); ctx.lineWidth = 8; ctx.strokeStyle = INK; ctx.stroke(); }
+  beakerBack(bx, by, bw, bh);
+  const top = beakerLiquid(bx, by, bw, bh, .72, t * (1 + boil), isSol ? 'rgba(255,214,150,.92)' : 'rgba(150,212,255,.92)');
+  // فقاعات
+  if (boil > 0) {
+    const R = rng(isSol ? 91 : 92);
+    for (let i = 0; i < 16; i++) {
+      const x = bx + (R() - .5) * (bw - 50), sp = 70 + R() * 80, ph = R();
+      const yy = by + bh - 10 - ((t * sp / 100 + ph) % 1) * (by + bh - top - 10);
+      const r = (4 + R() * 9) * boil;
+      ctx.beginPath(); ctx.arc(x + Math.sin(t * 6 + i) * 3, yy, r, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = INK; ctx.stroke();
+    }
+  }
+  // جزيئات داخل السائل
+  const lbox = { x: bx - 75, y: top + 25, w: 150, h: by + bh - top - 55 };
+  const mood = T > 80 ? 'hot' : 'happy';
+  (isSol ? boilParts.sol : boilParts.pure).forEach((p, i) => {
+    const [x, y] = wpos(p, t * (1 + T / 60), lbox);
+    mol(x, y, 15, { t, seed: p.seed, type: isSol && i % 3 === 0 ? 'solute' : 'water', mood: isSol && i % 3 === 0 ? 'happy' : mood });
+  });
+  beakerFront(bx, by, bw, bh);
+  // جزيئات تقفز للخارج عند الغليان
+  if (boil > 0) {
+    for (let i = 0; i < 2; i++) {
+      const ph = ((t - boilStart) * .55 + i * .5) % 1;
+      const x = bx + (i ? 40 : -40) * (1 + ph), y = top - Math.sin(ph * Math.PI) * 120 - ph * 30;
+      mol(x, y, 15, { t, seed: 70 + i, mood: 'excited', alpha: boil * (1 - ph * .8) });
+    }
+    steam(bx, by - 20, t, boil);
+  }
+  // مقياس الضغط البخاري (عمود) مقابل خط الضغط الجوي
+  const mx = cx - 175, mtop = 270, mh = 250;
+  const vp = clamp(Math.pow((T - 25) / (isSol ? 77 : 75), 2));
+  rr(mx - 20 + 4, mtop + 4, 40, mh, 12); ctx.fillStyle = INK; ctx.fill();
+  rr(mx - 20, mtop, 40, mh, 12); ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.save(); rr(mx - 20, mtop, 40, mh, 12); ctx.clip();
+  ctx.fillStyle = isSol ? '#ff9f1c' : '#3d8bfd'; ctx.fillRect(mx - 20, mtop + mh * (1 - vp * .82), 40, mh);
+  ctx.restore();
+  rr(mx - 20, mtop, 40, mh, 12); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+  const ay = mtop + mh * (1 - .82);
+  ctx.setLineDash([10, 7]); ctx.beginPath(); ctx.moveTo(mx - 36, ay); ctx.lineTo(mx + 36, ay); ctx.lineWidth = 5; ctx.strokeStyle = '#ff3b55'; ctx.stroke(); ctx.setLineDash([]);
+  txt('الضغط\nالجوي', mx - 62, ay, 20, { font: 'Cairo', weight: '900', color: '#fff', sw: 5, lh: 1.1 });
+  txt('الضغط\nالبخاري', mx, mtop + mh + 40, 20, { font: 'Cairo', weight: '900', color: '#fff', sw: 5, lh: 1.1 });
+  if (vp >= 1) burst(mx, ay, 26 + Math.sin(t * 8) * 3, t, '#ffd84a');
+  // ميزان الحرارة
+  const tx = cx + 165;
+  const toY = thermo(tx, 250, 270, T, 20, 105, [{ v: 100, label: '100' }]);
+  tempLabel(T, tx, 208, isSol && T > 100.05 ? '#ff7a00' : '#ff4d5e');
+  tag(label, bx, 200, color);
+  // شارة "لم يغلِ بعد!"
+  if (isSol) {
+    const k = pop(t, 7, .4) * (1 - seg(t, 10.7, 11));
+    if (k > 0) card('لم يغلِ بعد!', bx, 140, 26, { scale: k, bg: '#ffe3e6', color: '#c81d3a' });
+    const k2 = pop(t, 12.6, .5);
+    if (k2 > 0) {
+      ctx.save(); ctx.translate(tx + 78, toY(100) + 50); ctx.scale(k2, k2);
+      burst(0, 0, 40, t, '#ffd84a'); txt('ΔTb', 0, 3, 26, { font: 'Pop', weight: '800', dir: 'ltr', color: '#ff4d5e', sw: 6 });
+      ctx.restore();
+    }
+  } else {
+    const k = pop(t, 6.6, .4);
+    if (k > 0) card('يغلي!', bx, 140, 26, { scale: k, bg: '#d9f7e6', color: '#13804a' });
+  }
+}
+const boilParts = { pure: makeParts(8, 51, 3), sol: makeParts(9, 52, 3) };
+function sceneBoil(t) {
+  background(t, '#ffb36b', '#e8553d');
+  heading('ارتفاع درجة الغليان', t, '#d6336c', 2);
+  boilSide(t, 900, 'ماء نقي', '#3d8bfd', false);
+  boilSide(t, 380, 'محلول', '#ff9f1c', true);
+  caption('يغلي السائل عندما يصل ضغطه البخاري إلى الضغط الجوي', t, .5, 6.5);
+  caption('الماء النقي يغلي عند 100 درجة مئوية… لكن المحلول لم يغلِ بعد!', t, 6.5, 11.6);
+  caption('ضغطه البخاري أقل ← يحتاج حرارة أكبر ← درجة غليان أعلى', t, 11.6, 18, { bg: '#fff0b8' });
+}
+
+// ---- 5) انخفاض درجة التجمد ----
+const frzParts = { pure: makeParts(16, 61, 4), solW: makeParts(12, 62, 4), solS: makeParts(4, 63, 4) };
+function freezeTemp(t, isSol) {
+  let T = lerp(20, 0, eio(seg(t, 1, 5)));
+  if (isSol) T -= 3 * eio(seg(t, 9.5, 11.5));
+  return T;
+}
+function freezeSide(t, cx, label, color, isSol) {
+  const T = freezeTemp(t, isSol);
+  const fStart = isSol ? 11.6 : 5, fz = eio(seg(t, fStart, fStart + 1.4));
+  const x0 = cx - 165, y0 = 205, w = 300, h = 300;
+  // نافذة التكبير
+  rr(x0 + 6, y0 + 8, w, h, 30); ctx.fillStyle = INK; ctx.fill();
+  rr(x0, y0, w, h, 30);
+  const g = ctx.createLinearGradient(0, y0, 0, y0 + h);
+  g.addColorStop(0, fz > .5 ? '#f2fbff' : (isSol ? '#ffe2b0' : '#bfe6ff')); g.addColorStop(1, fz > .5 ? '#bfe9ff' : (isSol ? '#ffc56b' : '#7cc8ff'));
+  ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.save(); rr(x0, y0, w, h, 30); ctx.clip();
+  if (fz > 0) { // لمعان الجليد
+    ctx.globalAlpha = fz * .5; ctx.strokeStyle = '#fff'; ctx.lineWidth = 10;
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x0 + 40 + i * 110, y0 - 10); ctx.lineTo(x0 - 60 + i * 110, y0 + h + 10); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+  }
+  const box = { x: x0 + 40, y: y0 + 45, w: w - 80, h: h - 90 };
+  const gx = (c, n) => x0 + w / 2 + (c - (n - 1) / 2) * 62, gy = (r, n) => y0 + h / 2 + (r - (n - 1) / 2) * 62;
+  const waters = isSol ? frzParts.solW : frzParts.pure;
+  const cols = 4, rows = isSol ? 3 : 4;
+  // روابط البلورة
+  if (fz > .6) {
+    ctx.save(); ctx.globalAlpha = (fz - .6) / .4; ctx.setLineDash([6, 6]); ctx.lineWidth = 3; ctx.strokeStyle = '#2a7fd4';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const yo = isSol ? 30 : 0;
+      if (c < cols - 1) { ctx.beginPath(); ctx.moveTo(gx(c, cols), gy(r, rows) + yo); ctx.lineTo(gx(c + 1, cols), gy(r, rows) + yo); ctx.stroke(); }
+      if (r < rows - 1) { ctx.beginPath(); ctx.moveTo(gx(c, cols), gy(r, rows) + yo); ctx.lineTo(gx(c, cols), gy(r + 1, rows) + yo); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+  // محاولة الترتيب عند الصفر في المحلول (تفشل)
+  const attempt = isSol ? Math.sin(seg(t, 5.2, 9.2) * Math.PI) * .35 : 0;
+  const mood = fz > .5 ? 'happy2' : (T < 8 ? 'cold' : 'happy');
+  waters.forEach((p, i) => {
+    const [wx, wy] = wpos(p, t, box, 1 - fz);
+    const c = i % cols, r = Math.floor(i / cols);
+    const tx = gx(c, cols), ty = gy(r, rows) + (isSol ? 30 : 0);
+    const k = Math.max(fz, attempt);
+    mol(lerp(wx, tx, k), lerp(wy, ty, k), 19, { t: fz > .9 ? 0 : t, seed: p.seed, mood, frozen: fz > .5 });
+  });
+  if (isSol) {
+    frzParts.solS.forEach((p, i) => {
+      let [x, y] = wpos(p, t, box, 1.2);
+      // المذاب يُدفع إلى الأعلى عند التجمد
+      x = lerp(x, x0 + 52 + i * 65, fz); y = lerp(y, y0 + 42, fz);
+      if (attempt > .05) { ctx.beginPath(); ctx.arc(x, y, 26 + Math.sin(t * 10) * 3, 0, TAU); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,59,85,.8)'; ctx.stroke(); }
+      mol(x, y, 18, { t, seed: p.seed, type: 'solute', mood: attempt > .05 ? 'angry' : 'happy' });
+    });
+  }
+  ctx.restore();
+  // ميزان الحرارة
+  const tx = cx + 175;
+  const toY = thermo(tx, 240, 260, T, -6, 22, [{ v: 0, label: '0' }]);
+  tempLabel(T, tx, 198, '#2a7fd4');
+  tag(label, cx - 15, 168, color);
+  const fk = pop(t, fStart + 1.2, .4);
+  if (fk > 0) card('تجمّد!', cx - 15, 548, 26, { scale: fk, bg: '#e2f6ff', color: '#1f72c9' });
+  if (isSol) {
+    const k = pop(t, 5.6, .4) * (1 - seg(t, 11.3, 11.6));
+    if (k > 0) card('لم يتجمد بعد!', cx - 15, 548, 26, { scale: k, bg: '#ffe3e6', color: '#c81d3a' });
+    const k2 = pop(t, 13.4, .5);
+    if (k2 > 0) {
+      ctx.save(); ctx.translate(tx + 72, toY(-3.5)); ctx.scale(k2, k2);
+      burst(0, 0, 40, t, '#ffd84a'); txt('ΔTf', 0, 3, 26, { font: 'Pop', weight: '800', dir: 'ltr', color: '#1f72c9', sw: 6 });
+      ctx.restore();
+    }
+  }
+}
+function sceneFreeze(t) {
+  background(t, '#9fdcff', '#3a7bd5', 'snow');
+  heading('انخفاض درجة التجمد', t, '#1f72c9', 3);
+  freezeSide(t, 890, 'ماء نقي', '#3d8bfd', false);
+  freezeSide(t, 390, 'محلول', '#ff9f1c', true);
+  caption('عند التجمد تترتب جزيئات الماء في بلّورة منتظمة', t, .5, 5.4);
+  caption('جسيمات المذاب تعرقل هذا الترتيب… فلا يتجمد المحلول عند الصفر المئوي', t, 5.4, 11.6);
+  caption('يحتاج تبريداً أكثر ← درجة تجمد أقل\n(لهذا نرش الملح على الجليد في الطرق!)', t, 11.6, 18, { bg: '#fff0b8' });
+}
+
+// ---- 6) العلاقة بينها (مخطط الطور + سلسلة السبب والنتيجة) ----
+const PH = { x0: 80, x1: 640, y0: 590, y1: 170 };
+const px = T => lerp(PH.x0, PH.x1, T), py = P => lerp(PH.y0, PH.y1, P);
+const VA = .0371, VK = 3.91, SB = .0147, SK = 7, ATM = .62, SOLF = .74;
+const Pv = T => VA * Math.exp(VK * T), Ps = T => SB * Math.exp(SK * T);
+const TRIP = .3, TRIP_S = Math.log(SOLF * VA / SB) / (SK - VK);
+const fusT = (T0, P0, P) => T0 - .03 * (P - P0) / .88;
+function drawCurve(f, a, b, prog, color, w, dash) {
+  if (prog <= 0) return;
+  ctx.save(); ctx.beginPath();
+  const n = 60, end = lerp(a, b, prog);
+  for (let i = 0; i <= n; i++) { const [x, y] = f(lerp(a, end, i / n)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = INK; ctx.lineWidth = w + 5; if (dash) ctx.setLineDash(dash); ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke();
+  ctx.restore();
+}
+function sceneSummary(t) {
+  background(t, '#ffd56b', '#ff9a3c');
+  heading('العلاقة بين الخواص الثلاث', t, '#7445d6');
+  // لوحة المخطط
+  const k0 = eout(seg(t, .4, 1));
+  ctx.save(); ctx.globalAlpha = k0;
+  rr(40 + 6, 120 + 8, 640, 540, 30); ctx.fillStyle = INK; ctx.fill();
+  rr(40, 120, 640, 540, 30); ctx.fillStyle = '#fffdf6'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+  // المحاور
+  arrow(PH.x0, PH.y0, PH.x0, PH.y1 - 10, INK, 4, 18);
+  arrow(PH.x0, PH.y0, PH.x1 + 15, PH.y0, INK, 4, 18);
+  txt('الضغط', PH.x0 + 46, PH.y1 - 20, 22, { font: 'Cairo', weight: '900', color: INK, stroke: false });
+  txt('درجة الحرارة', PH.x1 - 45, PH.y0 - 24, 22, { font: 'Cairo', weight: '900', color: INK, stroke: false });
+  // مناطق الأطوار
+  const rk = seg(t, 3.2, 3.8);
+  txt('صلب', px(.07), py(.55), 32, { color: '#3db8f5', alpha: rk, sw: 6 });
+  txt('سائل', px(.45), py(.7), 32, { color: '#3d8bfd', alpha: rk, sw: 6 });
+  txt('غاز', px(.92), py(.32), 32, { color: '#9aa6b8', alpha: rk, sw: 6 });
+  // منحنيات الماء النقي
+  const p1 = eio(seg(t, 1, 3));
+  drawCurve(T => [px(T), py(Ps(T))], .05, TRIP, p1, '#3d8bfd', 6);
+  drawCurve(T => [px(T), py(Pv(T))], TRIP, Math.log(.85 / VA) / VK, p1, '#3d8bfd', 6);
+  drawCurve(P => [px(fusT(TRIP, Pv(TRIP), P)), py(P)], Pv(TRIP), .85, p1, '#3d8bfd', 6);
+  // منحنيات المحلول
+  const p2 = eio(seg(t, 4.2, 6.2));
+  drawCurve(T => [px(T), py(SOLF * Pv(T))], TRIP_S, Math.log(.85 / (SOLF * VA)) / VK, p2, '#ff7a00', 6, [14, 10]);
+  drawCurve(P => [px(fusT(TRIP_S, Ps(TRIP_S), P)), py(P)], Ps(TRIP_S), .85, p2, '#ff7a00', 6, [14, 10]);
+  // مفتاح الألوان
+  const lk = seg(t, 2, 2.5);
+  ctx.globalAlpha = k0 * lk;
+  ctx.lineWidth = 6; ctx.strokeStyle = '#3d8bfd'; ctx.beginPath(); ctx.moveTo(650, 150); ctx.lineTo(610, 150); ctx.stroke();
+  txt('ماء نقي', 600, 150, 22, { font: 'Cairo', weight: '900', color: INK, stroke: false, align: 'right' });
+  ctx.globalAlpha = k0 * seg(t, 5, 5.5);
+  ctx.setLineDash([12, 8]); ctx.strokeStyle = '#ff7a00'; ctx.beginPath(); ctx.moveTo(490, 150); ctx.lineTo(450, 150); ctx.stroke(); ctx.setLineDash([]);
+  txt('محلول', 440, 150, 22, { font: 'Cairo', weight: '900', color: INK, stroke: false, align: 'right' });
+  ctx.globalAlpha = k0;
+  // سهم انخفاض الضغط البخاري
+  const vk = pop(t, 6.4, .5);
+  if (vk > 0) {
+    const T = .6, a = py(Pv(T)), b = py(SOLF * Pv(T));
+    ctx.save(); ctx.globalAlpha = k0 * clamp(vk); arrow(px(T) + 24, a, px(T) + 24, b + 4, '#ff7a59', 6, 18);
+    txt('ضغط بخاري\nأقل', px(T) - 95, (a + b) / 2 - 40, 20, { font: 'Cairo', weight: '900', color: '#ff7a59', sw: 5, lh: 1.1 });
+    ctx.restore();
+  }
+  // خط الضغط الجوي
+  const ak = eio(seg(t, 7.4, 8.2));
+  if (ak > 0) {
+    ctx.save(); ctx.setLineDash([10, 8]); ctx.lineWidth = 4; ctx.strokeStyle = '#ff3b55';
+    ctx.beginPath(); ctx.moveTo(PH.x0, py(ATM)); ctx.lineTo(lerp(PH.x0, PH.x1, ak), py(ATM)); ctx.stroke(); ctx.restore();
+    txt('1 atm', PH.x0 + 40, py(ATM) - 18, 20, { font: 'Pop', weight: '800', dir: 'ltr', color: '#ff3b55', stroke: false, alpha: ak });
+  }
+  // ΔTb و ΔTf
+  const Tb = Math.log(ATM / VA) / VK, Tb2 = Math.log(ATM / (SOLF * VA)) / VK;
+  const Tf = fusT(TRIP, Pv(TRIP), ATM), Tf2 = fusT(TRIP_S, Ps(TRIP_S), ATM);
+  for (const [a, b, s, c, at] of [[Tb, Tb2, 'ΔTb', '#ff4d6d', 8.4], [Tf, Tf2, 'ΔTf', '#1f72c9', 9.2]]) {
+    const k = pop(t, at, .5);
+    if (k <= 0) continue;
+    ctx.save(); ctx.globalAlpha = k0 * clamp(k);
+    for (const T of [a, b]) { ctx.setLineDash([5, 6]); ctx.beginPath(); ctx.moveTo(px(T), py(ATM)); ctx.lineTo(px(T), PH.y0 + 10); ctx.lineWidth = 3; ctx.strokeStyle = c; ctx.stroke(); ctx.setLineDash([]); }
+    for (const T of [a, b]) { ctx.beginPath(); ctx.arc(px(T), py(ATM), 8, 0, TAU); ctx.fillStyle = c; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke(); }
+    arrow(px(a), PH.y0 + 18, px(b), PH.y0 + 18, c, 5, 14);
+    txt(s, (px(a) + px(b)) / 2, PH.y0 + 46, 24 * clamp(k, 0, 1.2), { font: 'Pop', weight: '800', dir: 'ltr', color: c, sw: 5 });
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // سلسلة السبب والنتيجة
+  const chain = [
+    { s: 'نضيف جسيمات مذاب', c: '#ff9f1c', at: 1.6, y: 175 },
+    { s: 'ينخفض الضغط البخاري', c: '#ff7a59', at: 6.4, y: 300 },
+  ];
+  chain.forEach((b, i) => {
+    const k = pop(t, b.at, .5); if (k <= 0) return;
+    ctx.save(); ctx.translate(960, b.y); ctx.scale(k, k);
+    rr(-250 + 6, -42 + 7, 500, 84, 26); ctx.fillStyle = INK; ctx.fill();
+    rr(-250, -42, 500, 84, 26); ctx.fillStyle = b.c; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    txt(b.s, -35, -3, 34, { font: 'Cairo', weight: '900', sw: 7 });
+    if (i === 0) { mol(200, 0, 24, { t, seed: 9, type: 'solute', mood: 'excited' }); }
+    else gauge(200, 0, 28, .3);
+    ctx.restore();
+  });
+  if (t > 6.2) arrow(960, 222, 960, 254, '#fff', 9, 24);
+  const ends = [{ s: 'ترتفع درجة\nالغليان', c: '#ff4d6d', x: 1100, at: 8.4 }, { s: 'تنخفض درجة\nالتجمد', c: '#3db8f5', x: 820, at: 9.2 }];
+  ends.forEach(b => {
+    const k = pop(t, b.at, .5); if (k <= 0) return;
+    arrow(960 + (b.x - 960) * .2, 346, 960 + (b.x - 960) * .75, 398, '#fff', 8, 22);
+    ctx.save(); ctx.translate(b.x, 455); ctx.scale(k, k);
+    rr(-125 + 6, -52 + 7, 250, 104, 26); ctx.fillStyle = INK; ctx.fill();
+    rr(-125, -52, 250, 104, 26); ctx.fillStyle = b.c; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    txt(b.s, 0, -2, 30, { font: 'Cairo', weight: '900', sw: 7, lh: 1.15 });
+    ctx.restore();
+  });
+  // الخلاصة
+  const fk = pop(t, 11, .6);
+  if (fk > 0) {
+    ctx.save(); ctx.translate(960, 590); ctx.scale(fk, fk); ctx.rotate(Math.sin(t * 2) * .02);
+    rr(-250 + 6, -62 + 7, 500, 124, 30); ctx.fillStyle = INK; ctx.fill();
+    rr(-250, -62, 500, 124, 30); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    txt('كلما زاد عدد جسيمات المذاب\nزاد التأثير!', 0, -2, 32, { color: '#7445d6', sw: 6, lh: 1.2 });
+    ctx.restore();
+  }
+  // مشهد الختام
+  const ek = eio(seg(t, 14.6, 15.2));
+  if (ek > 0) {
+    ctx.save(); ctx.globalAlpha = ek;
+    background(t, '#58c4ff', '#2b6fd6');
+    ctx.restore();
+    const k = pop(t, 15, .6);
+    ctx.save(); ctx.translate(W / 2, 300); ctx.scale(k, k);
+    burst(0, 0, 230, t * .3, '#8fd4ff');
+    txt('أحسنتم!', 0, -20, 120, { color: '#ffd84a', sw: 18 });
+    txt('الخواص المجمعة = عدد الجسيمات', 0, 95, 40, { font: 'Cairo', weight: '900', sw: 8 });
+    ctx.restore();
+    for (let i = 0; i < 7; i++) {
+      const kk = back(seg(t, 15.2 + i * .1, 15.8 + i * .1));
+      mol(140 + i * 166, lerp(H + 80, 600 - Math.abs(Math.sin(t * 4 + i)) * 40, kk), 34, { t, seed: i * 7, type: i % 3 === 1 ? 'solute' : 'water', mood: 'happy2' });
+    }
+  }
+}
+
+// ---------- الانتقالات ----------
+const SCENE_FN = { intro: sceneIntro, idea: sceneIdea, vapor: sceneVapor, boil: sceneBoil, freeze: sceneFreeze, summary: sceneSummary };
+const IRIS = .38;
+function renderFrame(t) {
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const sc = SCENES.find(s => t < s.end) || SCENES[SCENES.length - 1];
+  SCENE_FN[sc.name](t - sc.start);
+  // ستارة دائرية بين المشاهد
+  const maxR = Math.hypot(W, H) / 2 + 20;
+  for (const s of SCENES) {
+    if (s.start === 0) continue;
+    const d = t - s.start;
+    if (Math.abs(d) < IRIS) {
+      ctx.save(); ctx.fillStyle = INK;
+      if (d < 0) { ctx.beginPath(); ctx.arc(W / 2, H / 2, maxR * eio(1 + d / IRIS), 0, TAU); ctx.fill(); }
+      else { ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.arc(W / 2, H / 2, maxR * eio(d / IRIS), 0, TAU, true); ctx.fill('evenodd'); }
+      ctx.restore();
+    }
+  }
+  const fade = Math.max(1 - seg(t, 0, .4), seg(t, DURATION - .6, DURATION));
+  if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${fade})`; ctx.fillRect(0, 0, W, H); }
+}
+
+// ---------- المؤثرات الصوتية (يقرؤها audio.py) ----------
+const SFX = [];
+(function () {
+  const add = (t, type, o = {}) => SFX.push({ t: +t.toFixed(3), type, ...o });
+  for (let i = 0; i < 9; i++) add(.1 + i * .12 + .3, 'pop', { pitch: 1 + i * .06 });
+  add(.75, 'boing'); add(2.4, 'pop', { pitch: 1.3 });
+  [3.6, 4.2, 4.8].forEach((x, i) => add(x, 'pop', { pitch: 1.1 + i * .15 }));
+  for (const s of SCENES.slice(1)) add(s.start - IRIS, 'whoosh');
+  const I = 8; SOLUTE_DROPS.forEach((d, i) => add(I + d + .2, 'plop', { pitch: 1 + i * .1 }));
+  add(I + 6.9, 'fall'); add(I + 7.6, 'plop'); add(I + 7.65, 'pop', { pitch: 1.4 });
+  add(I + 8.1, 'pop', { pitch: 1.2 }); add(I + 9.1, 'ding');
+  const V = 19; VAP.pure.spawns.forEach(s => add(V + s, 'blip', { pitch: 1.2 })); VAP.sol.spawns.forEach(s => add(V + s, 'blip', { pitch: .9 }));
+  add(V + 7, 'alert'); add(V + 13, 'ding');
+  const B = 38; add(B + .3, 'flame');
+  add(B + 6.5, 'bubbles', { dur: 11.5, gain: .5 }); add(B + 6.6, 'ding'); add(B + 7, 'alert');
+  add(B + 11, 'bubbles', { dur: 7, gain: .5 }); add(B + 11.1, 'ding', { pitch: 1.12 }); add(B + 12.6, 'pop', { pitch: 1.3 });
+  const F = 56; add(F + 5, 'freeze'); add(F + 6.2, 'ding'); add(F + 5.6, 'alert'); add(F + 11.6, 'freeze'); add(F + 12.8, 'ding', { pitch: 1.12 }); add(F + 13.4, 'pop', { pitch: 1.3 });
+  const M = 74; add(M + 1, 'swish'); add(M + 4.2, 'swish'); add(M + 1.6, 'pop'); add(M + 6.4, 'pop', { pitch: 1.15 });
+  add(M + 8.4, 'pop', { pitch: 1.3 }); add(M + 9.2, 'pop', { pitch: 1.45 }); add(M + 11, 'ding');
+  add(M + 15, 'tada');
+})();
+
+// ---------- واجهة التصدير / التشغيل ----------
+window.DURATION = DURATION; window.FPS = FPS; window.SFX = SFX; window.renderFrame = renderFrame;
+window.ready = Promise.all(['40px Lalezar', '700 40px Cairo', '800 40px Cairo', '900 40px Cairo', '800 40px Pop']
+  .map(f => document.fonts.load(f, 'ابجد abc 123'))).then(() => document.fonts.ready);
+if (!/[?&]export/.test(location.search)) {
+  window.ready.then(() => {
+    const t0 = performance.now();
+    const loop = () => { renderFrame(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); };
+    loop();
+  });
+}
+</script>
+</body>
+</html>
