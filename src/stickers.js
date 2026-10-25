@@ -127,7 +127,7 @@ const SHEETS = [
     { c: C.red, art: svg(IC.bolt('#c92a2a', '#ff8787')), t: 'هرمون الحماس', s: 'الأدرينالين', f: 'C9H13NO3' },
     { c: C.green, art: svg(IC.smile('#2f9e44', '#b2f2bb')), t: 'الإندورفين', s: 'يُفرَز مع الضحك والرياضة' },
     { c: C.teal, art: `<div class="tiles">${tile('Cu', 29, 'نحاس', TILE.cu, 12.5)}${tile('Te', 52, 'تيلوريوم', TILE.te, 12.5)}</div>`, t: '<span dir="ltr">Cu + Te = Cute</span>', s: 'كيمياء… بس لطيفة!', small: true },
-    { c: C.blue, art: svg(IC.drop('#1c7ed6', '#74c0fc')), t: 'الماء سرّ الحياة', s: 'جسمك <span dir="ltr">60%</span> ماء', f: 'H2O' },
+    { c: C.blue, art: svg(IC.drop('#1c7ed6', '#74c0fc')), t: 'الماء سرّ الحياة', s: 'جسمك حوالي <span dir="ltr">60%</span> ماء', f: 'H2O' },
   ] },
 ];
 
