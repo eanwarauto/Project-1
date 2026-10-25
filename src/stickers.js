@@ -10,7 +10,9 @@ const OUT = path.join(ROOT, 'stickers');
 const HTML_DIR = path.join(ROOT, 'build', 'stickers');
 const fontUrl = f => 'file://' + path.join(ROOT, 'assets', 'fonts', f);
 
-const LABEL = { w: 70, h: 35, cols: 3, rows: 8 };
+// ارتفاع الاستيكر قابل للتغيير: LABEL_H=36 node src/stickers.js (الورق المكتوب عليه 70×35 يأتي أحياناً بصفوف 36 أو 37 ملم)
+const LABEL = { w: 70, h: parseFloat(process.env.LABEL_H || '35'), cols: 3, rows: 8 };
+const SUFFIX = `-ارتفاع-${LABEL.h}`;
 const PAGE = { w: 210, h: 297 };
 const MX = (PAGE.w - LABEL.w * LABEL.cols) / 2, MY = (PAGE.h - LABEL.h * LABEL.rows) / 2;
 // المسافة الآمنة: التصميم يبعد عن حافة الاستيكر بهذا المقدار حتى لا يخرج عنه إذا انزاحت الطباعة قليلاً
@@ -219,8 +221,8 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
   const browser = await chromium.launch();
   const pg = await browser.newPage({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 3 });
   const jobs = [
-    [COMPENSATED ? 'استيكرات-A4-مضبوط-على-الطابعة' : 'استيكرات-A4', SHEETS.map(s => sheet(s.items)).join(''), SHEETS.map((s, i) => `ورقة-${i + 1}-${s.name.replace(/ /g, '-')}`)],
-    [COMPENSATED ? 'اختبار-المقاس-مضبوط-على-الطابعة' : 'اختبار-المقاس', calSheet() + testSheet(), COMPENSATED ? ['ورقة-القياس-مضبوط', 'اختبار-المقاس-مضبوط'] : ['ورقة-القياس', 'اختبار-المقاس']],
+    [(COMPENSATED ? 'استيكرات-A4-مضبوط-على-الطابعة' : 'استيكرات-A4') + SUFFIX, SHEETS.map(s => sheet(s.items)).join(''), SHEETS.map((s, i) => `ورقة-${i + 1}-${s.name.replace(/ /g, '-')}${SUFFIX}`)],
+    [(COMPENSATED ? 'اختبار-المقاس-مضبوط-على-الطابعة' : 'اختبار-المقاس') + SUFFIX, calSheet() + testSheet(), (COMPENSATED ? ['ورقة-القياس-مضبوط', 'اختبار-المقاس-مضبوط'] : ['ورقة-القياس', 'اختبار-المقاس']).map(n => n + SUFFIX)],
   ];
   for (const [name, body, previews] of jobs) {
     const f = path.join(HTML_DIR, name + '.html');
