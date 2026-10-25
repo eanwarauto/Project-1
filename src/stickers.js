@@ -131,9 +131,12 @@ const AR_NAME = { Ge: 'جرمانيوم', Ni: 'نيكل', U: 'يورانيوم',
   Es: 'أينشتاينيوم', F: 'فلور', N: 'نيتروجين', Te: 'تيلوريوم', Am: 'أمريسيوم', Si: 'سيليكون', Sn: 'قصدير', Ac: 'أكتينيوم', No: 'نوبليوم',
   Mo: 'موليبدنوم', La: 'لانثانوم', Lu: 'لوتيشيوم', Ru: 'روثينيوم' };
 const TILE_COLORS = [['#ff8fab', '#e64980'], ['#ffc078', '#f76707'], ['#ffe066', '#e0a800'], ['#8ce99a', '#2f9e44'], ['#66d9e8', '#1098ad'], ['#91a7ff', '#4263eb'], ['#d0bfff', '#7048e8'], ['#fcc2d7', '#d6336c']];
+// ترتيب الورقة (24 استيكر)، والكلمات المفضلة مكررة
+const WORD_SHEET = ['Genius', 'Brain', 'Think', 'Bravo', 'Wow', 'Hero', 'Genius', 'Brain', 'Bravo', 'Life', 'Honey', 'Banana',
+  'Think', 'Wow', 'Genius', 'Kind', 'Nice', 'Hearts', 'Brain', 'Bravo', 'Snack', 'Nora', 'Mona', 'Lulu'];
 function wordItems() {
   const pal = [C.pink, C.orange, C.indigo, C.green, C.teal, C.blue, C.purple, C.red];
-  return WORDS.map(([word, els, ar], i) => {
+  return WORD_SHEET.map(w => WORDS.find(x => x[0] === w)).map(([word, els, ar], i) => {
     const size = els.length === 2 ? 11.5 : els.length === 3 ? 9.4 : 7.6;
     const tiles = els.map(([sym, z], j) => tile(sym, z, AR_NAME[sym], TILE_COLORS[(i + j * 3) % TILE_COLORS.length], size)).join('');
     return { c: pal[Math.floor(i / 3) % pal.length], art: `<div class="tiles">${tiles}</div>`, small: true,
