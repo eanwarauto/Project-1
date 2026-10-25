@@ -13,8 +13,8 @@ const fontUrl = f => 'file://' + path.join(ROOT, 'assets', 'fonts', f);
 // ارتفاع الاستيكر قابل للتغيير: LABEL_H=36 node src/stickers.js (الورق المكتوب عليه 70×35 يأتي أحياناً بصفوف 36 أو 37 ملم)
 const LABEL = { w: 70, h: parseFloat(process.env.LABEL_H || '35'), cols: 3, rows: 8 };
 const SUFFIX = `-ارتفاع-${LABEL.h}`;
-// IMAGE=1: صور بنسبة 3:4 بلا هوامش (3×8 استيكرات تملأ الصورة)، مثل الصورة التي طُبعت مضبوطة من الجوال
-const IMAGE = process.env.IMAGE === '1';
+// صور بنسبة 3:4 بلا هوامش (3×8 استيكرات تملأ الصورة)، مثل الصورة التي طُبعت مضبوطة من الجوال
+const IMAGE = process.env.IMAGE !== '0';  // الافتراضي: الصور (المقاس المضبوط)؛ IMAGE=0 لملفات PDF
 const PAGE = IMAGE ? { w: LABEL.w * LABEL.cols, h: LABEL.h * LABEL.rows } : { w: 210, h: 297 };
 const MX = (PAGE.w - LABEL.w * LABEL.cols) / 2, MY = (PAGE.h - LABEL.h * LABEL.rows) / 2;
 // المسافة الآمنة: التصميم يبعد عن حافة الاستيكر بهذا المقدار حتى لا يخرج عنه إذا انزاحت الطباعة قليلاً
@@ -79,7 +79,7 @@ const IC = {
 
 // بطاقة عنصر صغيرة
 const tile = (sym, z, name, c, s = 15) => `<div class="tile" style="width:${s}mm;height:${s}mm;background:linear-gradient(150deg,${c[0]},${c[1]})">
-  <span class="tz" style="font-size:${s * .17}mm">${z}</span><span class="ts" style="font-size:${s * .44}mm">${sym}</span><span class="tn" style="font-size:${s * .15}mm">${name}</span></div>`;
+  <span class="tz" style="font-size:${s * .17}mm">${z}</span><span class="ts" style="font-size:${s * .44}mm">${sym}</span>${s >= 10 ? `<span class="tn" style="font-size:${s * .15}mm">${name}</span>` : ''}</div>`;
 
 const C = {
   purple: { bg: '#f4effe', ring: '#8b6be0', ink: '#3d2a84', a: '#b197fc', b: '#e64980' },
@@ -98,6 +98,49 @@ const TILE = {
 
 // كل تصميم: لون، أيقونة (SVG أو بطاقة عنصر)، عنوان، سطر فرعي، وصيغة كيميائية اختيارية
 const ARAB = 'الأسبوع العربي<br>للكيمياء';
+// كلمات تُكتب برموز عناصر حقيقية فقط: [الكلمة، [[الرمز، العدد الذري]...]، المعنى]
+const WORDS = [
+  ['Genius', [['Ge', 32], ['Ni', 28], ['U', 92], ['S', 16]], 'عبقري'],
+  ['Brain', [['B', 5], ['Ra', 88], ['In', 49]], 'عقل'],
+  ['Think', [['Th', 90], ['In', 49], ['K', 19]], 'فكّر'],
+  ['Hero', [['H', 1], ['Er', 68], ['O', 8]], 'بطل'],
+  ['Bravo', [['B', 5], ['Ra', 88], ['V', 23], ['O', 8]], 'أحسنت'],
+  ['Wow', [['W', 74], ['O', 8], ['W', 74]], 'رائع!'],
+  ['Life', [['Li', 3], ['Fe', 26]], 'حياة'],
+  ['Honey', [['Ho', 67], ['Ne', 10], ['Y', 39]], 'عسل'],
+  ['Banana', [['Ba', 56], ['Na', 11], ['Na', 11]], 'موز'],
+  ['Care', [['Ca', 20], ['Re', 75]], 'اهتمام'],
+  ['Kind', [['K', 19], ['I', 53], ['Nd', 60]], 'لطيف'],
+  ['Nice', [['Ni', 28], ['Ce', 58]], 'جميل'],
+  ['Hearts', [['He', 2], ['Ar', 18], ['Ts', 117]], 'قلوب'],
+  ['Yes', [['Y', 39], ['Es', 99]], 'نعم'],
+  ['Fun', [['F', 9], ['U', 92], ['N', 7]], 'مرح'],
+  ['Team', [['Te', 52], ['Am', 95]], 'فريق'],
+  ['Sis', [['Si', 14], ['S', 16]], 'أختي'],
+  ['Snack', [['Sn', 50], ['Ac', 89], ['K', 19]], 'وجبة خفيفة'],
+  ['Nora', [['No', 102], ['Ra', 88]], 'نورة'],
+  ['Mona', [['Mo', 42], ['Na', 11]], 'منى'],
+  ['Layla', [['La', 57], ['Y', 39], ['La', 57]], 'ليلى'],
+  ['Lulu', [['Lu', 71], ['Lu', 71]], 'لولو'],
+  ['Ruba', [['Ru', 44], ['Ba', 56]], 'ربى'],
+  ['Rana', [['Ra', 88], ['Na', 11]], 'رنا'],
+];
+const AR_NAME = { Ge: 'جرمانيوم', Ni: 'نيكل', U: 'يورانيوم', S: 'كبريت', B: 'بورون', Ra: 'راديوم', In: 'إنديوم', Th: 'ثوريوم', K: 'بوتاسيوم',
+  H: 'هيدروجين', Er: 'إربيوم', O: 'أكسجين', V: 'فاناديوم', W: 'تنجستن', Li: 'ليثيوم', Fe: 'حديد', Ho: 'هولميوم', Ne: 'نيون', Y: 'إتريوم',
+  Ba: 'باريوم', Na: 'صوديوم', Ca: 'كالسيوم', Re: 'رينيوم', I: 'يود', Nd: 'نيوديميوم', Ce: 'سيريوم', He: 'هيليوم', Ar: 'أرجون', Ts: 'تينيسين',
+  Es: 'أينشتاينيوم', F: 'فلور', N: 'نيتروجين', Te: 'تيلوريوم', Am: 'أمريسيوم', Si: 'سيليكون', Sn: 'قصدير', Ac: 'أكتينيوم', No: 'نوبليوم',
+  Mo: 'موليبدنوم', La: 'لانثانوم', Lu: 'لوتيشيوم', Ru: 'روثينيوم' };
+const TILE_COLORS = [['#ff8fab', '#e64980'], ['#ffc078', '#f76707'], ['#ffe066', '#e0a800'], ['#8ce99a', '#2f9e44'], ['#66d9e8', '#1098ad'], ['#91a7ff', '#4263eb'], ['#d0bfff', '#7048e8'], ['#fcc2d7', '#d6336c']];
+function wordItems() {
+  const pal = [C.pink, C.orange, C.indigo, C.green, C.teal, C.blue, C.purple, C.red];
+  return WORDS.map(([word, els, ar], i) => {
+    const size = els.length === 2 ? 11.5 : els.length === 3 ? 9.4 : 7.6;
+    const tiles = els.map(([sym, z], j) => tile(sym, z, AR_NAME[sym], TILE_COLORS[(i + j * 3) % TILE_COLORS.length], size)).join('');
+    return { c: pal[Math.floor(i / 3) % pal.length], art: `<div class="tiles">${tiles}</div>`, small: true,
+      t: `<span dir="ltr" class="word">${word}</span>`, s: `<span dir="ltr" class="eq">${els.map(e => e[0]).join(' + ')}</span><br>${ar}` };
+  });
+}
+
 const SHEETS = [
   { name: 'الأسبوع العربي للكيمياء', items: [
     { c: C.pink, art: tile('Ar', 18, 'أرجون', TILE.ar), t: ARAB, s: 'أرجون… عنصرنا العربي' },
@@ -129,6 +172,7 @@ const SHEETS = [
     { c: C.teal, art: `<div class="tiles">${tile('Cu', 29, 'نحاس', TILE.cu, 12.5)}${tile('Te', 52, 'تيلوريوم', TILE.te, 12.5)}</div>`, t: '<span dir="ltr">Cu + Te = Cute</span>', s: 'كيمياء… بس لطيفة!', small: true },
     { c: C.blue, art: svg(IC.drop('#1c7ed6', '#74c0fc')), t: 'الماء سرّ الحياة', s: 'جسمك حوالي <span dir="ltr">60%</span> ماء', f: 'H2O' },
   ] },
+  { name: 'كلمات من الجدول الدوري', unique: true, items: wordItems() },
 ];
 
 const formula = f => `<span class="formula" dir="ltr">${f.replace(/(\d+)/g, '<sub>$1</sub>')}</span>`;
@@ -143,7 +187,7 @@ function sticker(d) {
     <div class="art">${d.art}</div></div></div>`;
 }
 
-const sheet = items => `<section class="page"><div class="sheet">${items.map(d => [d, d, d].map(sticker).join('')).join('')}</div></section>`;
+const sheet = sh => `<section class="page"><div class="sheet">${(sh.unique ? sh.items : sh.items.flatMap(d => [d, d, d])).map(sticker).join('')}</div></section>`;
 
 function calSheet() {
   const ln = (style, n) => `<div class="cal" style="${style}"><b>${n}</b></div>`;
@@ -199,6 +243,8 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
 .txt{flex:1;text-align:center;min-width:0}
 .t{font-family:Lalezar;font-size:5.4mm;line-height:1.08}
 .t.sm{font-size:4.6mm}
+.word{font-family:Pop;font-weight:800;font-size:5mm;letter-spacing:.1mm}
+.eq{font-family:Pop;font-weight:700;font-size:2.4mm;white-space:nowrap}
 .brush{height:.9mm;width:62%;margin:1mm auto .6mm;border-radius:1mm}
 .s{font-weight:800;font-size:2.7mm;line-height:1.35}
 .formula{font-family:Pop;font-weight:700;font-size:2.5mm;white-space:nowrap}
@@ -227,7 +273,7 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
     fs.mkdirSync(dir, { recursive: true });
     const pg = await browser.newPage({ viewport: { width: 794, height: 1060 }, deviceScaleFactor: 2480 / (PAGE.w / 25.4 * 96) });
     const f = path.join(HTML_DIR, 'صور.html');
-    fs.writeFileSync(f, `<!doctype html><html dir="rtl"><head><meta charset="utf-8"><style>${CSS}</style></head><body>${SHEETS.map(s => sheet(s.items)).join('')}</body></html>`);
+    fs.writeFileSync(f, `<!doctype html><html dir="rtl"><head><meta charset="utf-8"><style>${CSS}</style></head><body>${SHEETS.map(sheet).join('')}</body></html>`);
     await pg.goto('file://' + f, { waitUntil: 'load' });
     await pg.evaluate(() => document.fonts.ready);
     const secs = await pg.$$('section.page');
@@ -237,7 +283,7 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
   }
   const pg = await browser.newPage({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 3 });
   const jobs = [
-    [(COMPENSATED ? 'استيكرات-A4-مضبوط-على-الطابعة' : 'استيكرات-A4') + SUFFIX, SHEETS.map(s => sheet(s.items)).join(''), SHEETS.map((s, i) => `ورقة-${i + 1}-${s.name.replace(/ /g, '-')}${SUFFIX}`)],
+    [(COMPENSATED ? 'استيكرات-A4-مضبوط-على-الطابعة' : 'استيكرات-A4') + SUFFIX, SHEETS.map(sheet).join(''), SHEETS.map((s, i) => `ورقة-${i + 1}-${s.name.replace(/ /g, '-')}${SUFFIX}`)],
     [(COMPENSATED ? 'اختبار-المقاس-مضبوط-على-الطابعة' : 'اختبار-المقاس') + SUFFIX, calSheet() + testSheet(), (COMPENSATED ? ['ورقة-القياس-مضبوط', 'اختبار-المقاس-مضبوط'] : ['ورقة-القياس', 'اختبار-المقاس']).map(n => n + SUFFIX)],
   ];
   for (const [name, body, previews] of jobs) {
