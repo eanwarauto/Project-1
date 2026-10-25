@@ -13,13 +13,15 @@ const fontUrl = f => 'file://' + path.join(ROOT, 'assets', 'fonts', f);
 // ارتفاع الاستيكر قابل للتغيير: LABEL_H=36 node src/stickers.js (الورق المكتوب عليه 70×35 يأتي أحياناً بصفوف 36 أو 37 ملم)
 const LABEL = { w: 70, h: parseFloat(process.env.LABEL_H || '35'), cols: 3, rows: 8 };
 const SUFFIX = `-ارتفاع-${LABEL.h}`;
-const PAGE = { w: 210, h: 297 };
+// IMAGE=1: صور بنسبة 3:4 بلا هوامش (3×8 استيكرات تملأ الصورة)، مثل الصورة التي طُبعت مضبوطة من الجوال
+const IMAGE = process.env.IMAGE === '1';
+const PAGE = IMAGE ? { w: LABEL.w * LABEL.cols, h: LABEL.h * LABEL.rows } : { w: 210, h: 297 };
 const MX = (PAGE.w - LABEL.w * LABEL.cols) / 2, MY = (PAGE.h - LABEL.h * LABEL.rows) / 2;
 // المسافة الآمنة: التصميم يبعد عن حافة الاستيكر بهذا المقدار حتى لا يخرج عنه إذا انزاحت الطباعة قليلاً
-const SAFE = { x: 4.5, y: 3.2 };
+const SAFE = IMAGE ? { x: 3.5, y: 2.8 } : { x: 4.5, y: 3.2 };
 // تصغير التصميم داخل الاستيكر ورفعه قليلاً، ليبقى بعيداً عن الحواف حتى لو انزاحت الطباعة
-const CARD_SCALE = parseFloat(process.env.CARD_SCALE || '0.75');
-const SHIFT_UP = parseFloat(process.env.SHIFT_UP || '2');
+const CARD_SCALE = parseFloat(process.env.CARD_SCALE || (IMAGE ? '1' : '0.75'));
+const SHIFT_UP = parseFloat(process.env.SHIFT_UP || (IMAGE ? '0' : '2'));
 const CARD_T = `translateY(${-SHIFT_UP}mm) scale(${CARD_SCALE})`;
 
 // تعويض تصغير/إزاحة الطابعة: تُقاس الأرقام بالمسطرة على «ورقة القياس» المطبوعة ثم تُمرَّر هكذا:
@@ -219,6 +221,20 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(HTML_DIR, { recursive: true });
   const browser = await chromium.launch();
+  if (IMAGE) {
+    // عرض 2480 بكسل (300 نقطة في البوصة لعرض 210 ملم)
+    const dir = path.join(OUT, 'صور-للطباعة');
+    fs.mkdirSync(dir, { recursive: true });
+    const pg = await browser.newPage({ viewport: { width: 794, height: 1060 }, deviceScaleFactor: 2480 / (PAGE.w / 25.4 * 96) });
+    const f = path.join(HTML_DIR, 'صور.html');
+    fs.writeFileSync(f, `<!doctype html><html dir="rtl"><head><meta charset="utf-8"><style>${CSS}</style></head><body>${SHEETS.map(s => sheet(s.items)).join('')}</body></html>`);
+    await pg.goto('file://' + f, { waitUntil: 'load' });
+    await pg.evaluate(() => document.fonts.ready);
+    const secs = await pg.$$('section.page');
+    for (let i = 0; i < secs.length; i++) await secs[i].screenshot({ path: path.join(dir, `استيكرات-${i + 1}-${SHEETS[i].name.replace(/ /g, '-')}.png`) });
+    await browser.close();
+    return;
+  }
   const pg = await browser.newPage({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 3 });
   const jobs = [
     [(COMPENSATED ? 'استيكرات-A4-مضبوط-على-الطابعة' : 'استيكرات-A4') + SUFFIX, SHEETS.map(s => sheet(s.items)).join(''), SHEETS.map((s, i) => `ورقة-${i + 1}-${s.name.replace(/ /g, '-')}${SUFFIX}`)],
