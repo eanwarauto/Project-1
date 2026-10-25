@@ -124,23 +124,28 @@ const WORDS = [
   ['Lulu', [['Lu', 71], ['Lu', 71]], 'لولو'],
   ['Ruba', [['Ru', 44], ['Ba', 56]], 'ربى'],
   ['Rana', [['Ra', 88], ['Na', 11]], 'رنا'],
+  ['Unicorn', [['U', 92], ['Ni', 28], ['Co', 27], ['Rn', 86]], 'يونيكورن'],
+  ['Rainbow', [['Ra', 88], ['In', 49], ['B', 5], ['O', 8], ['W', 74]], 'قوس قزح'],
+  ['Popcorn', [['Po', 84], ['P', 15], ['Co', 27], ['Rn', 86]], 'فشار'],
+  ['Princess', [['Pr', 59], ['In', 49], ['Ce', 58], ['S', 16], ['S', 16]], 'أميرة'],
 ];
 const AR_NAME = { Ge: 'جرمانيوم', Ni: 'نيكل', U: 'يورانيوم', S: 'كبريت', B: 'بورون', Ra: 'راديوم', In: 'إنديوم', Th: 'ثوريوم', K: 'بوتاسيوم',
   H: 'هيدروجين', Er: 'إربيوم', O: 'أكسجين', V: 'فاناديوم', W: 'تنجستن', Li: 'ليثيوم', Fe: 'حديد', Ho: 'هولميوم', Ne: 'نيون', Y: 'إتريوم',
   Ba: 'باريوم', Na: 'صوديوم', Ca: 'كالسيوم', Re: 'رينيوم', I: 'يود', Nd: 'نيوديميوم', Ce: 'سيريوم', He: 'هيليوم', Ar: 'أرجون', Ts: 'تينيسين',
   Es: 'أينشتاينيوم', F: 'فلور', N: 'نيتروجين', Te: 'تيلوريوم', Am: 'أمريسيوم', Si: 'سيليكون', Sn: 'قصدير', Ac: 'أكتينيوم', No: 'نوبليوم',
-  Mo: 'موليبدنوم', La: 'لانثانوم', Lu: 'لوتيشيوم', Ru: 'روثينيوم' };
+  Mo: 'موليبدنوم', La: 'لانثانوم', Lu: 'لوتيشيوم', Ru: 'روثينيوم', Co: 'كوبالت', Rn: 'رادون', Po: 'بولونيوم', P: 'فوسفور', Pr: 'براسيوديميوم' };
 const TILE_COLORS = [['#ff8fab', '#e64980'], ['#ffc078', '#f76707'], ['#ffe066', '#e0a800'], ['#8ce99a', '#2f9e44'], ['#66d9e8', '#1098ad'], ['#91a7ff', '#4263eb'], ['#d0bfff', '#7048e8'], ['#fcc2d7', '#d6336c']];
 // ترتيب الورقة (24 استيكر)، والكلمات المفضلة مكررة
 const WORD_SHEET = ['Genius', 'Brain', 'Think', 'Bravo', 'Wow', 'Hero', 'Genius', 'Brain', 'Bravo', 'Life', 'Honey', 'Banana',
   'Think', 'Wow', 'Genius', 'Kind', 'Nice', 'Hearts', 'Brain', 'Bravo', 'Snack', 'Nora', 'Mona', 'Lulu'];
-function wordItems() {
+const FUN_SHEET = Array.from({ length: 24 }, (_, i) => ['Unicorn', 'Rainbow', 'Popcorn', 'Princess'][i % 4]);
+function wordItems(order = WORD_SHEET) {
   const pal = [C.pink, C.orange, C.indigo, C.green, C.teal, C.blue, C.purple, C.red];
-  return WORD_SHEET.map(w => WORDS.find(x => x[0] === w)).map(([word, els, ar], i) => {
-    const size = els.length === 2 ? 11.5 : els.length === 3 ? 9.4 : 7.6;
+  return order.map(w => WORDS.find(x => x[0] === w)).map(([word, els, ar], i) => {
+    const size = els.length === 2 ? 11.5 : els.length === 3 ? 9.4 : els.length === 4 ? 7.6 : 5.9;
     const tiles = els.map(([sym, z], j) => tile(sym, z, AR_NAME[sym], TILE_COLORS[(i + j * 3) % TILE_COLORS.length], size)).join('');
-    return { c: pal[Math.floor(i / 3) % pal.length], art: `<div class="tiles">${tiles}</div>`, small: true,
-      t: `<span dir="ltr" class="word">${word}</span>`, s: `<span dir="ltr" class="eq">${els.map(e => e[0]).join(' + ')}</span><br>${ar}` };
+    return { c: pal[Math.floor(i / 3) % pal.length], art: `<div class="tiles${els.length >= 5 ? ' tight' : ''}">${tiles}</div>`, small: true,
+      t: `<span dir="ltr" class="word${word.length >= 7 ? ' long' : ''}">${word}</span>`, s: `<span dir="ltr" class="eq${els.length >= 5 ? ' long' : ''}">${els.map(e => e[0]).join(' + ')}</span><br>${ar}` };
   });
 }
 
@@ -176,6 +181,7 @@ const SHEETS = [
     { c: C.blue, art: svg(IC.drop('#1c7ed6', '#74c0fc')), t: 'الماء سرّ الحياة', s: 'جسمك حوالي <span dir="ltr">60%</span> ماء', f: 'H2O' },
   ] },
   { name: 'كلمات من الجدول الدوري', unique: true, items: wordItems() },
+  { name: 'يونيكورن وقوس قزح', unique: true, items: wordItems(FUN_SHEET) },
 ];
 
 const formula = f => `<span class="formula" dir="ltr">${f.replace(/(\d+)/g, '<sub>$1</sub>')}</span>`;
@@ -247,6 +253,9 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
 .t{font-family:Lalezar;font-size:5.4mm;line-height:1.08}
 .t.sm{font-size:4.6mm}
 .word{font-family:Pop;font-weight:800;font-size:5mm;letter-spacing:.1mm}
+.word.long{font-size:4.1mm}
+.eq.long{font-size:2mm}
+.tiles.tight{gap:.6mm}
 .eq{font-family:Pop;font-weight:700;font-size:2.4mm;white-space:nowrap}
 .brush{height:.9mm;width:62%;margin:1mm auto .6mm;border-radius:1mm}
 .s{font-weight:800;font-size:2.7mm;line-height:1.35}
