@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إلكترونات التكافؤ</title>
+<style>
+@font-face{font-family:Lal;src:url(../assets/fonts/lalezar-arabic-400-normal.woff2)}
+@font-face{font-family:Lal;src:url(../assets/fonts/lalezar-latin-400-normal.woff2);unicode-range:U+0000-00FF}
+@font-face{font-family:Cai;font-weight:700;src:url(../assets/fonts/cairo-arabic-700-normal.woff2)}
+@font-face{font-family:Cai;font-weight:800;src:url(../assets/fonts/cairo-arabic-800-normal.woff2)}
+@font-face{font-family:Cai;font-weight:900;src:url(../assets/fonts/cairo-arabic-900-normal.woff2)}
+@font-face{font-family:Pop;font-weight:700;src:url(../assets/fonts/poppins-latin-700-normal.woff2)}
+@font-face{font-family:Pop;font-weight:800;src:url(../assets/fonts/poppins-latin-800-normal.woff2)}
+@font-face{font-family:Pop;font-weight:900;src:url(../assets/fonts/poppins-latin-800-normal.woff2)}
+html,body{margin:0;background:#1d1f3f;height:100%}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:Cai,Pop,sans-serif}
+canvas{width:min(100vw,calc((100vh - 60px)*16/9));aspect-ratio:16/9;display:block;border-radius:12px;cursor:pointer}
+#bar{width:min(100vw,calc((100vh - 60px)*16/9));display:flex;gap:12px;align-items:center;color:#fff;padding:0 16px;box-sizing:border-box}
+#bar input{flex:1}
+#bar button{font:inherit;font-weight:800;border:0;border-radius:999px;padding:6px 18px;background:#ffd23f;color:#2b2d5c;cursor:pointer}
+body.render{display:block}
+body.render canvas{width:1920px;height:1080px;border-radius:0}
+body.render #bar{display:none}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<div id="bar"><button id="pp">⏸</button><input id="seek" type="range" min="0" max="1000" value="0"><span id="tm">0:00</span></div>
+<script>
+'use strict';
+const W = 1920, H = 1080;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+// ---------- الألوان ----------
+const C = {
+  ink: '#2b2d5c', nuc: '#ff8fab', nucD: '#e0607f', e: '#5aa9ff', eD: '#2f6fc7',
+  v: '#ffd23f', vD: '#e09a00', lose: '#ff7b54', gain: '#1fb5a5', noble: '#9b7bff',
+  ring: '#8a93d6', white: '#ffffff', red: '#ff4d6d',
+};
+
+// ---------- أدوات الحركة ----------
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eo = p => 1 - Math.pow(1 - p, 3);
+const ei = p => p * p * p;
+const eio = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+const back = p => { const c1 = 1.9, c3 = c1 + 1; return p <= 0 ? 0 : 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
+const lerp = (a, b, p) => a + (b - a) * p;
+function hex(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mixc(a, b, p) { const A = hex(a), B = hex(b); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * clamp(p))).join(',') + ')'; }
+
+// ---------- أدوات الرسم ----------
+function font(size, kind = 'lal', w = 800) {
+  if (kind === 'lal') return `${size}px Lal, Pop, "Noto Color Emoji"`;
+  if (kind === 'num') return `900 ${size}px Pop, Lal`;
+  return `${w} ${size}px Cai, Pop, "Noto Color Emoji"`;
+}
+function txt(s, x, y, size, color = C.ink, o = {}) {
+  ctx.save();
+  ctx.globalAlpha *= (o.alpha ?? 1);
+  ctx.translate(x, y);
+  if (o.rot) ctx.rotate(o.rot);
+  if (o.scale !== undefined) ctx.scale(o.scale, o.scale);
+  ctx.font = font(size, o.kind || 'lal', o.w);
+  ctx.direction = o.ltr ? 'ltr' : 'rtl';
+  ctx.textAlign = o.align || 'center';
+  ctx.textBaseline = 'middle';
+  if (o.stroke) { ctx.lineJoin = 'round'; ctx.lineWidth = o.sw || size * .16; ctx.strokeStyle = o.stroke; ctx.strokeText(s, 0, o.dy || 0); }
+  ctx.fillStyle = color; ctx.fillText(s, 0, o.dy || 0);
+  ctx.restore();
+}
+function measure(s, size, kind = 'lal', w) { ctx.save(); ctx.font = font(size, kind, w); const m = ctx.measureText(s).width; ctx.restore(); return m; }
+function circle(x, y, r, fill, stroke, lw) {
+  ctx.beginPath(); ctx.arc(x, y, Math.max(0, r), 0, Math.PI * 2);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.stroke(); }
+}
+// بطاقة كرتونية بحد غامق وظل مسطّح
+function box(x, y, w, h, fill, o = {}) {
+  const r = o.r ?? 28, sc = o.scale ?? 1;
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  ctx.translate(x, y); if (o.rot) ctx.rotate(o.rot); ctx.scale(sc, sc);
+  if (o.glow) { ctx.shadowColor = o.glowColor || C.v; ctx.shadowBlur = 50 * o.glow; }
+  ctx.fillStyle = 'rgba(43,45,92,.9)';
+  ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2 + 10, w, h, r); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, r);
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.lineWidth = o.lw ?? 6; ctx.strokeStyle = C.ink; ctx.stroke();
+  if (o.dash) { ctx.setLineDash(o.dash); }
+  ctx.restore();
+}
+
+// ---------- الخلفية ----------
+function background(T) {
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#fff3fb'); g.addColorStop(.5, '#eef4ff'); g.addColorStop(1, '#e6fbf6');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // نقاط خفيفة
+  ctx.fillStyle = 'rgba(138,147,214,.16)';
+  for (let y = 30; y < H; y += 60) for (let x = 30 + ((y / 60) % 2) * 30; x < W; x += 60) { ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fill(); }
+  // فقاعات تطفو
+  const blobs = [[200, 260, 140, '#ffd6e5'], [1700, 200, 180, '#d8e6ff'], [1600, 880, 160, '#d4f7ee'], [320, 900, 120, '#fff1c4'], [980, 120, 90, '#eadfff']];
+  blobs.forEach(([bx, by, br, bc], i) => {
+    ctx.globalAlpha = .7;
+    circle(bx + Math.sin(T * .3 + i) * 30, by + Math.cos(T * .25 + i * 2) * 25, br, bc);
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ---------- وجه كرتوني ----------
+function face(x, y, r, mood = 'happy', T = 0) {
+  const blink = ((T + x * .001) % 3.4) < .12;
+  const ex = r * .34, ey = -r * .1, er = r * .13;
+  if (mood === 'cool') {
+    ctx.fillStyle = C.ink;
+    ctx.beginPath(); ctx.roundRect(-ex - er * 2.2 + x, ey - er * 1.5 + y, er * 4.4, er * 3, er); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(ex - er * 2.2 + x, ey - er * 1.5 + y, er * 4.4, er * 3, er); ctx.fill();
+    ctx.fillRect(x - ex + er * 2, y + ey - er * .5, (ex - er * 2) * 2, er * .7);
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.beginPath(); ctx.ellipse(x - ex - er, y + ey - er * .5, er * .6, er * .35, -.4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + ex - er, y + ey - er * .5, er * .6, er * .35, -.4, 0, 7); ctx.fill();
+  } else {
+    for (const sx of [-1, 1]) {
+      if (blink) { ctx.strokeStyle = C.ink; ctx.lineWidth = er * .6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x + sx * ex - er, y + ey); ctx.lineTo(x + sx * ex + er, y + ey); ctx.stroke(); }
+      else { circle(x + sx * ex, y + ey, er * (mood === 'wow' ? 1.25 : 1), C.ink); circle(x + sx * ex - er * .35, y + ey - er * .4, er * .4, '#fff'); }
+    }
+  }
+  // خدود
+  ctx.globalAlpha *= .5;
+  circle(x - r * .55, y + r * .2, r * .14, '#ff5d8f'); circle(x + r * .55, y + r * .2, r * .14, '#ff5d8f');
+  ctx.globalAlpha /= .5;
+  // فم
+  ctx.strokeStyle = C.ink; ctx.lineWidth = r * .09; ctx.lineCap = 'round';
+  if (mood === 'wow') { circle(x, y + r * .32, r * .13, C.ink); }
+  else if (mood === 'sad') { ctx.beginPath(); ctx.arc(x, y + r * .48, r * .2, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
+  else { ctx.beginPath(); ctx.arc(x, y + r * .12, r * .26, Math.PI * .15, Math.PI * .85); ctx.stroke(); }
+}
+function crown(x, y, s, alpha = 1) {
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(x, y); ctx.scale(s, s);
+  ctx.beginPath(); ctx.moveTo(-50, 25); ctx.lineTo(-58, -30); ctx.lineTo(-25, 0); ctx.lineTo(0, -42); ctx.lineTo(25, 0); ctx.lineTo(58, -30); ctx.lineTo(50, 25); ctx.closePath();
+  ctx.fillStyle = '#ffc93c'; ctx.fill(); ctx.lineWidth = 6; ctx.strokeStyle = C.ink; ctx.lineJoin = 'round'; ctx.stroke();
+  circle(0, -42, 8, '#ff5d8f', C.ink, 4); circle(-58, -30, 7, '#5aa9ff', C.ink, 4); circle(58, -30, 7, '#5aa9ff', C.ink, 4);
+  ctx.restore();
+}
+
+// ---------- الإلكترون ----------
+function electron(x, y, r, col, o = {}) {
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  if (o.glow > 0) {
+    const g = ctx.createRadialGradient(x, y, r * .5, x, y, r * 3);
+    g.addColorStop(0, `rgba(255,214,60,${.75 * o.glow})`); g.addColorStop(1, 'rgba(255,214,60,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 3, 0, 7); ctx.fill();
+  }
+  circle(x, y, r, col, C.ink, Math.max(2, r * .22));
+  circle(x - r * .35, y - r * .38, r * .28, 'rgba(255,255,255,.85)');
+  if (o.face) {
+    circle(x - r * .3, y + r * .02, r * .12, C.ink); circle(x + r * .3, y + r * .02, r * .12, C.ink);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = r * .1; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(x, y + r * .15, r * .24, Math.PI * .2, Math.PI * .8); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------- الذرة ----------
+// o: x,y,s,shells,T, ap[] (ظهور كل مستوى 0..1), nucP, dim, glow, slots (8 للاكتساب), incP, leaveN, leaveP, ringFade,
+//    charge, chargeP, tag, tagP, mood, crownP
+function shellR(i, s) { return (118 + i * 90) * s; }
+function atom(o) {
+  const s = o.s || 1, x = o.x, y = o.y, T = o.T || 0, sh = o.shells, L = sh.length;
+  const ap = o.ap || sh.map(() => 1), dim = o.dim || 0, glow = o.glow || 0;
+  const R = shellR(L - 1, s);
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  // الحلقات
+  for (let i = 0; i < L; i++) {
+    const outer = i === L - 1, r = shellR(i, s);
+    let a = eo(seg(ap[i], 0, .35));
+    if (outer) a *= 1 - (o.ringFade || 0);
+    if (a <= 0) continue;
+    ctx.save(); ctx.globalAlpha *= a * (outer ? 1 : 1 - .6 * dim);
+    if (outer && glow > 0) {
+      ctx.save(); ctx.globalAlpha *= glow * (.45 + .2 * Math.sin(T * 5));
+      ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 34 * s; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke(); ctx.restore();
+    }
+    ctx.strokeStyle = outer && glow > 0 ? mixc(C.ring, '#f0a000', glow) : C.ring;
+    ctx.lineWidth = (outer && glow > 0 ? 7 : 5) * s;
+    ctx.beginPath(); ctx.arc(x, y, r * (.6 + .4 * eo(seg(ap[i], 0, .35))), 0, 7); ctx.stroke();
+    ctx.restore();
+  }
+  // النواة
+  const nucP = o.nucP ?? 1;
+  if (nucP > 0) {
+    const nr = 62 * s * back(nucP);
+    const g = ctx.createRadialGradient(x - nr * .35, y - nr * .4, nr * .1, x, y, nr);
+    g.addColorStop(0, '#ffd0de'); g.addColorStop(1, C.nuc);
+    circle(x, y, nr, g, C.ink, 6 * s);
+    face(x, y, nr, o.mood || 'happy', T);
+  }
+  // الإلكترونات
+  for (let i = 0; i < L; i++) {
+    const outer = i === L - 1, r = shellR(i, s), n = sh[i];
+    const rot = T * (.45 / (1 + i * .6)) * (i % 2 ? -1 : 1) + i * .7 + (o.rot0 || 0);
+    const slots = outer && o.slots ? o.slots : n;
+    const leaveN = outer ? (o.leaveN || 0) : 0;
+    for (let k = 0; k < slots; k++) {
+      const ang = rot + k * Math.PI * 2 / slots - Math.PI / 2;
+      const cx = Math.cos(ang), cy = Math.sin(ang);
+      const th = .3 + .55 * k / slots;
+      const pk = back(seg(ap[i], th, th + .15));
+      const isV = outer;
+      const er = (isV ? 20 : 16) * s;
+      const col = isV ? mixc(C.e, C.v, glow) : C.e;
+      const alpha = outer ? 1 : 1 - .6 * dim;
+      if (k >= n) {
+        // خانة فارغة تنتظر إلكترون
+        if (pk <= 0) continue;
+        const pulse = 1 + .12 * Math.sin(T * 6 + k);
+        ctx.save(); ctx.globalAlpha *= pk * (o.slotA ?? 1);
+        ctx.setLineDash([7 * s, 6 * s]); ctx.lineWidth = 4 * s; ctx.strokeStyle = C.gain;
+        ctx.fillStyle = 'rgba(31,181,165,.12)';
+        ctx.beginPath(); ctx.arc(x + cx * r, y + cy * r, er * pulse, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
+        const j = k - n, pi = seg(o.incP || 0, j * .22, j * .22 + .55);
+        if (pi > 0) {
+          const d = r + (1 - eo(pi)) * 900;
+          const wob = (1 - pi) * .6;
+          electron(x + Math.cos(ang + wob) * d, y + Math.sin(ang + wob) * d, er, C.v, { glow: 1, face: true });
+        }
+        continue;
+      }
+      if (pk <= 0) continue;
+      if (leaveN && k >= n - leaveN) {
+        const lk = k - (n - leaveN), pl = seg(o.leaveP || 0, lk * .18, lk * .18 + .62);
+        const d = r + ei(pl) * 950 + Math.sin(pl * 9) * 10 * (pl > 0 ? 1 : 0);
+        electron(x + cx * d, y + cy * d, er * (1 + .2 * Math.sin(pl * 3.14)), col, { glow, alpha: alpha * (1 - pl * pl), face: glow > .5 });
+        continue;
+      }
+      electron(x + cx * r, y + cy * r, er * pk, col, { glow: isV ? glow : 0, alpha, face: isV && glow > .5 });
+    }
+  }
+  if (nucP > 0 && o.crownP > 0) crown(x, y - 62 * s * back(nucP) - 22 * s, .9 * s * back(o.crownP), clamp(o.crownP * 3));
+  // الشحنة
+  if (o.charge && o.chargeP > 0) {
+    const p = back(o.chargeP), bx = x + R * .78, by = y - R * .78;
+    ctx.save(); ctx.translate(bx, by); ctx.scale(p, p);
+    circle(0, 0, 52, o.chargeCol || C.lose, C.ink, 6);
+    txt(o.charge, 0, 4, 54, '#fff', { kind: 'num', ltr: true, stroke: C.ink, sw: 8 });
+    ctx.restore();
+  }
+  // اسم العنصر
+  if (o.tag && (o.tagP ?? 1) > 0) {
+    const p = back(o.tagP ?? 1), ty = y + R + 58 * s;
+    const w = measure(o.tag, 44, 'cai', 800) + 70;
+    box(x, ty, w, 78, '#fff', { scale: p, r: 39 });
+    txt(o.tag, x, ty + 2, 44, C.ink, { kind: 'cai', w: 800, scale: p });
+  }
+  ctx.restore();
+}
+
+// ---------- عناصر مساعدة ----------
+function stamp(s, x, y, size, color, p, o = {}) {
+  if (p <= 0) return;
+  const sc = lerp(2.3, 1, eo(clamp(p * 1.4))), a = clamp(p * 3);
+  const w = measure(s, size, 'lal') + 90, h = size * 1.55;
+  ctx.save(); ctx.globalAlpha *= a; ctx.translate(x, y); ctx.rotate(o.rot ?? -.05); ctx.scale(sc, sc);
+  box(0, 0, w, h, color, { r: 26, glow: o.glow ?? .8, glowColor: color });
+  txt(s, 0, size * .06, size, '#fff', { stroke: C.ink, sw: size * .14 });
+  ctx.restore();
+}
+function pillText(s, x, y, size, fill, p = 1, o = {}) {
+  if (p <= 0) return;
+  const w = (o.w || measure(s, size, o.kind || 'cai', 800)) + (o.pad ?? 70), h = size * 1.75;
+  box(x, y, w, h, fill, { scale: back(p), r: h / 2, alpha: clamp(p * 3), lw: o.lw });
+  txt(s, x, y + size * .04, size, o.color || C.ink, { kind: o.kind || 'cai', w: 800, scale: back(p), alpha: clamp(p * 3) });
+}
+function arrow(x1, y1, x2, y2, color, lw, p = 1) {
+  if (p <= 0) return;
+  const ex = lerp(x1, x2, eo(p)), ey = lerp(y1, y2, eo(p)), a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const [c, w] of [[C.ink, lw + 10], [color, lw]]) {
+    ctx.strokeStyle = c; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex - Math.cos(a - .5) * lw * 2.6, ey - Math.sin(a - .5) * lw * 2.6); ctx.lineTo(ex, ey);
+    ctx.lineTo(ex - Math.cos(a + .5) * lw * 2.6, ey - Math.sin(a + .5) * lw * 2.6); ctx.stroke();
+  }
+  ctx.restore();
+}
+function sparkles(x, y, rad, T, p, color = '#ffc93c') {
+  if (p <= 0) return;
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4 + T * .5, d = rad * (.8 + .3 * Math.sin(T * 3 + i));
+    const sx = x + Math.cos(a) * d, sy = y + Math.sin(a) * d, sz = 16 * eo(p) * (.7 + .3 * Math.sin(T * 6 + i * 2));
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(T + i); ctx.fillStyle = color; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let k = 0; k < 8; k++) { const rr = k % 2 ? sz * .4 : sz; ctx.lineTo(Math.cos(k * Math.PI / 4) * rr, Math.sin(k * Math.PI / 4) * rr); }
+    ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+}
+// بطاقة المجموعة: رقم كبير مع إمكانية حذف خانة العشرات «1»
+function groupCard(x, y, w, h, num, color, p = 1, o = {}) {
+  if (p <= 0) return;
+  const sc = back(p);
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+  box(0, 0, w, h, '#fff', { r: 34, glow: o.glow || 0, glowColor: color });
+  ctx.save(); ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 34); ctx.clip();
+  ctx.fillStyle = color; ctx.fillRect(-w / 2, -h / 2, w, h * .2); ctx.restore();
+  ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 34); ctx.lineWidth = 6; ctx.strokeStyle = C.ink; ctx.stroke();
+  txt('المجموعة', 0, -h / 2 + h * .1, h * .1, '#fff', { kind: 'cai', w: 900 });
+  const size = o.size || h * .5, cy = o.dots ? h * .04 : h * .1;
+  const str = String(num);
+  if (str.length === 2 && o.dropP !== undefined) dropNumber(str[0], str[1], 0, cy, size, o.dropP, o.T || 0);
+  else txt(str, 0, cy, size, C.ink, { kind: 'num', ltr: true });
+  if (o.dots) dots(0, h / 2 - h * .14, o.dots, h * .045, o.dotsGlow ?? 1);
+  ctx.restore();
+}
+function dots(x, y, n, r, glow) {
+  const per = Math.min(n, 4), rows = Math.ceil(n / 4), gap = r * 2.7;
+  for (let k = 0; k < n; k++) {
+    const row = Math.floor(k / 4), inRow = row === rows - 1 ? n - row * 4 : 4, col = k % 4;
+    electron(x + (col - (inRow - 1) / 2) * gap, y + (row - (rows - 1) / 2) * gap * .95 - (rows - 1) * 0, r, C.v, { glow: glow * .5 });
+  }
+}
+function dropNumber(d1, d2, x, y, size, p, T) {
+  const w1 = measure(d1, size, 'num'), w2 = measure(d2, size, 'num'), tot = w1 + w2;
+  const left = x - tot / 2;
+  const shake = seg(p, 0, .3), fly = seg(p, .3, .7), cen = eio(seg(p, .55, 1));
+  // الواحد يرتجف ثم يطير
+  if (fly < 1) {
+    const jx = shake > 0 && fly === 0 ? Math.sin(T * 60) * 8 * shake : 0;
+    const fx = left + w1 / 2 + jx - 320 * fly, fy = y - 420 * fly + 520 * fly * fly;
+    txt(d1, fx, fy, size, mixc(C.ink, C.red, shake), { kind: 'num', ltr: true, rot: -fly * 2.4, alpha: 1 - fly * fly, scale: 1 + shake * .12 });
+    if (shake > 0 && fly < .2) {
+      ctx.save(); ctx.globalAlpha *= shake * (1 - fly * 5); ctx.strokeStyle = C.red; ctx.lineWidth = 12; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(fx - w1 * .7, fy - size * .35); ctx.lineTo(fx + w1 * .7, fy + size * .35); ctx.stroke(); ctx.restore();
+    }
+  }
+  const x2 = lerp(left + w1 + w2 / 2, x, cen);
+  txt(d2, x2, y, size, mixc(C.ink, '#ff7b00', cen), { kind: 'num', ltr: true, scale: 1 + .25 * cen, stroke: cen > 0 ? '#ffe9a8' : null, sw: 14 * cen });
+}
+
+// ---------- المشاهد ----------
+// كل مشهد: d مدته، f(t,T) رسمه بالزمن المحلي، caps: [بداية، نهاية، نص]
+const S = [];
+
+// 1) المقدمة
+S.push({ d: 7, caps: [[1.2, 6.8, 'يلّا نتعرّف على إلكترونات التكافؤ وعدد التكافؤ ✨']], f(t, T) {
+  const bob = Math.sin(t * 2.4) * 14;
+  atom({ x: 960, y: 400 + bob, s: .95, shells: [2, 4], T, nucP: seg(t, 0, .8), ap: [seg(t, .3, 1.5), seg(t, .7, 2.2)], glow: seg(t, 2.6, 3.4) });
+  sparkles(960, 400 + bob, 330, T, seg(t, 2.6, 3.4));
+  const p = back(seg(t, 1, 2));
+  txt('إلكترونات التكافؤ', 960, 800, 150, '#ffd23f', { scale: p, stroke: C.ink, sw: 26, alpha: clamp(p) });
+} });
+
+// 2) النموذج الذري للصوديوم
+S.push({ d: 22, caps: [
+  [.3, 5, 'هذي ذرة الصوديوم Na… في وسطها النواة'],
+  [5, 9.5, 'والإلكترونات تدور حول النواة في مستويات'],
+  [9.5, 14.5, 'ركّزي على المستوى الأخير… هو الأبعد عن النواة'],
+  [14.5, 21.8, 'إلكترونات هذا المستوى اسمها: إلكترونات التكافؤ'],
+], f(t, T) {
+  const dim = seg(t, 9.5, 10.5), glow = seg(t, 9.5, 10.5);
+  atom({ x: 690, y: 500, s: 1, shells: [2, 8, 1], T, nucP: seg(t, 0, .9), ap: [seg(t, 1.5, 3.2), seg(t, 3.6, 5.6), seg(t, 6, 7.4)], dim, glow, tag: 'Na · الصوديوم', tagP: seg(t, .8, 1.6) });
+  sparkles(690 + shellR(2, 1) * Math.cos(T * .45 / 2.2 + 1.4 - Math.PI / 2), 500 + shellR(2, 1) * Math.sin(T * .45 / 2.2 + 1.4 - Math.PI / 2), 50, T, glow);
+  const rows = [['المستوى الأول', '2', 1.8], ['المستوى الثاني', '8', 3.9], ['المستوى الأخير', '1', 6.3]];
+  rows.forEach(([lab, n, at], i) => {
+    const p = seg(t, at, at + .6), y = 330 + i * 150, last = i === 2;
+    const fill = last ? mixc('#ffffff', '#ffe066', glow) : '#fff';
+    box(1440, y, 640, 116, fill, { scale: back(p), alpha: clamp(p * 3) * (last ? 1 : 1 - .5 * dim), glow: last ? glow : 0 });
+    if (p <= 0) return;
+    ctx.save(); ctx.globalAlpha *= clamp(p * 3) * (last ? 1 : 1 - .5 * dim);
+    txt(lab, 1580, y + 4, 52, C.ink, { scale: back(p) });
+    electron(1240, y, 40 * back(p), last ? mixc(C.e, C.v, glow) : C.e, { glow: last ? glow : 0 });
+    txt(n, 1240, y + 3, 50, last && glow > .5 ? C.ink : '#fff', { kind: 'num', ltr: true, scale: back(p), stroke: last && glow > .5 ? null : C.eD, sw: 8 });
+    ctx.restore();
+  });
+  arrow(1110, 630, 1000, 560, '#ffc93c', 16, seg(t, 10.2, 11));
+  // اللافتة
+  const bp = seg(t, 14.5, 15.3);
+  if (bp > 0) {
+    box(960, 105, 1500, 130, '#ffd23f', { scale: back(bp), alpha: clamp(bp * 3), glow: 1 });
+    txt('إلكترونات التكافؤ = إلكترونات المستوى الأخير', 960, 112, 76, C.ink, { scale: back(bp), alpha: clamp(bp * 3) });
+  }
+  stamp('الصوديوم عنده 1 إلكترون تكافؤ', 1440, 810, 54, C.lose, seg(t, 17.5, 18.5));
+} });
+
+// 3) مثال الكلور
+S.push({ d: 10, caps: [[.3, 4.5, 'مثال ثاني: ذرة الكلور Cl'], [4.5, 9.8, 'مستواها الأخير فيه 7 إلكترونات ← 7 إلكترونات تكافؤ']], f(t, T) {
+  const glow = seg(t, 3.3, 4.2);
+  atom({ x: 690, y: 480, s: 1, shells: [2, 8, 7], T, nucP: seg(t, 0, .7), ap: [seg(t, .4, 1.4), seg(t, 1, 2.2), seg(t, 1.8, 3.2)], dim: glow, glow, tag: 'Cl · الكلور', tagP: seg(t, .6, 1.3) });
+  const p = seg(t, 1.2, 1.8);
+  txt('التوزيع الإلكتروني', 1430, 260, 64, C.ink, { alpha: clamp(p * 3) });
+  ['2', '8', '7'].forEach((n, i) => {
+    const x = 1630 - i * 200, last = i === 2, q = seg(t, 1.4 + i * .5, 1.9 + i * .5);
+    box(x, 430, 160, 160, last ? mixc('#ffffff', '#ffe066', glow) : '#fff', { scale: back(q) * (last ? 1 + .12 * glow : 1), alpha: clamp(q * 3), glow: last ? glow : 0 });
+    txt(n, x, 438, 100, C.ink, { kind: 'num', ltr: true, scale: back(q) * (last ? 1 + .12 * glow : 1), alpha: clamp(q * 3) * (last ? 1 : 1 - .45 * glow) });
+  });
+  arrow(1230, 560, 1230, 640, '#ffc93c', 14, seg(t, 4, 4.6));
+  stamp('7 إلكترونات تكافؤ', 1430, 740, 66, C.gain, seg(t, 4.6, 5.6));
+} });
+
+// 4) الاستقرار وتعريف عدد التكافؤ
+S.push({ d: 13, caps: [[.3, 4.5, 'كل ذرة تبي تستقر… يعني يصير مستواها الأخير 8 إلكترونات'], [4.5, 8.5, 'عشان كذا الذرة يا تفقد إلكترونات… يا تكتسب إلكترونات'], [8.5, 12.8, 'وعدد هذي الإلكترونات اسمه: عدد التكافؤ']], f(t, T) {
+  atom({ x: 520, y: 450, s: 1.1, shells: [2, 8], T, nucP: seg(t, 0, .7), ap: [seg(t, .2, 1), seg(t, .5, 1.8)], glow: seg(t, 1.8, 2.5), crownP: seg(t, 2.2, 2.9), mood: 'cool' });
+  sparkles(520, 450, 300, T, seg(t, 2, 2.8));
+  txt('حلم كل ذرة ✨', 1310, 210, 92, C.noble, { scale: back(seg(t, .6, 1.3)), stroke: '#fff', sw: 14 });
+  const p2 = seg(t, 1.3, 2);
+  pillText('8 إلكترونات في المستوى الأخير', 1310, 340, 54, '#ffe066', p2);
+  // تفقد / تكتسب
+  const q = seg(t, 4.5, 5.2), q2 = seg(t, 5.3, 6);
+  if (q > 0) {
+    box(1560, 560, 420, 170, '#ffe1d6', { scale: back(q) });
+    txt('تفقد', 1600, 564, 80, C.lose, { scale: back(q), stroke: C.ink, sw: 10 });
+    const fl = (t * .9) % 1;
+    electron(1450 - fl * 70, 560, 24, C.v, { alpha: (1 - .7 * fl) * clamp(q * 3), glow: 1, face: true });
+    arrow(1470, 600, 1395, 600, C.lose, 10, q);
+  }
+  if (q2 > 0) {
+    box(1060, 560, 420, 170, '#d3f5f0', { scale: back(q2) });
+    txt('تكتسب', 1100, 564, 80, C.gain, { scale: back(q2), stroke: C.ink, sw: 10 });
+    const fl = (t * .9) % 1;
+    electron(880 + fl * 70, 560, 24, C.v, { alpha: (.3 + .7 * fl) * clamp(q2 * 3), glow: 1, face: true });
+    arrow(870, 600, 945, 600, C.gain, 10, q2);
+  }
+  const b = seg(t, 8.5, 9.3);
+  if (b > 0) {
+    box(1310, 800, 1060, 170, '#fff', { scale: back(b), alpha: clamp(b * 3), glow: .7, glowColor: C.noble });
+    txt('عدد التكافؤ =', 1310, 760, 60, C.noble, { scale: back(b), alpha: clamp(b * 3) });
+    txt('عدد الإلكترونات التي تفقدها الذرة أو تكتسبها', 1310, 840, 48, C.ink, { kind: 'cai', w: 900, scale: back(b), alpha: clamp(b * 3) });
+  }
+} });
+
+// 5) بطاقات المجموعات
+const GROUPS = [1, 2, 13, 14, 15, 16, 17, 18];
+const gx = i => 109 + 95 + i * 216;
+const gcol = g => g <= 14 ? C.lose : g <= 17 ? C.gain : C.noble;
+S.push({ d: 11, caps: [[.3, 4.5, 'هذي مجموعات الجدول الدوري… وكم إلكترون تكافؤ في كل وحدة'], [4.5, 10.8, 'المجموعات 1 و2 و13 و14 تفقد… و15 و16 و17 تكتسب… و18 مستقرة']], f(t, T) {
+  txt('عدد إلكترونات التكافؤ في كل مجموعة', 960, 120, 70, C.ink, { alpha: clamp(seg(t, 0, .6) * 3), stroke: '#fff', sw: 12 });
+  GROUPS.forEach((g, i) => {
+    const p = seg(t, .4 + i * .22, 1 + i * .22), c = seg(t, 4.5, 5.3);
+    groupCard(gx(i), 420, 190, 300, g, mixc('#8a93d6', gcol(g), c), p, { size: 110, dots: i + 1 });
+  });
+  const br = [[0, 3, 'تفقد', C.lose, 4.6], [4, 6, 'تكتسب', C.gain, 5.6], [7, 7, 'مستقرة', C.noble, 6.6]];
+  br.forEach(([a, b, lab, col, at]) => {
+    const p = seg(t, at, at + .7); if (p <= 0) return;
+    const x1 = gx(a) - 90, x2 = gx(b) + 90, y = 615;
+    ctx.save(); ctx.globalAlpha *= clamp(p * 3); ctx.strokeStyle = col; ctx.lineWidth = 12; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x1, y + 30); ctx.lineTo(lerp(x1, x2, eo(p)), y + 30); ctx.stroke();
+    if (p > .95) { ctx.beginPath(); ctx.moveTo(x2, y + 30); ctx.lineTo(x2, y); ctx.stroke(); }
+    ctx.restore();
+    pillText(lab, (x1 + x2) / 2, 735, 54, col, seg(t, at + .4, at + 1), { color: '#fff', kind: 'lal' });
+  });
+} });
+
+// 6) مشهد الفقد (المجموعتان 1 و2)
+function loseScene(o) {
+  return { d: o.d, caps: o.caps, f(t, T) {
+    const glow = seg(t, 1.6, 2.3), lp = seg(t, 3.6, 6.4);
+    atom({ x: 620, y: 460, s: o.s, shells: o.shells, T, nucP: seg(t, 0, .7), ap: o.shells.map((_, i) => seg(t, .2 + i * .3, 1.4 + i * .3)),
+      dim: glow * .6, glow, leaveN: o.n, leaveP: lp, ringFade: seg(t, 6, 6.8), charge: o.charge, chargeP: seg(t, 6.6, 7.3), chargeCol: C.lose,
+      tag: o.tag, tagP: seg(t, .6, 1.3), mood: lp > .05 && lp < .9 ? 'wow' : 'happy' });
+    if (lp > .02 && lp < .95) txt('باي باي 👋', 620 + shellR(o.shells.length - 1, o.s) + 120, 230, 52, C.lose, { alpha: Math.sin(lp * Math.PI), stroke: '#fff', sw: 10 });
+    pillText('المجموعة ' + o.g, 1380, 150, 60, C.lose, seg(t, .3, .9), { color: '#fff', kind: 'lal' });
+    pillText(o.l1, 1380, 310, 50, '#fff', seg(t, 1.8, 2.4));
+    pillText(o.l2, 1380, 450, 50, '#ffe1d6', seg(t, 3.8, 4.4));
+    stamp('تكافؤها = ' + o.n, 1380, 640, 92, C.lose, seg(t, 7.3, 8.3));
+    o.members.forEach((m, i) => pillText(m, 1380 + (i - (o.members.length - 1) / 2) * 150, 810, 50, '#fff', seg(t, 8.6 + i * .2, 9.1 + i * .2), { kind: 'num', pad: 60 }));
+  } };
+}
+S.push(loseScene({ d: 12, g: 1, n: 1, shells: [2, 1], s: 1.15, tag: 'Li · الليثيوم', charge: '+', l1: 'عندها 1 إلكترون تكافؤ', l2: 'تفقده عشان تستقر', members: ['Li', 'Na', 'K'],
+  caps: [[.3, 3.5, 'المجموعة 1: مثل الليثيوم Li'], [3.5, 7.2, 'عندها إلكترون واحد في المستوى الأخير… وتفقده بسهولة!'], [7.2, 11.8, 'فقدت 1 ← إذن تكافؤ المجموعة 1 = 1']] }));
+S.push(loseScene({ d: 12, g: 2, n: 2, shells: [2, 8, 2], s: .95, tag: 'Mg · المغنيسيوم', charge: '2+', l1: 'عندها 2 إلكترون تكافؤ', l2: 'تفقدهم عشان تستقر', members: ['Be', 'Mg', 'Ca'],
+  caps: [[.3, 3.5, 'المجموعة 2: مثل المغنيسيوم Mg'], [3.5, 7.2, 'عندها إلكترونين في المستوى الأخير… وتفقدهم'], [7.2, 11.8, 'فقدت 2 ← إذن تكافؤ المجموعة 2 = 2']] }));
+
+// 7) المجموعتان 13 و14: نشيل الواحد
+function dropScene(o) {
+  return { d: o.d, caps: o.caps, f(t, T) {
+    const glow = seg(t, 1, 1.7), lp = o.lose ? seg(t, 6.2, 8.6) : 0;
+    atom({ x: 560, y: 450, s: o.s, shells: o.shells, T, nucP: seg(t, 0, .7), ap: o.shells.map((_, i) => seg(t, .2 + i * .3, 1.2 + i * .3)),
+      dim: glow * .6, glow, leaveN: o.lose ? o.n : 0, leaveP: lp, ringFade: o.lose ? seg(t, 8.2, 8.9) : 0,
+      charge: o.charge, chargeP: o.lose ? seg(t, 8.7, 9.3) : 0, tag: o.tag, tagP: seg(t, .6, 1.3), mood: lp > .05 && lp < .9 ? 'wow' : 'happy' });
+    const dp = seg(t, 2, 5);
+    groupCard(1360, 400, 560, 470, o.g, C.lose, seg(t, .2, .9), { size: 260, dropP: dp, T, glow: seg(t, 4.4, 5) });
+    if (dp > .3 && dp < .75) txt('نشيل الواحد ✂️', 1360, 110, 56, C.red, { alpha: Math.sin(seg(dp, .3, .75) * Math.PI), stroke: '#fff', sw: 10 });
+    stamp('تكافؤها = ' + o.n, 1360, 760, 92, C.lose, seg(t, 5.2, 6.1));
+    if (o.note) pillText(o.note, 1360, 880, 38, '#fff', seg(t, 6.6, 7.2));
+  } };
+}
+S.push(dropScene({ d: 11, g: 13, n: 3, shells: [2, 8, 3], s: .92, tag: 'Al · الألومنيوم', charge: '3+', lose: true,
+  caps: [[.3, 2, 'المجموعة 13… سرّها بسيط!'], [2, 5.2, 'نشيل الواحد… يبقى 3'], [5.2, 10.8, 'إذن تكافؤ المجموعة 13 = 3 (تفقد 3 إلكترونات)']] }));
+S.push(dropScene({ d: 10, g: 14, n: 4, shells: [2, 4], s: 1.12, tag: 'C · الكربون', note: 'المستوى الأخير فيه 4 إلكترونات تكافؤ',
+  caps: [[.3, 2, 'والمجموعة 14 نفس الحركة'], [2, 5.2, 'نشيل الواحد… يبقى 4'], [5.2, 9.8, 'إذن تكافؤ المجموعة 14 = 4']] }));
+
+// 8) المجموعات 15 و16 و17: تكتسب
+S.push({ d: 11, caps: [[.3, 3.6, 'أما المجموعات 15 و16 و17… هذي تكتسب إلكترونات!'], [3.6, 7, 'هنا نخلّي الواحد… ونتكلم عن 5 و6 و7'], [7, 10.8, 'والسؤال: كم باقي على كل رقم عشان يصير 8؟']], f(t, T) {
+  pillText('هذي تكتسب إلكترونات', 960, 130, 64, C.gain, seg(t, .2, .8), { color: '#fff', kind: 'lal' });
+  [15, 16, 17].forEach((g, i) => {
+    groupCard(1360 - i * 400, 470, 330, 400, g, C.gain, seg(t, .5 + i * .25, 1.1 + i * .25), { size: 170, dropP: seg(t, 3.6 + i * .3, 6 + i * .3), T });
+  });
+  const p = seg(t, 7, 7.8);
+  if (p > 0) {
+    box(960, 820, 520, 150, '#ffe066', { scale: back(p), glow: 1 });
+    txt('الهدف: 8 🎯', 960, 826, 80, C.ink, { scale: back(p) });
+  }
+} });
+
+// 9) مشهد الاكتساب
+function gainScene(o) {
+  const need = 8 - o.n;
+  return { d: o.d, caps: o.caps, f(t, T) {
+    const ip = seg(t, 8, 10.2);
+    atom({ x: 590, y: 440, s: 1.15, shells: o.shells, T, nucP: seg(t, 0, .7), ap: [seg(t, .2, 1.2), seg(t, .5, 2)], glow: seg(t, 1.2, 1.9), dim: .4,
+      slots: 8, incP: ip, slotA: seg(t, 3, 3.6), charge: o.charge, chargeP: seg(t, 10.3, 10.9), chargeCol: C.gain, tag: o.tag, tagP: seg(t, .6, 1.3),
+      mood: ip > .02 && ip < .98 ? 'wow' : 'happy' });
+    pillText('المجموعة ' + o.g, 1380, 130, 58, C.gain, seg(t, .3, .9), { color: '#fff', kind: 'lal' });
+    // صف الخانات الثماني (من اليمين لليسار)
+    for (let k = 0; k < 8; k++) {
+      const x = 1700 - k * 92, y = 320, p = seg(t, 1.6 + k * .08, 2.1 + k * .08);
+      if (p <= 0) continue;
+      const filled = k < o.n, fillP = filled ? 1 : seg(ip, (k - o.n) * .22, (k - o.n) * .22 + .55);
+      ctx.save(); ctx.globalAlpha *= clamp(p * 3); ctx.translate(x, y); ctx.scale(back(p), back(p));
+      ctx.beginPath(); ctx.roundRect(-38, -38, 76, 76, 16);
+      ctx.fillStyle = filled ? '#fff7d1' : 'rgba(31,181,165,.1)'; ctx.fill();
+      if (!filled) ctx.setLineDash([9, 7]);
+      ctx.lineWidth = 5; ctx.strokeStyle = filled ? C.ink : C.gain; ctx.stroke(); ctx.setLineDash([]);
+      if (filled) electron(0, 0, 22, C.v, { glow: .4 });
+      else if (fillP > 0) electron(0, -60 * (1 - eo(fillP)), 22 * eo(fillP), C.v, { glow: 1, face: true });
+      ctx.restore();
+      if (!filled) {
+        const j = k - o.n, cp = seg(t, 4 + j * .8, 4.5 + j * .8);
+        if (cp > 0) {
+          circle(x, y - 80, 30 * back(cp), C.gain, C.ink, 5);
+          txt(String(j + 1), x, y - 77, 36, '#fff', { kind: 'num', ltr: true, scale: back(cp) });
+        }
+      }
+    }
+    txt('عندها ' + o.n, 1700 - (o.n - 1) * 46, 410, 40, C.ink, { kind: 'cai', w: 900, alpha: clamp(seg(t, 2.4, 3) * 3) });
+    txt('باقي ' + need, 1700 - (o.n + (need - 1) / 2) * 92, 410, 40, C.gain, { kind: 'cai', w: 900, alpha: clamp(seg(t, 4.4 + need * .8, 5 + need * .8) * 3) });
+    // المعادلة 8 − 5 = 3
+    const ep = seg(t, 6.2, 7.6);
+    if (ep > 0) {
+      const toks = ['8', '−', String(o.n), '=', String(need)], cols = [C.noble, C.ink, C.v, C.ink, C.gain];
+      toks.forEach((s, i) => {
+        const p = seg(ep, i * .17, i * .17 + .35);
+        txt(s, 1110 + i * 130, 560, 130, cols[i], { kind: 'num', ltr: true, scale: back(p), alpha: clamp(p * 3), stroke: i % 2 ? null : C.ink, sw: 14 });
+      });
+    }
+    stamp('تكافؤها = ' + need, 1380, 760, 92, C.gain, seg(t, 10.6, 11.5));
+    o.members && o.members.forEach((m, i) => pillText(m, 1380 + (i - 1) * 150, 900, 44, '#fff', seg(t, 11.6 + i * .2, 12 + i * .2), { kind: 'num', pad: 56 }));
+  } };
+}
+S.push(gainScene({ d: 13.5, g: 15, n: 5, shells: [2, 5], tag: 'N · النيتروجين', charge: '3−', members: ['N', 'P', 'As'],
+  caps: [[.3, 3.8, 'المجموعة 15: مثل النيتروجين N… عنده 5 إلكترونات تكافؤ'], [3.8, 7.8, 'كم باقي على الخمسة عشان تصير 8؟ … 3!'], [7.8, 13.3, 'يكتسب 3 ← إذن تكافؤ المجموعة 15 = 3']] }));
+S.push(gainScene({ d: 13, g: 16, n: 6, shells: [2, 6], tag: 'O · الأكسجين', charge: '2−', members: ['O', 'S', 'Se'],
+  caps: [[.3, 3.8, 'المجموعة 16: مثل الأكسجين O… عنده 6 إلكترونات تكافؤ'], [3.8, 7.8, 'كم باقي على الستة عشان تصير 8؟ … 2!'], [7.8, 12.8, 'يكتسب 2 ← إذن تكافؤ المجموعة 16 = 2']] }));
+S.push(gainScene({ d: 13, g: 17, n: 7, shells: [2, 7], tag: 'F · الفلور', charge: '−', members: ['F', 'Cl', 'Br'],
+  caps: [[.3, 3.8, 'المجموعة 17: مثل الفلور F… عنده 7 إلكترونات تكافؤ'], [3.8, 7.8, 'كم باقي على السبعة عشان تصير 8؟ … 1!'], [7.8, 12.8, 'يكتسب 1 ← إذن تكافؤ المجموعة 17 = 1']] }));
+
+// 10) الغازات النبيلة
+S.push({ d: 12, caps: [[.3, 4, 'وأخيراً المجموعة 18: الغازات النبيلة 👑'], [4, 8, 'مستواها الأخير مكتمل… ما تحتاج تفقد ولا تكتسب'], [8, 11.8, 'عشان كذا هي مستقرة… وتكافؤها صفر']], f(t, T) {
+  atom({ x: 600, y: 450, s: 1.15, shells: [2, 8], T, nucP: seg(t, 0, .7), ap: [seg(t, .2, 1.2), seg(t, .5, 2)], glow: seg(t, 2, 2.7), crownP: seg(t, 2.6, 3.3), mood: t > 2.6 ? 'cool' : 'happy', tag: 'Ne · النيون', tagP: seg(t, .6, 1.3) });
+  sparkles(600, 450, 320, T, seg(t, 2.6, 3.3), '#c9b8ff');
+  pillText('المجموعة 18', 1380, 130, 58, C.noble, seg(t, .3, .9), { color: '#fff', kind: 'lal' });
+  txt('الغازات النبيلة', 1380, 280, 100, C.noble, { scale: back(seg(t, .8, 1.5)), stroke: '#fff', sw: 16 });
+  pillText('المستوى الأخير مكتمل ✔', 1380, 420, 50, '#fff', seg(t, 4, 4.6));
+  pillText('ما تفقد ولا تكتسب ← مستقرة', 1380, 540, 50, '#efe9ff', seg(t, 5.4, 6));
+  stamp('تكافؤها = صفر', 1380, 730, 92, C.noble, seg(t, 8, 9));
+  pillText('(الهيليوم He مكتمل بإلكترونين فقط)', 1380, 880, 36, '#fff', seg(t, 9.5, 10.1));
+} });
+
+// 11) الخلاصة
+const VAL = [1, 2, 3, 4, 3, 2, 1, 0];
+S.push({ d: 16, caps: [[.3, 5, 'الخلاصة: 1 و2 و13 و14 تفقد ← تكافؤها 1، 2، 3، 4'], [5, 10, 'و15 و16 و17 تكتسب ← 8 ناقص العدد: 3، 2، 1'], [10, 15.8, 'و18 مستقرة ← صفر. لاحظي: يصعد لين 4 وبعدين ينزل! ⛰️']], f(t, T) {
+  txt('الخلاصة', 960, 70, 84, C.ink, { scale: back(seg(t, 0, .6)), stroke: '#fff', sw: 14 });
+  const base = 760, unit = 115;
+  [['تفقد', 0, 3, C.lose, 0.5], ['تكتسب', 4, 6, C.gain, 5], ['مستقرة', 7, 7, C.noble, 10]].forEach(([l, a, b, c, at]) =>
+    pillText(l, (gx(a) + gx(b)) / 2, 175, 46, c, seg(t, at, at + .6), { color: '#fff', kind: 'lal' }));
+  const tops = [];
+  GROUPS.forEach((g, i) => {
+    const at = i < 4 ? .8 + i * .7 : i < 7 ? 5.4 + (i - 4) * .9 : 10.4;
+    const p = eo(seg(t, at, at + .8)), h = VAL[i] * unit * p, x = gx(i), col = gcol(g);
+    tops.push([x, base - VAL[i] * unit, seg(t, at, at + .8)]);
+    if (h > 0) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(43,45,92,.9)'; ctx.beginPath(); ctx.roundRect(x - 75 + 8, base - h + 8, 150, h, [24, 24, 0, 0]); ctx.fill();
+      ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x - 75, base - h, 150, h, [24, 24, 0, 0]); ctx.fill();
+      ctx.lineWidth = 6; ctx.strokeStyle = C.ink; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(x - 55, base - h + 16, 18, Math.max(0, h - 32));
+      ctx.restore();
+    }
+    const lp = seg(t, at + .5, at + 1.1);
+    if (lp > 0) {
+      circle(x, base - h - 55, 44 * back(lp), '#fff', C.ink, 6);
+      txt(String(VAL[i]), x, base - h - 52, 56, col, { kind: 'num', ltr: true, scale: back(lp) });
+    }
+    box(x, base + 60, 170, 76, '#fff', { r: 20, alpha: clamp(seg(t, 0, .8) * 3) });
+    txt(String(g), x, base + 64, 46, C.ink, { kind: 'num', ltr: true, alpha: clamp(seg(t, 0, .8) * 3) });
+  });
+  ctx.fillStyle = C.ink; ctx.fillRect(110, base - 3, 1700, 6);
+  // خط الجبل
+  const lp = seg(t, 12, 14);
+  if (lp > 0) {
+    ctx.save(); ctx.setLineDash([16, 12]); ctx.lineWidth = 7; ctx.strokeStyle = '#ffc93c'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    const n = lp * 7;
+    tops.forEach(([x, y], i) => { if (i <= n) i ? ctx.lineTo(x, y - 110) : ctx.moveTo(x, y - 110); });
+    const k = Math.floor(n); if (k < 7) ctx.lineTo(lerp(tops[k][0], tops[k + 1][0], n - k), lerp(tops[k][1], tops[k + 1][1], n - k) - 110);
+    ctx.stroke(); ctx.restore();
+  }
+} });
+
+// 12) الخاتمة
+S.push({ d: 7, caps: [[.6, 6.8, 'الحين صرتِ تعرفين إلكترونات التكافؤ وعدد التكافؤ 💪']], f(t, T) {
+  const bob = Math.sin(t * 3) * 16;
+  atom({ x: 960, y: 380 + bob, s: .9, shells: [2, 8], T, nucP: seg(t, 0, .6), ap: [seg(t, .1, .9), seg(t, .3, 1.4)], glow: 1, crownP: seg(t, 1, 1.6) });
+  sparkles(960, 380 + bob, 300, T, seg(t, .8, 1.4));
+  txt('أحسنتِ يا بطلة! 🌟', 960, 790, 140, '#ffd23f', { scale: back(seg(t, .8, 1.6)), stroke: C.ink, sw: 24 });
+} });
+
+// ---------- الخط الزمني ----------
+let acc = 0; for (const sc of S) { sc.start = acc; acc += sc.d; }
+const TOTAL = acc;
+
+function caption(s, p) {
+  if (p <= 0) return;
+  const size = 50, w = measure(s, size, 'cai', 900) + 110, y = 1000 + (1 - eo(p)) * 30;
+  ctx.save(); ctx.globalAlpha *= clamp(p);
+  box(960, y, w, 108, 'rgba(255,255,255,.96)', { r: 54, lw: 5 });
+  txt(s, 960, y + 3, size, C.ink, { kind: 'cai', w: 900 });
+  ctx.restore();
+}
+function renderFrame(T) {
+  T = clamp(T, 0, TOTAL - 1e-3);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
+  background(T);
+  const sc = S.find(s => T >= s.start && T < s.start + s.d) || S[S.length - 1];
+  const t = T - sc.start;
+  ctx.save();
+  ctx.globalAlpha = seg(t, 0, .35) * (1 - seg(t, sc.d - .35, sc.d));
+  sc.f(t, T);
+  for (const [a, b, s] of sc.caps || []) if (t >= a && t < b) caption(s, Math.min(seg(t, a, a + .3), 1 - seg(t, b - .25, b)));
+  ctx.restore();
+  // شريط التقدم
+  ctx.fillStyle = 'rgba(43,45,92,.12)'; ctx.fillRect(0, H - 8, W, 8);
+  ctx.fillStyle = '#ffc93c'; ctx.fillRect(W - W * T / TOTAL, H - 8, W * T / TOTAL, 8);
+}
+
+// ---------- التشغيل ----------
+const params = new URLSearchParams(location.search);
+async function loadFonts() {
+  const specs = ['40px Lal', '800 40px Cai', '900 40px Cai', '900 40px Pop', '700 40px Pop'];
+  await Promise.all(specs.flatMap(s => [document.fonts.load(s, 'إلكترون'), document.fonts.load(s, 'Na 123')]));
+  await document.fonts.ready;
+}
+window.TOTAL = TOTAL;
+window.renderFrame = renderFrame;
+window.ready = loadFonts().then(() => true);
+
+if (params.has('render')) {
+  document.body.classList.add('render');
+} else {
+  let playing = true, T0 = performance.now(), off = 0, cur = 0;
+  const seek = document.getElementById('seek'), pp = document.getElementById('pp'), tm = document.getElementById('tm');
+  const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  const toggle = () => { playing = !playing; if (playing) { off = cur; T0 = performance.now(); } pp.textContent = playing ? '⏸' : '▶'; };
+  pp.onclick = toggle; cv.onclick = toggle;
+  seek.oninput = () => { cur = off = seek.value / 1000 * TOTAL; T0 = performance.now(); renderFrame(cur); };
+  window.ready.then(() => {
+    (function loop() {
+      if (playing) { cur = off + (performance.now() - T0) / 1000; if (cur >= TOTAL) { off = 0; T0 = performance.now(); cur = 0; } }
+      renderFrame(cur); seek.value = cur / TOTAL * 1000; tm.textContent = fmt(cur) + ' / ' + fmt(TOTAL);
+      requestAnimationFrame(loop);
+    })();
+  });
+}
+</script>
+</body>
+</html>
