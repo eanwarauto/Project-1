@@ -15,6 +15,10 @@ const PAGE = { w: 210, h: 297 };
 const MX = (PAGE.w - LABEL.w * LABEL.cols) / 2, MY = (PAGE.h - LABEL.h * LABEL.rows) / 2;
 // المسافة الآمنة: التصميم يبعد عن حافة الاستيكر بهذا المقدار حتى لا يخرج عنه إذا انزاحت الطباعة قليلاً
 const SAFE = { x: 4.5, y: 3.2 };
+// تصغير التصميم داخل الاستيكر ورفعه قليلاً، ليبقى بعيداً عن الحواف حتى لو انزاحت الطباعة
+const CARD_SCALE = parseFloat(process.env.CARD_SCALE || '0.75');
+const SHIFT_UP = parseFloat(process.env.SHIFT_UP || '2');
+const CARD_T = `translateY(${-SHIFT_UP}mm) scale(${CARD_SCALE})`;
 
 // تعويض تصغير/إزاحة الطابعة: تُقاس الأرقام بالمسطرة على «ورقة القياس» المطبوعة ثم تُمرَّر هكذا:
 // TOP=9 HEIGHT=272 LEFT=15.5 WIDTH=176 node src/stickers.js
@@ -187,7 +191,7 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
 .calbox td,.calbox th{border:.3mm solid #adb5bd;padding:1.5mm 2.5mm;text-align:right}
 .calbox td:last-child{width:28mm}
 .label{width:${LABEL.w}mm;height:${LABEL.h}mm;padding:${SAFE.y}mm ${SAFE.x}mm;position:relative}
-.card{width:100%;height:100%;border:.6mm solid;border-radius:5mm;display:flex;align-items:center;gap:1.5mm;padding:0 2.6mm 0 3mm;position:relative;overflow:hidden;direction:rtl}
+.card{width:100%;height:100%;border:.6mm solid;border-radius:5mm;display:flex;align-items:center;gap:1.5mm;padding:0 2.6mm 0 3mm;position:relative;overflow:hidden;direction:rtl;transform:${CARD_T}}
 .txt{flex:1;text-align:center;min-width:0}
 .t{font-family:Lalezar;font-size:5.4mm;line-height:1.08}
 .t.sm{font-size:4.6mm}
@@ -204,7 +208,7 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
 .spark{position:absolute;font-size:2.6mm;top:1.2mm;left:24mm;opacity:.8}
 .spark.s2{top:auto;bottom:1.1mm;left:auto;right:2mm;font-size:2mm}
 .test{border:.25mm solid #000}
-.test .safe{position:absolute;inset:${SAFE.y}mm ${SAFE.x}mm;border:.3mm dashed #e8665d;border-radius:5mm}
+.test .safe{position:absolute;inset:${SAFE.y}mm ${SAFE.x}mm;border:.3mm dashed #e8665d;border-radius:5mm;transform:${CARD_T}}
 .test span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 6mm Pop;color:#adb5bd}
 .note{position:absolute;left:8mm;right:8mm;bottom:${Math.max(.5, MY / 2 - 2.5)}mm;font:700 2.3mm/1.3 Cairo;color:#495057;text-align:center;direction:rtl}
 `;
