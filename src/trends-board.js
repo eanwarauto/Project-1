@@ -127,7 +127,7 @@ function board() {
     ['نصف القطر الذري', -1, +1],
     ['طاقة التأين', +1, -1],
     ['السالبية الكهربائية', +1, -1],
-    ['الصفة الفلزية', -1, +1],
+    ['الميل الإلكتروني', +1, -1],
   ];
   const tag = v => v > 0
     ? `<span style="display:inline-flex;align-items:center;gap:10px;background:#e3f6e8;color:#1f8a46;border-radius:40px;padding:2px 26px">▲ يزيد</span>`

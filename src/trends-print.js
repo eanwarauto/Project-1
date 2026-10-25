@@ -87,7 +87,7 @@ const PROPS = [
   ['نصف القطر الذري', -1, +1, '#ff6b6b'],
   ['طاقة التأين', +1, -1, '#f2b600'],
   ['السالبية الكهربائية', +1, -1, '#12b886'],
-  ['الصفة الفلزية', -1, +1, '#845ef7'],
+  ['الميل الإلكتروني', +1, -1, '#845ef7'],
 ];
 const trend = v => v > 0 ? `<span class="tr up">▲ تزداد</span>` : `<span class="tr down">▼ تقل</span>`;
 function propCard([name, period, group, hue]) {
