@@ -38,7 +38,7 @@ const FIX = `translate(${-ox / sx}mm,${-oy / sy}mm) scale(${1 / sx},${1 / sy})`;
 const COMPENSATED = ['TOP', 'HEIGHT', 'LEFT', 'WIDTH'].some(k => process.env[k]);
 
 // ---------- أيقونات (SVG بإطار 64×64) ----------
-const svg = (body, s = 20) => `<svg width="${s}mm" height="${s}mm" viewBox="0 0 64 64">${body}</svg>`;
+const svg = (body, s = 20) => `<svg width="${s}mm" height="${s}mm" viewBox="0 0 64 64" style="direction:ltr">${body}</svg>`;
 const IC = {
   flask: (c1, c2) => `<path d="M24 6h16M27 6v18L11 52c-2 5 1 8 6 8h30c5 0 8-3 6-8L37 24V6" fill="#fff" stroke="${c1}" stroke-width="3.5" stroke-linejoin="round"/>
     <path d="M16 44h32l5 9c1 4-1 6-5 6H16c-4 0-6-2-5-6Z" fill="${c2}"/><circle cx="26" cy="50" r="2.5" fill="#fff" opacity=".8"/><circle cx="36" cy="47" r="1.8" fill="#fff" opacity=".8"/>
@@ -74,6 +74,57 @@ const IC = {
   drop: (c1, c2) => `<path d="M32 4C22 20 14 30 14 40a18 18 0 0 0 36 0C50 30 42 20 32 4Z" fill="${c2}" stroke="${c1}" stroke-width="3"/><path d="M24 40a8 8 0 0 0 8 9" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>`,
   bolt: (c1, c2) => `<circle cx="32" cy="32" r="27" fill="${c2}" opacity=".25"/><path d="M36 6L16 36h14l-4 22l22-32H34Z" fill="${c2}" stroke="${c1}" stroke-width="3" stroke-linejoin="round"/>`,
   moon: (c1, c2) => `<path d="M40 6a26 26 0 1 0 18 40A21 21 0 0 1 40 6Z" fill="${c2}" stroke="${c1}" stroke-width="3"/><circle cx="50" cy="14" r="2.5" fill="${c1}"/><circle cx="56" cy="26" r="1.8" fill="${c1}"/><path d="M14 8l1.5 4l4 1.5l-4 1.5l-1.5 4l-1.5-4l-4-1.5l4-1.5Z" fill="${c1}"/>`,
+  // ---- القهوة والشاي ----
+  mug: (c1, c2) => `<path d="M22 15c-3-3 3-5 0-9M30 15c-3-3 3-5 0-9M38 15c-3-3 3-5 0-9" fill="none" stroke="${c1}" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+    <path d="M44 27h4a7 7 0 0 1 0 14h-4" fill="none" stroke="${c1}" stroke-width="3.2"/>
+    <path d="M12 22h32v22c0 8-6 14-14 14h-4c-8 0-14-6-14-14Z" fill="#fff" stroke="${c1}" stroke-width="3.2"/>
+    <ellipse cx="28" cy="24" rx="14" ry="3.6" fill="${c2}"/>
+    <path d="M28 26.4c-2-1.4-3.4-2.3-3.4-3.6a1.7 1.7 0 0 1 3.4-.4a1.7 1.7 0 0 1 3.4.4c0 1.3-1.4 2.2-3.4 3.6Z" fill="#f6e7d4"/>
+    <path d="M18 40h20" stroke="${c2}" stroke-width="2.4" stroke-linecap="round" opacity=".35"/>`,
+  beans: (c1, c2) => `<g transform="rotate(-25 24 36)"><ellipse cx="24" cy="36" rx="11" ry="15" fill="${c2}" stroke="${c1}" stroke-width="2.6"/><path d="M24 22c-5 8 5 20 0 28" fill="none" stroke="${c1}" stroke-width="2.6"/></g>
+    <g transform="rotate(25 44 26)"><ellipse cx="44" cy="26" rx="9" ry="12.5" fill="${c2}" stroke="${c1}" stroke-width="2.6"/><path d="M44 14.5c-4 7 4 16 0 23" fill="none" stroke="${c1}" stroke-width="2.6"/></g>
+    <path d="M50 46l1.4 3.6l3.6 1.4l-3.6 1.4l-1.4 3.6l-1.4-3.6l-3.6-1.4l3.6-1.4Z" fill="${c1}"/>`,
+  aroma: (c1, c2) => `<path d="M22 30c-6-6 6-9 0-16c-4-5 2-9 4-10M34 30c-6-6 6-9 0-16M46 22c-3-3 3-5 0-9" fill="none" stroke="${c2}" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="30" cy="56" rx="22" ry="4" fill="${c2}" opacity=".45"/>
+    <path d="M44 39h3a5 5 0 0 1 0 10h-4" fill="none" stroke="${c1}" stroke-width="3"/>
+    <path d="M14 36h30v6c0 7-6 12-13 12h-4c-7 0-13-5-13-12Z" fill="#fff" stroke="${c1}" stroke-width="3"/>`,
+  phBar: (c1) => `<defs><linearGradient id="phg" x1="0" x2="1"><stop offset="0" stop-color="#e03131"/><stop offset=".2" stop-color="#ff922b"/><stop offset=".36" stop-color="#fcc419"/><stop offset=".5" stop-color="#51cf66"/><stop offset=".66" stop-color="#22b8cf"/><stop offset=".82" stop-color="#4263eb"/><stop offset="1" stop-color="#7048e8"/></linearGradient></defs>
+    <rect x="4" y="28" width="56" height="11" rx="5.5" fill="url(#phg)"/>
+    <path d="M24 25l-4.5-9h9Z" fill="${c1}"/><text x="24" y="12" text-anchor="middle" font-family="Pop" font-weight="800" font-size="9" fill="${c1}">pH 5</text>
+    <text x="5" y="50" font-family="Pop" font-weight="700" font-size="7" fill="${c1}">0</text><text x="32" y="50" text-anchor="middle" font-family="Pop" font-weight="700" font-size="7" fill="${c1}">7</text><text x="59" y="50" text-anchor="end" font-family="Pop" font-weight="700" font-size="7" fill="${c1}">14</text>`,
+  sleepy: (c1, c2) => `<path d="M36 10a24 24 0 1 0 18 38A20 20 0 0 1 36 10Z" fill="${c2}" stroke="${c1}" stroke-width="3"/>
+    <text x="40" y="22" font-family="Pop" font-weight="800" font-size="13" fill="${c1}">z</text><text x="50" y="12" font-family="Pop" font-weight="800" font-size="9" fill="${c1}">z</text>
+    <path d="M14 52l12-12" stroke="#c92a2a" stroke-width="4" stroke-linecap="round"/><path d="M14 40l12 12" stroke="#c92a2a" stroke-width="4" stroke-linecap="round"/>`,
+  teaGlass: (c1, c2) => `<path d="M26 8c-2-2 2-3.5 0-6M34 8c-2-2 2-3.5 0-6" fill="none" stroke="${c1}" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+    <ellipse cx="32" cy="56" rx="20" ry="4.5" fill="#fff" stroke="${c1}" stroke-width="2.6"/>
+    <path d="M19.6 16C21 24 25 27 25 32C25 38 21.6 42 22.6 51H41.4C42.4 42 39 38 39 32C39 27 43 24 44.4 16Z" fill="${c2}"/>
+    <path d="M18 10C20 22 24 26 24 32C24 38 20 42 21 52H43C44 42 40 38 40 32C40 26 44 22 46 10" fill="none" stroke="${c1}" stroke-width="2.8" stroke-linejoin="round"/>
+    <path d="M18 10H46" stroke="#e0a800" stroke-width="2.6"/><path d="M23 20c1 4 3 6 3 9" stroke="#fff" stroke-width="2" fill="none" opacity=".6" stroke-linecap="round"/>`,
+  teapot: (c1, c2) => `<path d="M15 36c-6 0-9-6-11-11" fill="none" stroke="${c1}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M49 28c9 0 9 17 0 17" fill="none" stroke="${c1}" stroke-width="4"/>
+    <path d="M14 32c0-8 8-12 18-12s18 4 18 12v8c0 8-8 13-18 13s-18-5-18-13Z" fill="${c2}" stroke="${c1}" stroke-width="3"/>
+    <path d="M23 20c0-5 18-5 18 0Z" fill="${c1}"/><circle cx="32" cy="12.5" r="3" fill="${c1}"/>
+    <path d="M16 37h32" stroke="#fff" stroke-width="2.2" opacity=".7"/><circle cx="24" cy="44" r="1.6" fill="#fff" opacity=".8"/><circle cx="32" cy="45" r="1.6" fill="#fff" opacity=".8"/><circle cx="40" cy="44" r="1.6" fill="#fff" opacity=".8"/>`,
+  leaf: (c1, c2) => `<path d="M8 56C8 32 24 12 54 8C54 36 38 56 8 56Z" fill="${c2}" stroke="${c1}" stroke-width="3"/>
+    <path d="M8 56L44 20M22 42l-3-11M30 34l-2-11M24 40l11 2M32 32l11 2" stroke="${c1}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  twoLeaves: () => `<path d="M6 54C6 34 18 18 36 14C36 36 26 52 6 54Z" fill="#8ce99a" stroke="#2f9e44" stroke-width="2.8"/><path d="M6 54L28 26" stroke="#2f9e44" stroke-width="2" fill="none"/>
+    <path d="M28 58C28 38 40 22 58 18C58 40 48 56 28 58Z" fill="#c2410c" stroke="#7c2d12" stroke-width="2.8"/><path d="M28 58L50 30" stroke="#7c2d12" stroke-width="2" fill="none"/>`,
+  lemon: (c1, c2) => `<circle cx="32" cy="32" r="25" fill="#fff3a6" stroke="${c1}" stroke-width="3"/><circle cx="32" cy="32" r="20" fill="${c2}"/>
+    ${Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<path d="M32 32L${32 + 20 * Math.cos(a)} ${32 + 20 * Math.sin(a)}" stroke="#fffbe6" stroke-width="2.4"/>`; }).join('')}<circle cx="32" cy="32" r="3" fill="#fffbe6"/>`,
+  caffeine: (c1, c2, bg) => {
+    const L = (a, b, w = 2.3) => `<path d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" stroke="${c1}" stroke-width="${w}" stroke-linecap="round"/>`;
+    const D = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), ox = -dy / l * 1.3, oy = dx / l * 1.3;
+      return L([a[0] + ox, a[1] + oy], [b[0] + ox, b[1] + oy]) + L([a[0] - ox, a[1] - oy], [b[0] - ox, b[1] - oy]); };
+    const I = (a, b, c) => { const m = t => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], p = m(.2), q = m(.8), k = 2.6 / Math.hypot(c[0] - (a[0] + b[0]) / 2, c[1] - (a[1] + b[1]) / 2);
+      const sh = v => [v[0] + (c[0] - (a[0] + b[0]) / 2) * k, v[1] + (c[1] - (a[1] + b[1]) / 2) * k]; return L(sh(p), sh(q)); };
+    const N1 = [12.5, 28.5], C6 = [22, 23], C5 = [31.5, 28.5], C4 = [31.5, 39.5], N3 = [22, 45], C2 = [12.5, 39.5];
+    const N7 = [42, 25.1], C8 = [48.4, 34], N9 = [42, 42.9], hex = [22, 34], pent = [39, 34];
+    const lab = (pt, t, col) => `<circle cx="${pt[0]}" cy="${pt[1]}" r="4" fill="${bg}"/><text x="${pt[0]}" y="${pt[1] + 3}" text-anchor="middle" font-family="Pop" font-weight="800" font-size="8.4" fill="${col}">${t}</text>`;
+    return `<g transform="translate(6 1)">${L(N1, C6) + L(C6, C5) + L(C5, C4) + I(C5, C4, hex) + L(C4, N3) + L(N3, C2) + L(C2, N1)
+      + L(C5, N7) + L(N7, C8) + L(C8, N9) + I(C8, N9, pent) + L(N9, C4)
+      + D(C6, [22, 14.5]) + D(C2, [5, 43.8]) + L(N1, [5, 24.2]) + L(N3, [22, 53.5]) + L(N7, [45.5, 16.5])}
+      ${lab(N1, 'N', c2) + lab(N3, 'N', c2) + lab(N7, 'N', c2) + lab(N9, 'N', c2) + lab([22, 12.5], 'O', '#e03131') + lab([4, 44.5], 'O', '#e03131')}</g>`;
+  },
   smile: (c1, c2) => `<circle cx="32" cy="32" r="26" fill="${c2}" stroke="${c1}" stroke-width="3"/><circle cx="23" cy="26" r="3.5" fill="${c1}"/><circle cx="41" cy="26" r="3.5" fill="${c1}"/><path d="M19 38c4 9 22 9 26 0" fill="none" stroke="${c1}" stroke-width="3.5" stroke-linecap="round"/>`,
 };
 
@@ -90,6 +141,14 @@ const C = {
   teal: { bg: '#e9faf7', ring: '#20a99a', ink: '#0d5c54', a: '#12b886', b: '#fab005' },
   red: { bg: '#fff1f0', ring: '#e8665d', ink: '#8c221b', a: '#e8665d', b: '#ff8787' },
   indigo: { bg: '#eff0ff', ring: '#5c62d6', ink: '#262a7a', a: '#5c62d6', b: '#ffd43b' },
+  coffee: { bg: '#f8efe6', ring: '#8b5a3c', ink: '#4a2a17' },
+  latte: { bg: '#fff6ea', ring: '#c08552', ink: '#5c3a21' },
+  mocha: { bg: '#f3ebe6', ring: '#6f4e37', ink: '#3d2618' },
+  caramel: { bg: '#fff3e0', ring: '#d9822b', ink: '#6b3a0a' },
+  tea: { bg: '#fff1ec', ring: '#b5462f', ink: '#6e1f12' },
+  greenTea: { bg: '#f1f8ec', ring: '#5b8c3a', ink: '#2f4d1c' },
+  lemon: { bg: '#fffbe6', ring: '#d9a800', ink: '#6b5200' },
+  amber: { bg: '#fff4e6', ring: '#c56a1c', ink: '#6a3408' },
 };
 const TILE = {
   ar: ['#ff8fab', '#e64980'], he: ['#ffd8a8', '#ff922b'], au: ['#ffe066', '#e0a800'], o: ['#a5d8ff', '#339af0'],
@@ -208,6 +267,26 @@ const SHEETS = [
   ] },
   { name: 'كلمات من الجدول الدوري', unique: true, items: wordItems() },
   { name: 'يونيكورن وقوس قزح', unique: true, items: wordItems(FUN_SHEET) },
+  { name: 'كيمياء القهوة', items: [
+    { c: C.coffee, art: svg(IC.caffeine('#4a2a17', '#1c7ed6', '#f8efe6'), 22), t: 'الكافيين', s: 'منبّه طبيعي يزيد اليقظة', f: 'C8H10N4O2' },
+    { c: C.latte, art: `<div class="tiles">${['C', 'H', 'N', 'O'].map((e, i) => tile(e, [6, 1, 7, 8][i], '', [['#d4a373', '#8b5a3c'], ['#e9c46a', '#c08552'], ['#a3b18a', '#588157'], ['#e5989b', '#b5838d']][i], 6.4)).join('')}</div>`, t: 'سرّ الكافيين', s: 'يتكوّن من 4 عناصر فقط', small: true },
+    { c: C.mocha, art: svg(IC.mug('#6f4e37', '#7f5539')), t: 'كوب قهوتي', s: 'فيه حوالي 95 ملغ كافيين<br>(لكل 240 مل)' },
+    { c: C.caramel, art: svg(IC.beans('#5c3a21', '#a0673f')), t: 'تفاعل ميلارد', s: 'سرّ لون القهوة ورائحتها<br>عند التحميص' },
+    { c: C.coffee, art: svg(IC.aroma('#8b5a3c', '#c9a27e')), t: 'رائحة القهوة', s: 'أكثر من 800 مركب عطري!' },
+    { c: C.latte, art: svg(IC.hex('#8b5a3c', '#e5989b')), t: 'الكلوروجينيك', s: 'مضاد أكسدة في القهوة', f: 'C16H18O9', small: true },
+    { c: C.mocha, art: svg(IC.sleepy('#6f4e37', '#ffe8a3')), t: 'وداعاً للنعاس', s: 'الكافيين يحجب الأدينوسين<br>مادة النعاس في الدماغ' },
+    { c: C.caramel, art: svg(IC.phBar('#6b3a0a'), 21), t: 'القهوة حمضية', s: 'قيمة <span dir="ltr">pH</span> لها حوالي 5' },
+  ] },
+  { name: 'كيمياء الشاي', items: [
+    { c: C.tea, art: svg(IC.teaGlass('#7a2614', '#c0392b')), t: 'الثيين = الكافيين', s: 'نفس المركّب باسم آخر!', f: 'C8H10N4O2', small: true },
+    { c: C.greenTea, art: svg(IC.leaf('#2f6b1f', '#8bc34a')), t: 'الثيانين', s: 'يساعد على الهدوء والاسترخاء', f: 'C7H14N2O3' },
+    { c: C.lemon, art: svg(IC.lemon('#d9a800', '#ffe066')), t: 'الشاي كاشف طبيعي', s: 'الليمون الحمضي يفتّح لونه', small: true },
+    { c: C.amber, art: svg(IC.twoLeaves()), t: 'نفس النبتة!', s: 'الشاي الأخضر غير مؤكسد<br>والأحمر مؤكسد' },
+    { c: C.greenTea, art: svg(IC.hex('#2f6b1f', '#8bc34a')), t: 'الكاتيكينات', s: 'مضادات أكسدة أشهرها <span dir="ltr">EGCG</span>', f: 'C22H18O11', small: true },
+    { c: C.tea, art: `<div class="tiles">${tile('K', 19, '', ['#ffa8a8', '#e03131'], 8.6)}${tile('Mn', 25, '', ['#b197fc', '#7048e8'], 8.6)}${tile('F', 9, '', ['#8ce99a', '#2f9e44'], 8.6)}</div>`, t: 'عناصر في الشاي', s: 'بوتاسيوم، منغنيز، فلور', small: true, },
+    { c: C.amber, art: svg(IC.teapot('#7a2614', '#e8590c')), t: 'كوب شاي', s: 'فيه حوالي 47 ملغ كافيين<br>(لكل 240 مل)' },
+    { c: C.lemon, art: svg(IC.teaGlass('#7a2614', '#d9480f')), t: 'التانينات', s: 'سرّ الطعم القابض<br>في الشاي' },
+  ] },
   { name: 'أفكار للاختيار', unique: true, preview: true, items: wordItems(IDEAS).map((d, i) => ({ ...d, n: i + 1 })) },
 ];
 
