@@ -128,16 +128,42 @@ const WORDS = [
   ['Rainbow', [['Ra', 88], ['In', 49], ['B', 5], ['O', 8], ['W', 74]], 'قوس قزح'],
   ['Popcorn', [['Po', 84], ['P', 15], ['Co', 27], ['Rn', 86]], 'فشار'],
   ['Princess', [['Pr', 59], ['In', 49], ['Ce', 58], ['S', 16], ['S', 16]], 'أميرة'],
+  ['Physics', [['P', 15], ['H', 1], ['Y', 39], ['Si', 14], ['Cs', 55]], 'فيزياء'],
+  ['Flask', [['F', 9], ['La', 57], ['S', 16], ['K', 19]], 'دورق'],
+  ['Bunsen', [['B', 5], ['U', 92], ['N', 7], ['Se', 34], ['N', 7]], 'موقد بنسن'],
+  ['Carbon', [['C', 6], ['Ar', 18], ['B', 5], ['O', 8], ['N', 7]], 'كربون'],
+  ['Neon', [['Ne', 10], ['O', 8], ['N', 7]], 'نيون'],
+  ['Books', [['B', 5], ['O', 8], ['O', 8], ['K', 19], ['S', 16]], 'كتب'],
+  ['Notes', [['N', 7], ['O', 8], ['Te', 52], ['S', 16]], 'ملاحظات'],
+  ['Bunny', [['B', 5], ['U', 92], ['N', 7], ['N', 7], ['Y', 39]], 'أرنوب'],
+  ['Pink', [['P', 15], ['In', 49], ['K', 19]], 'وردي'],
+  ['Iris', [['Ir', 77], ['I', 53], ['S', 16]], 'زهرة السوسن'],
+  ['Moon', [['Mo', 42], ['O', 8], ['N', 7]], 'قمر'],
+  ['Sunny', [['S', 16], ['U', 92], ['N', 7], ['N', 7], ['Y', 39]], 'مشمس'],
+  ['Choco', [['C', 6], ['Ho', 67], ['Co', 27]], 'شوكولا'],
+  ['Sushi', [['S', 16], ['U', 92], ['S', 16], ['H', 1], ['I', 53]], 'سوشي'],
+  ['Lunch', [['Lu', 71], ['N', 7], ['C', 6], ['H', 1]], 'غداء'],
+  ['Chef', [['C', 6], ['He', 2], ['F', 9]], 'طبّاخ'],
+  ['Win', [['W', 74], ['In', 49]], 'فوز'],
+  ['Spark', [['S', 16], ['P', 15], ['Ar', 18], ['K', 19]], 'تألّق'],
+  ['Cute', [['C', 6], ['U', 92], ['Te', 52]], 'لطيف'],
+  ['Bonbon', [['B', 5], ['O', 8], ['Nb', 41], ['O', 8], ['N', 7]], 'حلوى'],
+  ['Noura', [['N', 7], ['O', 8], ['U', 92], ['Ra', 88]], 'نورة'],
+  ['Amal', [['Am', 95], ['Al', 13]], 'أمل'],
+  ['Nawal', [['Na', 11], ['W', 74], ['Al', 13]], 'نوال'],
+  ['Lina', [['Li', 3], ['Na', 11]], 'لينا'],
 ];
 const AR_NAME = { Ge: 'جرمانيوم', Ni: 'نيكل', U: 'يورانيوم', S: 'كبريت', B: 'بورون', Ra: 'راديوم', In: 'إنديوم', Th: 'ثوريوم', K: 'بوتاسيوم',
   H: 'هيدروجين', Er: 'إربيوم', O: 'أكسجين', V: 'فاناديوم', W: 'تنجستن', Li: 'ليثيوم', Fe: 'حديد', Ho: 'هولميوم', Ne: 'نيون', Y: 'إتريوم',
   Ba: 'باريوم', Na: 'صوديوم', Ca: 'كالسيوم', Re: 'رينيوم', I: 'يود', Nd: 'نيوديميوم', Ce: 'سيريوم', He: 'هيليوم', Ar: 'أرجون', Ts: 'تينيسين',
   Es: 'أينشتاينيوم', F: 'فلور', N: 'نيتروجين', Te: 'تيلوريوم', Am: 'أمريسيوم', Si: 'سيليكون', Sn: 'قصدير', Ac: 'أكتينيوم', No: 'نوبليوم',
-  Mo: 'موليبدنوم', La: 'لانثانوم', Lu: 'لوتيشيوم', Ru: 'روثينيوم', Co: 'كوبالت', Rn: 'رادون', Po: 'بولونيوم', P: 'فوسفور', Pr: 'براسيوديميوم' };
+  Mo: 'موليبدنوم', La: 'لانثانوم', Lu: 'لوتيشيوم', Ru: 'روثينيوم', Co: 'كوبالت', Rn: 'رادون', Po: 'بولونيوم', P: 'فوسفور', Pr: 'براسيوديميوم', Cs: 'سيزيوم', Se: 'سيلينيوم', Ir: 'إيريديوم', Nb: 'نيوبيوم', Al: 'ألومنيوم' };
 const TILE_COLORS = [['#ff8fab', '#e64980'], ['#ffc078', '#f76707'], ['#ffe066', '#e0a800'], ['#8ce99a', '#2f9e44'], ['#66d9e8', '#1098ad'], ['#91a7ff', '#4263eb'], ['#d0bfff', '#7048e8'], ['#fcc2d7', '#d6336c']];
 // ترتيب الورقة (24 استيكر)، والكلمات المفضلة مكررة
 const WORD_SHEET = ['Genius', 'Brain', 'Think', 'Bravo', 'Wow', 'Hero', 'Genius', 'Brain', 'Bravo', 'Life', 'Honey', 'Banana',
   'Think', 'Wow', 'Genius', 'Kind', 'Nice', 'Hearts', 'Brain', 'Bravo', 'Snack', 'Nora', 'Mona', 'Lulu'];
+const IDEAS = ['Physics', 'Flask', 'Bunsen', 'Carbon', 'Neon', 'Books', 'Notes', 'Bunny', 'Pink', 'Iris', 'Moon', 'Sunny',
+  'Choco', 'Sushi', 'Lunch', 'Chef', 'Win', 'Spark', 'Cute', 'Bonbon', 'Noura', 'Amal', 'Nawal', 'Lina'];
 const FUN_SHEET = Array.from({ length: 24 }, (_, i) => ['Unicorn', 'Rainbow', 'Popcorn', 'Princess'][i % 4]);
 function wordItems(order = WORD_SHEET) {
   const pal = [C.pink, C.orange, C.indigo, C.green, C.teal, C.blue, C.purple, C.red];
@@ -182,13 +208,14 @@ const SHEETS = [
   ] },
   { name: 'كلمات من الجدول الدوري', unique: true, items: wordItems() },
   { name: 'يونيكورن وقوس قزح', unique: true, items: wordItems(FUN_SHEET) },
+  { name: 'أفكار للاختيار', unique: true, preview: true, items: wordItems(IDEAS).map((d, i) => ({ ...d, n: i + 1 })) },
 ];
 
 const formula = f => `<span class="formula" dir="ltr">${f.replace(/(\d+)/g, '<sub>$1</sub>')}</span>`;
 function sticker(d) {
   const { c } = d;
   return `<div class="label"><div class="card" style="background:${c.bg};border-color:${c.ring}">
-    <div class="spark" style="color:${c.ring}">✦</div><div class="spark s2" style="color:${c.ring}">✦</div>
+    ${d.n ? `<div class="num" style="background:${c.ring}">${d.n}</div>` : ''}<div class="spark" style="color:${c.ring}">✦</div><div class="spark s2" style="color:${c.ring}">✦</div>
     <div class="txt" style="color:${c.ink}">
       <div class="t ${d.small ? 'sm' : ''}">${d.t}</div>
       <div class="brush" style="background:linear-gradient(90deg,transparent,${c.ring})"></div>
@@ -255,6 +282,7 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
 .word{font-family:Pop;font-weight:800;font-size:5mm;letter-spacing:.1mm}
 .word.long{font-size:4.1mm}
 .eq.long{font-size:2mm}
+.num{position:absolute;top:1mm;right:1.6mm;min-width:4.6mm;height:4.6mm;border-radius:3mm;color:#fff;font:800 2.7mm/4.6mm Pop;text-align:center;padding:0 .8mm;z-index:2}
 .tiles.tight{gap:.6mm}
 .eq{font-family:Pop;font-weight:700;font-size:2.4mm;white-space:nowrap}
 .brush{height:.9mm;width:62%;margin:1mm auto .6mm;border-radius:1mm}
@@ -289,7 +317,7 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
     await pg.goto('file://' + f, { waitUntil: 'load' });
     await pg.evaluate(() => document.fonts.ready);
     const secs = await pg.$$('section.page');
-    for (let i = 0; i < secs.length; i++) await secs[i].screenshot({ path: path.join(dir, `استيكرات-${i + 1}-${SHEETS[i].name.replace(/ /g, '-')}.png`) });
+    for (let i = 0; i < secs.length; i++) await secs[i].screenshot({ path: SHEETS[i].preview ? path.join(OUT, `${SHEETS[i].name.replace(/ /g, '-')}.png`) : path.join(dir, `استيكرات-${i + 1}-${SHEETS[i].name.replace(/ /g, '-')}.png`) });
     await browser.close();
     return;
   }
