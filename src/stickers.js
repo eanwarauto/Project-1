@@ -16,6 +16,19 @@ const MX = (PAGE.w - LABEL.w * LABEL.cols) / 2, MY = (PAGE.h - LABEL.h * LABEL.r
 // المسافة الآمنة: التصميم يبعد عن حافة الاستيكر بهذا المقدار حتى لا يخرج عنه إذا انزاحت الطباعة قليلاً
 const SAFE = { x: 4.5, y: 3.2 };
 
+// تعويض تصغير/إزاحة الطابعة: تُقاس الأرقام بالمسطرة على «ورقة القياس» المطبوعة ثم تُمرَّر هكذا:
+// TOP=9 HEIGHT=272 LEFT=15.5 WIDTH=176 node src/stickers.js
+// TOP: من حافة الورقة العليا إلى الخط 1 (الصحيح 8.5)، HEIGHT: بين الخط 1 والخط 2 (الصحيح 280)،
+// LEFT: من حافة الورقة اليسرى إلى الخط 3 (الصحيح 15)، WIDTH: بين الخط 3 والخط 4 (الصحيح 180).
+const CAL = { top: MY, height: LABEL.h * LABEL.rows, left: 15, width: PAGE.w - 30 };
+const num = (k, d) => process.env[k] ? parseFloat(process.env[k]) : d;
+const meas = { top: num('TOP', CAL.top), height: num('HEIGHT', CAL.height), left: num('LEFT', CAL.left), width: num('WIDTH', CAL.width) };
+// الطابعة ترسم النقطة y في: oy + sy*y ؛ نعكس ذلك حتى تقع كل نقطة في مكانها الصحيح
+const sy = meas.height / CAL.height, sx = meas.width / CAL.width;
+const oy = meas.top - sy * CAL.top, ox = meas.left - sx * CAL.left;
+const FIX = `translate(${-ox / sx}mm,${-oy / sy}mm) scale(${1 / sx},${1 / sy})`;
+const COMPENSATED = ['TOP', 'HEIGHT', 'LEFT', 'WIDTH'].some(k => process.env[k]);
+
 // ---------- أيقونات (SVG بإطار 64×64) ----------
 const svg = (body, s = 20) => `<svg width="${s}mm" height="${s}mm" viewBox="0 0 64 64">${body}</svg>`;
 const IC = {
@@ -122,12 +135,33 @@ function sticker(d) {
     <div class="art">${d.art}</div></div></div>`;
 }
 
-const sheet = items => `<section class="page">${items.map(d => [d, d, d].map(sticker).join('')).join('')}</section>`;
+const sheet = items => `<section class="page"><div class="sheet">${items.map(d => [d, d, d].map(sticker).join('')).join('')}</div></section>`;
+
+function calSheet() {
+  const ln = (style, n) => `<div class="cal" style="${style}"><b>${n}</b></div>`;
+  return `<section class="page"><div class="sheet calsheet">
+    ${ln(`left:0;right:0;top:${CAL.top}mm;height:0;border-top:.3mm solid #000`, '1')}
+    ${ln(`left:0;right:0;top:${CAL.top + CAL.height}mm;height:0;border-top:.3mm solid #000`, '2')}
+    ${ln(`top:0;bottom:0;left:${CAL.left}mm;width:0;border-left:.3mm solid #000`, '3')}
+    ${ln(`top:0;bottom:0;left:${CAL.left + CAL.width}mm;width:0;border-left:.3mm solid #000`, '4')}
+    <div class="calbox">
+      <div class="calt">ورقة القياس</div>
+      <p>تُطبع على ورق عادي، ثم تُقاس هذه المسافات بالمسطرة بالملّيمتر:</p>
+      <table>
+        <tr><th>المسافة</th><th>الصحيح</th><th>المقاس</th></tr>
+        <tr><td>من حافة الورقة العليا إلى الخط 1</td><td>8.5 ملم</td><td></td></tr>
+        <tr><td>من الخط 1 إلى الخط 2</td><td>280 ملم</td><td></td></tr>
+        <tr><td>من حافة الورقة اليسرى إلى الخط 3</td><td>15 ملم</td><td></td></tr>
+        <tr><td>من الخط 3 إلى الخط 4</td><td>180 ملم</td><td></td></tr>
+      </table>
+      <p>إذا كانت كلها صحيحة فالطباعة مضبوطة. وإذا اختلفت، تُرسل الأرقام الأربعة ليُضبط ملف الاستيكرات على هذه الطابعة.</p>
+    </div></div></section>`;
+}
 
 function testSheet() {
   let s = '';
   for (let i = 0; i < LABEL.cols * LABEL.rows; i++) s += `<div class="label test"><div class="safe"></div><span>${i + 1}</span></div>`;
-  return `<section class="page">${s}<div class="note">تُطبع هذه الورقة على ورق عادي بمقاس «الحجم الفعلي <span dir="ltr">100%</span>»، ثم توضع فوق ورقة الاستيكر مقابل الضوء: الخط الأسود هو حدود الاستيكر، والمستطيل المتقطع هو مكان التصميم.</div></section>`;
+  return `<section class="page"><div class="sheet">${s}</div><div class="note">تُطبع هذه الورقة على ورق عادي بمقاس «الحجم الفعلي <span dir="ltr">100%</span>»، ثم توضع فوق ورقة الاستيكر مقابل الضوء: الخط الأسود هو حدود الاستيكر، والمستطيل المتقطع هو مكان التصميم.</div></section>`;
 }
 
 const CSS = `
@@ -140,8 +174,18 @@ const CSS = `
 @page{size:A4;margin:0}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.page{width:${PAGE.w}mm;height:${PAGE.h}mm;padding:${MY}mm ${MX}mm;display:grid;direction:ltr;
-  grid-template-columns:repeat(${LABEL.cols},${LABEL.w}mm);grid-template-rows:repeat(${LABEL.rows},${LABEL.h}mm);page-break-after:always;overflow:hidden;position:relative;background:#fff}
+.page{width:${PAGE.w}mm;height:${PAGE.h}mm;page-break-after:always;overflow:hidden;position:relative;background:#fff}
+.sheet{width:${PAGE.w}mm;height:${PAGE.h}mm;padding:${MY}mm ${MX}mm;display:grid;direction:ltr;transform-origin:0 0;transform:${FIX};
+  grid-template-columns:repeat(${LABEL.cols},${LABEL.w}mm);grid-template-rows:repeat(${LABEL.rows},${LABEL.h}mm);position:relative}
+.calsheet{display:block;padding:0}
+.cal{position:absolute}
+.cal b{position:absolute;font:800 4mm Pop;background:#fff;padding:0 1mm;top:-2.6mm;left:40mm}
+.cal[style*="border-left"] b{top:60mm;left:-2.4mm}
+.calbox{position:absolute;left:30mm;right:30mm;top:80mm;direction:rtl;font:700 4mm/1.7 Cairo;color:#212529}
+.calt{font:800 7mm Cairo;margin-bottom:2mm}
+.calbox table{width:100%;border-collapse:collapse;margin:3mm 0 4mm}
+.calbox td,.calbox th{border:.3mm solid #adb5bd;padding:1.5mm 2.5mm;text-align:right}
+.calbox td:last-child{width:28mm}
 .label{width:${LABEL.w}mm;height:${LABEL.h}mm;padding:${SAFE.y}mm ${SAFE.x}mm;position:relative}
 .card{width:100%;height:100%;border:.6mm solid;border-radius:5mm;display:flex;align-items:center;gap:1.5mm;padding:0 2.6mm 0 3mm;position:relative;overflow:hidden;direction:rtl}
 .txt{flex:1;text-align:center;min-width:0}
@@ -171,8 +215,8 @@ body{font-family:Cairo;-webkit-print-color-adjust:exact;print-color-adjust:exact
   const browser = await chromium.launch();
   const pg = await browser.newPage({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 3 });
   const jobs = [
-    ['استيكرات-A4', SHEETS.map(s => sheet(s.items)).join(''), SHEETS.map((s, i) => `ورقة-${i + 1}-${s.name.replace(/ /g, '-')}`)],
-    ['اختبار-المقاس', testSheet(), ['اختبار-المقاس']],
+    [COMPENSATED ? 'استيكرات-A4-مضبوط-على-الطابعة' : 'استيكرات-A4', SHEETS.map(s => sheet(s.items)).join(''), SHEETS.map((s, i) => `ورقة-${i + 1}-${s.name.replace(/ /g, '-')}`)],
+    [COMPENSATED ? 'اختبار-المقاس-مضبوط-على-الطابعة' : 'اختبار-المقاس', calSheet() + testSheet(), COMPENSATED ? ['ورقة-القياس-مضبوط', 'اختبار-المقاس-مضبوط'] : ['ورقة-القياس', 'اختبار-المقاس']],
   ];
   for (const [name, body, previews] of jobs) {
     const f = path.join(HTML_DIR, name + '.html');
