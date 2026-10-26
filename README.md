@@ -66,3 +66,11 @@
 
 إعادة التوليد (من مجلد `electron-configuration/source`): ثبّت `three` و`pptxgenjs` و`sharp` في `source/three/node_modules`، ثم
 `node r3d.js` و`node html_assets.js` لتوليد الصور، ثم `NODE_PATH=three/node_modules node deck.js deck_raw.pptx` و`python3 animate.py deck_raw.pptx deck_raw.anim.json deck.pptx` لإضافة الحركات والانتقالات.
+
+---
+
+# عرض تقديمي — الدرس [2-1]: الرابطة الأيونية
+
+الملف: `ionic-bond/الرابطة-الأيونية-الدرس-2-1.pptx` (25 شريحة، نفس تصميم الدرس [1-1] وحركاته وتوقيع `Eng.7IKAYA`).
+يتبع الكتاب (ص 112–119): الأهداف، الصورة الافتتاحية، النشاط وجدوله، إذًا نستنتج، تعريف الرابطة الأيونية، الأمثلة (1)–(5)، قانون حفظ الشحنة، السالبية الكهربائية وجدول (13)، التمارين (1)–(3)، دعنا نلخص ما سبق، ملاحظة طريقة التقاطع. معادلات الترتيب النقطي مرسومة كصور (`source/eq_assets.js`)، وإجابات التمارين تظهر بالنقر.
+للتوليد: نفس خطوات الدرس [1-1] مع `deck2.js` (السكربتات المشتركة في `electron-configuration/source`).

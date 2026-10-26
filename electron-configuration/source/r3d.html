@@ -71,6 +71,28 @@ window.renderScene = async (cfg) => {
       orb.rotation.z = ang; orb.rotation.x = 0.35; root.add(orb);
     });
     root.rotation.y = 0.2;
+  } else if (cfg.kind === 'lattice') {
+    const n = 3, a = 1.15;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) for (let k = 0; k < n; k++) {
+      const big = (i + j + k) % 2 === 0;
+      const m = new THREE.Mesh(new THREE.SphereGeometry(big ? 0.46 : 0.27, 48, 48), glossy(big ? 0x34c759 : 0x8e5cff, 0.1));
+      m.position.set((i - 1) * a, (j - 1) * a, (k - 1) * a); root.add(m);
+      const stick = (dx, dy, dz) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, a, 16), new THREE.MeshPhysicalMaterial({ color: 0xcfd8e3, roughness: .3, metalness: .2 }));
+        c.position.set((i - 1 + dx / 2) * a, (j - 1 + dy / 2) * a, (k - 1 + dz / 2) * a);
+        if (dx) c.rotation.z = Math.PI / 2; if (dz) c.rotation.x = Math.PI / 2; root.add(c); };
+      if (i < n - 1) stick(1, 0, 0); if (j < n - 1) stick(0, 1, 0); if (k < n - 1) stick(0, 0, 1);
+    }
+    root.rotation.set(0.5, -0.65, 0);
+  } else if (cfg.kind === 'ionpair') {
+    const na = new THREE.Mesh(new THREE.SphereGeometry(0.85, 64, 64), glossy(0x8e5cff, 0.12)); na.position.x = 2.4; root.add(na);
+    const cl = new THREE.Mesh(new THREE.SphereGeometry(1.35, 64, 64), glossy(0x34c759, 0.12)); cl.position.x = -1.6; root.add(cl);
+    na.add(glow(0xb79cff, 4.2, 0.5)); cl.add(glow(0x7be495, 6, 0.45));
+    for (let r = 0; r < 4; r++) { // attraction field arcs
+      const h = 0.35 + r * 0.38;
+      [1, -1].forEach(sg => { const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(1.62, 0, 0), new THREE.Vector3(0.65, sg * h * 1.9, 0.3), new THREE.Vector3(-0.3, 0, 0));
+        root.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 60, 0.035, 8), new THREE.MeshPhysicalMaterial({ color: 0xff8c00, emissive: 0xff8c00, emissiveIntensity: 0.45, transparent: true, opacity: 0.85 - r * 0.15 }))); });
+    }
+    root.rotation.y = 0.15;
   } else if (cfg.kind === 'sphere') {
     root.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), glossy(cfg.color, 0.12)));
     root.add(glow(cfg.color, 3.2, 0.4));

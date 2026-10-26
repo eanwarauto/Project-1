@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const OUT = path.join(__dirname, 'assets');
-const F = path.join(__dirname, '..', '..', 'assets', 'fonts') + '/';
+const F = '/home/user/Project-1/assets/fonts/';
 const css = `
 @font-face{font-family:Cairo;font-weight:700;src:url(file://${F}cairo-arabic-700-normal.woff2)}
 @font-face{font-family:Cairo;font-weight:900;src:url(file://${F}cairo-arabic-900-normal.woff2)}
@@ -25,7 +25,7 @@ const hex = `background-image:url("data:image/svg+xml,${encodeURIComponent(`<svg
 const orb = (x, y, s, c, o = .5) => `<div style="position:absolute;left:${x}px;top:${y}px;width:${s}px;height:${s}px;border-radius:50%;opacity:${o};
   background:radial-gradient(circle at 32% 28%,#fff 0%,${c} 35%,${c} 60%, rgba(0,0,0,.25) 110%);box-shadow:0 ${s / 6}px ${s / 3}px rgba(31,111,178,.18)"></div>`;
 const mark = `<div style="position:absolute;left:62px;bottom:30px;font:700 30px Pop;color:#000;letter-spacing:.5px">Eng.7IKAYA</div>`;
-function bg(kind) {
+function bg(kind, header = 'الدرس [1-1]: الترتيب الإلكتروني') {
   const title = kind === 'title';
   return `<div style="position:absolute;inset:0;width:2400px;height:1350px;overflow:hidden;
    background:radial-gradient(900px 700px at 92% 18%, rgba(132,214,190,.42), transparent 65%),
@@ -38,7 +38,7 @@ function bg(kind) {
    ${waveBottom}
    ${title ? orb(120, 260, 120, '#ffb703', .55) + orb(1900, 1050, 90, '#ff6fa8', .5) + orb(980, 1150, 60, '#2ec5ff', .6) + orb(330, 980, 70, '#7c6cf2', .45)
            : orb(2260, 1000, 70, '#ffb703', .35) + orb(40, 720, 54, '#2ec5ff', .3)}
-   ${title ? '' : `<div style="position:absolute;left:62px;top:150px;font:700 30px Cairo;color:#1f5f99;direction:rtl;opacity:.85">الدرس [1-1]: الترتيب الإلكتروني</div>`}
+   ${title ? '' : `<div style="position:absolute;left:62px;top:150px;font:700 30px Cairo;color:#1f5f99;direction:rtl;opacity:.85">${header}</div>`}
    ${mark}</div>`;
 }
 
@@ -104,16 +104,19 @@ const warn = `<div id="w" style="padding:20px;display:inline-block"><svg width="
  <path d="M50 6 L94 82 Q96 86 91 86 H9 Q4 86 6 82 Z" fill="url(#g)" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
  <rect x="45" y="30" width="10" height="32" rx="5" fill="#fff"/><circle cx="50" cy="72" r="6" fill="#fff"/></svg></div>`;
 
-const jobs = [
+const ONLY = process.argv[2];
+const jobs0 = [
   ['bg_title', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('title')}</div>`, '#x'],
   ['bg_content', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('content')}</div>`, '#x'],
+  ['bg_content2', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('content', 'الدرس [2-1]: الرابطة الأيونية')}</div>`, '#x'],
   ['ptable', ptable(), '#pt'], ['noble', noble(), '#ng'], ['warn', warn, '#w'],
 ];
-const L = { Be: 2, H: 1, C: 4, N: 5, K: 1, Li: 1, F: 7, Mg: 2, S: 6, Ca: 2 };
+const L = { Be: 2, H: 1, C: 4, N: 5, K: 1, Li: 1, F: 7, Mg: 2, S: 6, Ca: 2, Na: 1, Cl: 7 };
 for (const [s, n] of Object.entries(L)) {
-  jobs.push([`lewis_${s}`, `<div id="l" style="display:inline-block">${lewis(s, n, { fs: 150, dotColor: '#e8335f' })}</div>`, '#l']);
-  jobs.push([`lewisA_${s}`, `<div id="l" style="display:inline-block">${lewis(s, n, { fs: 150, color: '#0b8a5a', dotColor: '#0b8a5a' })}</div>`, '#l']);
+  jobs0.push([`lewis_${s}`, `<div id="l" style="display:inline-block">${lewis(s, n, { fs: 150, dotColor: '#e8335f' })}</div>`, '#l']);
+  jobs0.push([`lewisA_${s}`, `<div id="l" style="display:inline-block">${lewis(s, n, { fs: 150, color: '#0b8a5a', dotColor: '#0b8a5a' })}</div>`, '#l']);
 }
+const jobs = ONLY ? jobs0.filter(j => j[0] === ONLY) : jobs0;
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 2600, height: 1500 } });
   for (const [name, html, sel] of jobs) {
