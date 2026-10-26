@@ -1,0 +1,82 @@
+<!doctype html><html><head><style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./three/node_modules/three/build/three.module.js","three/addons/":"./three/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+window.renderScene = async (cfg) => {
+  const W = cfg.w, H = cfg.h;
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r.setPixelRatio(1); r.setSize(W, H); r.setClearColor(0x000000, 0);
+  r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15;
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  document.body.innerHTML = ''; document.body.appendChild(r.domElement);
+  const scene = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(r);
+  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  const cam = new THREE.PerspectiveCamera(cfg.fov || 32, W / H, 0.1, 100);
+  cam.position.set(0, 0, cfg.dist || 10); cam.lookAt(0, 0, 0);
+  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-4, 6, 8); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x9fd8ff, 1.2); rim.position.set(5, -3, -4); scene.add(rim);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+  const glossy = (c, em = 0, emc) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.18, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.06, emissive: emc || c, emissiveIntensity: em });
+  const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+    const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c); })();
+  const glow = (color, size, op = 0.8) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false })); s.scale.set(size, size, 1); return s; };
+
+  const nucleus = (n, rad) => {
+    const g = new THREE.Group(); const golden = Math.PI * (3 - Math.sqrt(5));
+    const sr = rad * (n > 10 ? 0.42 : 0.55);
+    for (let i = 0; i < n; i++) {
+      const y = 1 - (i / Math.max(1, n - 1)) * 2, rr = Math.sqrt(1 - y * y), th = golden * i;
+      const d = n === 1 ? 0 : rad * 0.62;
+      const m = new THREE.Mesh(new THREE.SphereGeometry(sr, 48, 48), glossy(i % 2 ? 0x3f7cff : 0xff4d5e, 0.08));
+      m.position.set(Math.cos(th) * rr * d, y * d, Math.sin(th) * rr * d); g.add(m);
+    }
+    g.add(glow(0xffb48a, rad * 6, 0.55));
+    return g;
+  };
+  const COLORS = { inner: 0x2ec5ff, val: 0xffb703, gain: 0xff4f9a };
+  const electron = (type, size) => { const g = new THREE.Group(); const col = COLORS[type];
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(size, 48, 48), glossy(col, 0.35)));
+    g.add(glow(col, size * 7, 0.85)); return g; };
+  const ring = (rad, col, op = 0.9, tube = 0.035) => new THREE.Mesh(new THREE.TorusGeometry(rad, tube, 24, 220),
+    new THREE.MeshPhysicalMaterial({ color: col, emissive: col, emissiveIntensity: 0.9, roughness: 0.3, transparent: true, opacity: op }));
+
+  const root = new THREE.Group(); scene.add(root);
+  if (cfg.kind === 'bohr') {
+    // cfg.shells: array of arrays of types e.g. [['inner','inner'],['val','val','val','val']]
+    root.add(nucleus(cfg.nuc || 12, cfg.nucR || 0.55));
+    cfg.shells.forEach((sh, i) => {
+      const rad = (cfg.r0 || 1.35) + i * (cfg.dr || 1.05);
+      const isOuter = i === cfg.shells.length - 1 && cfg.hiOuter;
+      root.add(ring(rad, isOuter ? 0xffc94a : 0x7fd6ff, isOuter ? 0.95 : 0.7, isOuter ? 0.045 : 0.03));
+      sh.forEach((t, k) => { const a = Math.PI / 2 + (k / sh.length) * Math.PI * 2 + (cfg.phase ? cfg.phase[i] || 0 : 0);
+        const e = electron(t, cfg.eR || 0.17); e.position.set(Math.cos(a) * rad, Math.sin(a) * rad, 0); root.add(e); });
+    });
+    root.rotation.x = cfg.tiltX ?? -0.5; root.rotation.y = cfg.tiltY ?? 0.25;
+  } else if (cfg.kind === 'hero') {
+    root.add(nucleus(16, 0.75));
+    const cols = [0x2ec5ff, 0xffb703, 0xff4f9a];
+    [0, Math.PI / 3, -Math.PI / 3].forEach((ang, i) => {
+      const orb = new THREE.Group(); const rx = 3.1, ry = 1.15;
+      const curve = new THREE.EllipseCurve(0, 0, rx, ry); const pts = curve.getPoints(300).map(p => new THREE.Vector3(p.x, p.y, 0));
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 300, 0.04, 16, true),
+        new THREE.MeshPhysicalMaterial({ color: cols[i], emissive: cols[i], emissiveIntensity: 1.1, roughness: 0.2 }));
+      orb.add(tube);
+      const t = [0.15, 0.55, 0.85][i] * Math.PI * 2; const e = electron(['inner', 'val', 'gain'][i], 0.26);
+      e.position.set(Math.cos(t) * rx, Math.sin(t) * ry, 0); orb.add(e);
+      orb.rotation.z = ang; orb.rotation.x = 0.35; root.add(orb);
+    });
+    root.rotation.y = 0.2;
+  } else if (cfg.kind === 'sphere') {
+    root.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), glossy(cfg.color, 0.12)));
+    root.add(glow(cfg.color, 3.2, 0.4));
+  }
+  r.render(scene, cam);
+  return true;
+};
+window.ready = true;
+</script></body></html>
