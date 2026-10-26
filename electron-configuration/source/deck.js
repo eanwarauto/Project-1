@@ -48,6 +48,7 @@ function img(file, x, y, w, h, fx, trig, dur, delay) {
 // runs: string or [{text, options}]
 function text(runs, x, y, w, h, o = {}, fx, trig, dur, delay) {
   const base = { fontFace: FONT, bold: true, color: C.navy, fontSize: 26, rtlMode: true, align: 'right', valign: 'top', margin: 4, lang: 'ar-KW', paraSpaceAfter: 6, lineSpacingMultiple: 1.05 };
+  if (o.rtlMode === false && !o.lang) o = { ...o, lang: 'en-US' };
   cur.addText(runs, reg({ ...base, ...o, x, y, w, h, isTextBox: true }, fx, trig, dur, delay));
 }
 const r = (t, o = {}) => ({ text: t, options: o });
@@ -186,13 +187,13 @@ async function build() {
   newSlide(); title('مستوى التكافؤ', 'sp_blue', C.blue, 5.4);
   text([r('ويسمى «مستوى الطاقة الخارجي للذرة الذي تُفقد منه الإلكترونات أو تنتقل إليه في التفاعل الكيميائي» بـ '), r('مستوى التكافؤ Valence\u00A0Shell', { color: C.blue }), r(' ويوضح الشكل (24) كلًّا من إلكترونات التكافؤ ومستوى التكافؤ.')],
     6.55, 1.95, 6.3, 3.6, { fontSize: 26 }, 'wipeR', 'after', 1800);
-  img('carbon.png', 1.7, 1.75, 4.6, null, 'zoom', 'after', 900);
+  img('carbon.png', 2.3, 1.75, 4.6, null, 'zoom', 'after', 900);
   // labels like the book figure
   text([br('مستوى التكافؤ', { fontSize: 22 }), r('Valence\u00A0Shell', { fontSize: 16, color: C.blue })], 0.3, 1.9, 2.5, 1.05, { shape: pres.ShapeType.roundRect, rectRadius: 0.15, fill: { color: C.white }, line: { color: C.navy, width: 2 }, align: 'center', valign: 'middle', margin: 0, shadow: shadow() }, 'flyL', 'after', 600);
-  cur.addShape(pres.ShapeType.line, reg({ x: 2.8, y: 2.4, w: 0.8, h: 0.4, line: { color: C.navy, width: 3, endArrowType: 'triangle' } }, 'fade', 'with', 400));
+  cur.addShape(pres.ShapeType.line, reg({ x: 2.82, y: 2.2, w: 0.95, h: 0.18, line: { color: C.navy, width: 3, endArrowType: 'triangle' } }, 'fade', 'with', 400));
   text([br('إلكترونات التكافؤ', { fontSize: 22 }), r('Valence\u00A0Electrons', { fontSize: 16, color: C.gold })], 0.3, 4.5, 2.65, 1.05, { shape: pres.ShapeType.roundRect, rectRadius: 0.15, fill: { color: C.white }, line: { color: C.navy, width: 2 }, align: 'center', valign: 'middle', margin: 0, shadow: shadow() }, 'flyL', 'after', 600);
-  cur.addShape(pres.ShapeType.line, reg({ x: 2.95, y: 4.15, w: 0.65, h: 0.75, flipV: true, line: { color: C.navy, width: 3, endArrowType: 'triangle' } }, 'fade', 'with', 400));
-  text('شكل (24)', 2.6, 5.6, 2.8, 0.5, { fontSize: 20, align: 'center', color: C.blue }, 'fade', 'after', 400);
+  cur.addShape(pres.ShapeType.line, reg({ x: 2.97, y: 5.02, w: 1.45, h: 0.14, line: { color: C.navy, width: 3, endArrowType: 'triangle' } }, 'fade', 'with', 400));
+  text('شكل (24)', 3.2, 5.6, 2.8, 0.5, { fontSize: 20, align: 'center', color: C.blue }, 'fade', 'after', 400);
   box(6.55, 5.6, 6.3, 0.95, { fill: 'FFF7E0', rad: 0.47 }, 'flyB', 'after', 500);
   img('sp_gold.png', 12.0, 5.7, 0.75, 0.75, 'zoom', 'with', 400);
   text('النقاط الذهبية = إلكترونات التكافؤ', 6.7, 5.6, 5.2, 0.95, { fontSize: 22, valign: 'middle', color: C.navy }, 'wipeR', 'with', 600);
@@ -287,18 +288,18 @@ async function build() {
 
   // 15 ── قاعدة الثمانية: الغازات النبيلة ─────────────────────
   newSlide(); title('قاعدة الثمانية', 'sp_gold', C.gold, 5.4);
-  text([r('كما تعلمت في دراستك للجدول الدوري، أنّ '), r('الغازات النبيلة مستقرة', { color: C.coral }), r(' وينتهي ترتيبها الإلكتروني حسب مستويات الطاقة الرئيسية '), r('بثمانية إلكترونات (8e', { color: C.gold }), r('−', { color: C.gold, superscript: true }), r(')', { color: C.gold }),
-    r(' ، ماعدا '), r('الهيليوم', { color: C.teal }), r(' ينتهي '), r('بإلكترونين فقط (2e', { color: C.teal }), r('−', { color: C.teal, superscript: true }), r(').', { color: C.teal })],
+  text([r('كما تعلمت في دراستك للجدول الدوري، أنّ '), r('الغازات النبيلة مستقرة', { color: C.coral }), r(' وينتهي ترتيبها الإلكتروني حسب مستويات الطاقة الرئيسية '), r('بثمانية إلكترونات', { color: C.gold }),
+    r(' ، ماعدا '), r('الهيليوم', { color: C.teal }), r(' ينتهي '), r('بإلكترونين فقط.', { color: C.teal })],
     0.5, 1.85, 12.35, 1.7, { fontSize: 27 }, 'wipeR', 'after', 1700);
   img('octet.png', 6.7, 3.4, 3.45, 3.45, 'zoom', 'click', 900);
-  text('8e⁻', 10.2, 4.6, 1.8, 0.9, { fontSize: 44, color: C.gold, rtlMode: false, align: 'center' }, 'zoom', 'after', 500);
+  text([r('8e'), r('−', { superscript: true })], 10.2, 4.6, 1.8, 0.9, { fontSize: 44, color: C.gold, rtlMode: false, align: 'center' }, 'zoom', 'after', 500);
   img('helium.png', 1.85, 3.5, 3.1, 3.1, 'zoom', 'after', 900);
-  text('2e⁻', 0.4, 4.6, 1.5, 0.9, { fontSize: 44, color: C.teal, rtlMode: false, align: 'center' }, 'zoom', 'after', 500);
+  text([r('2e'), r('−', { superscript: true })], 0.4, 4.6, 1.5, 0.9, { fontSize: 44, color: C.teal, rtlMode: false, align: 'center' }, 'zoom', 'after', 500);
   text('الهيليوم', 2.15, 6.45, 2.5, 0.5, { fontSize: 22, align: 'center', color: C.teal }, 'fade', 'with', 400);
 
   // 16 ── الكاتيون والأنيون ─────────────────────────────────
   newSlide(); title('الكاتيون والأنيون', 'sp_purple', C.purple, 6.0);
-  text('تساعد هذه القاعدة في تحديد نوع الأيون الذي تتجه ذرة العنصر.', 0.5, 1.8, 12.35, 0.65, { fontSize: 27 }, 'wipeR', 'after', 1000);
+  text('تساعد هذه القاعدة في تحديد نوع الأيون الذي تنتجه ذرة العنصر.', 0.5, 1.8, 12.35, 0.65, { fontSize: 27 }, 'wipeR', 'after', 1000);
   [[6.75, 'FFE8EE', 'F7A1B7', 'sp_coral.png', '+', C.coral,
     [r('فذرات العناصر التي تميل إلى '), r('فقد', { color: C.coral }), r(' الإلكترونات تُنتج أيونات موجبة (كاتيونات)، ليصبح ترتيبها الإلكتروني مشابه للغاز النبيل.')],
     [r('الكاتيون', { color: C.coral }), r(': «ذرة العنصر عندما تفقد إلكترونًا أو أكثر».')], 'after'],

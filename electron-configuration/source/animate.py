@@ -74,6 +74,19 @@ def build_timing(items, kinds):
             '<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq>'
             '</p:childTnLst></p:cTn></p:par></p:tnLst>' + (f'<p:bldLst>{bld}</p:bldLst>' if bld else '') + '</p:timing>')
 
+PPR = re.compile(r'<a:pPr\b[^>]*?(?:/>|>.*?</a:pPr>)', re.S)
+def fix_para(m):
+    p = m.group(0)
+    pprs = list(PPR.finditer(p))
+    if not pprs: return p
+    first = pprs[0].group(0)
+    body = PPR.sub('', p)                      # pptxgenjs repeats pPr between runs; keep one
+    if 'rtl=' not in first.split('>')[0]:      # LTR text must say so: the deck is RTL by default
+        first = first.replace('<a:pPr', '<a:pPr rtl="0"', 1)
+    return body.replace('<a:p>', '<a:p>' + first, 1)
+def fix_paras(x):
+    return re.sub(r'<a:p>.*?</a:p>', fix_para, x, flags=re.S)
+
 zin = zipfile.ZipFile(src)
 import hashlib
 canon, drop = {}, set()
@@ -98,6 +111,7 @@ for info in zin.infolist():
         # renumber every cNvPr id uniquely (pptxgenjs table ids can collide)
         counter = iter(range(2, 100000))
         x = re.sub(r'<p:cNvPr id="\d+"', lambda _: f'<p:cNvPr id="{next(counter)}"', x)
+        x = fix_paras(x)
         kinds, names = {}, {}
         for mm in re.finditer(r'<p:(sp|pic|graphicFrame)>\s*<p:nv\w+>\s*<p:cNvPr id="(\d+)" name="([^"]*)"', x):
             kinds[mm.group(2)] = mm.group(1); names[mm.group(3)] = mm.group(2)
