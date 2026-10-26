@@ -49,7 +49,7 @@ function ensureVoice() {
   fs.writeFileSync(planFile, JSON.stringify(plan));
   py('mix', planFile, wav, String(total));
   const m4a = path.join(NARR_DIR, 'narration.m4a');
-  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', wav, '-c:a', 'aac', '-b:a', '128k', m4a]);
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', wav, '-ar', '44100', '-ac', '2', '-c:a', 'aac', '-b:a', '160k', m4a]);
   console.log(`الصوت: ${plan.length} جملة، المدة ${total.toFixed(1)} ث`);
 
   const canvas = page.locator('canvas');
