@@ -16,6 +16,8 @@ const jobs = [
   ...[['sp_teal',0x14b8a6],['sp_coral',0xff4f7b],['sp_gold',0xffb703],['sp_purple',0x7c5cff],['sp_blue',0x2f80ed],['sp_green',0x12b76a]].map(([n,c])=>({name:n,w:500,h:500,kind:'sphere',color:c,dist:5.2})),
   { name: 'nacl_lattice', w: 1400, h: 1400, kind: 'lattice', dist: 9.5 },
   { name: 'ion_pair', w: 1700, h: 1000, kind: 'ionpair', dist: 10 },
+  { name: 'lattice_big', w: 1500, h: 1500, kind: 'lattice', n: 4, a: 1.0, rb: 0.3, rs: 0.22, c1: 0x34c759, c2: 0x2f6fed, dist: 11 },
+  { name: 'beaker', w: 1100, h: 1400, kind: 'beaker', dist: 8.5 },
 ];
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--allow-file-access-from-files'] });

@@ -124,7 +124,7 @@ async function build() {
   // 1 ── الغلاف ────────────────────────────────────────────
   newSlide('TITLE');
   img('nacl_lattice.png', 0.4, 1.0, 5.4, 5.4, 'zoom', 'after', 1100);
-  text('الدرس [2-1]', 9.6, 1.25, 3.1, 0.75, { shape: pres.ShapeType.roundRect, rectRadius: 0.37, fill: { color: C.teal }, color: C.white, fontSize: 28, align: 'center', valign: 'middle', shadow: shadow(), margin: 0 }, 'flyR', 'after', 700);
+  text('الدرس [\u200E2-1]', 9.6, 1.25, 3.1, 0.75, { shape: pres.ShapeType.roundRect, rectRadius: 0.37, fill: { color: C.teal }, color: C.white, fontSize: 28, align: 'center', valign: 'middle', shadow: shadow(), margin: 0 }, 'flyR', 'after', 700);
   text([br('الرابطة'), r('الأيونية')], 5.6, 2.05, 7.2, 2.5, { fontSize: 72, color: C.navy, valign: 'middle', margin: 0, paraSpaceAfter: 0, lineSpacingMultiple: 0.95 }, 'wipeR', 'after', 1300);
   text('Ionic Bond', 5.6, 4.5, 7.2, 0.8, { fontSize: 38, color: C.blue, rtlMode: false, align: 'right', valign: 'middle', margin: 0 }, 'float', 'after', 900);
   img('ion_pair.png', 8.6, 5.3, 3.9, null, 'zoom', 'after', 800);

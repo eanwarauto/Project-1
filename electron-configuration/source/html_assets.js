@@ -108,7 +108,8 @@ const ONLY = process.argv[2];
 const jobs0 = [
   ['bg_title', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('title')}</div>`, '#x'],
   ['bg_content', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('content')}</div>`, '#x'],
-  ['bg_content2', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('content', 'الدرس [2-1]: الرابطة الأيونية')}</div>`, '#x'],
+  ['bg_content2', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('content', 'الدرس [\u200E2-1]: الرابطة الأيونية')}</div>`, '#x'],
+  ['bg_content3', `<div id="x" style="width:2400px;height:1350px;position:relative">${bg('content', 'الدرس [\u200E3-1]: خواص المركبات الأيونية')}</div>`, '#x'],
   ['ptable', ptable(), '#pt'], ['noble', noble(), '#ng'], ['warn', warn, '#w'],
 ];
 const L = { Be: 2, H: 1, C: 4, N: 5, K: 1, Li: 1, F: 7, Mg: 2, S: 6, Ca: 2, Na: 1, Cl: 7 };

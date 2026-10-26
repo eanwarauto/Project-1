@@ -63,6 +63,15 @@ const jobs = [
     [['2,1', '', '2,5', '', ''], [`<span class="red">1e<sup>${minus}</sup></span>`, '', `<span class="red">3e<sup>${minus}</sup></span>`, '', '']], 110)],
   ['eq_li3n_b', eq([sp('Li', { r: 'r' }, { coef: '3' }), op('+'), sp('N', { l: 'n', r: 'n', t: 'nn', b: 'n' }, { coef: '1' }), ARROW, sp('Li', {}, { coef: '3', charge: '+' }), sp('N', { t: 'nn', l: 'rn', r: 'rn', b: 'rn' }, { charge: '3' + minus }), '<span style="margin-left:.6em">Li<sub>3</sub>N</span>'])],
   ['eq_caf2', eq([sp('Ca', { r: 'rr' }), op('+'), sp('F', { t: 'nn', b: 'nn', r: 'nn', l: 'n' }, { coef: '2' }), ARROW, sp('Ca', {}, { charge: '2+' }), sp('F', { t: 'nn', b: 'nn', r: 'nn', l: 'rn' }, { coef: '2', charge: minus }), '<span style="margin-left:.6em">CaF<sub>2</sub></span>'])],
+  ['eq_kf', eq([sp('K', { r: 'r' }), op('+'), sp('F', { t: 'nn', b: 'nn', r: 'nn', l: 'n' }), ARROW, sp('K', {}, { charge: '+' }), sp('F', { t: 'nn', b: 'nn', r: 'nn', l: 'rn' }, { charge: minus }), '<span style="margin-left:.6em">KF</span>'])],
+  ['thermo', `<div id="eq" style="display:inline-block;padding:10px"><svg width="200" height="560" viewBox="0 0 60 168">
+    <defs><linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#cfe3f5"/><stop offset=".45" stop-color="#ffffff"/><stop offset="1" stop-color="#a9c6e3"/></linearGradient>
+    <radialGradient id="bl" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#ff9aa8"/><stop offset=".5" stop-color="#ef2f4d"/><stop offset="1" stop-color="#a3122a"/></radialGradient>
+    <linearGradient id="mc" x1="0" x2="1"><stop offset="0" stop-color="#ff6b7f"/><stop offset=".5" stop-color="#ff2e4d"/><stop offset="1" stop-color="#b3132d"/></linearGradient></defs>
+    <rect x="20" y="6" width="20" height="130" rx="10" fill="url(#gl)" stroke="#7d9cbd" stroke-width="2"/>
+    <rect x="26" y="34" width="8" height="104" rx="4" fill="url(#mc)"/>
+    ${[30, 50, 70, 90, 110].map(y => `<line x1="40" y1="${y}" x2="48" y2="${y}" stroke="#5b7898" stroke-width="2"/>`).join('')}
+    <circle cx="30" cy="146" r="18" fill="url(#bl)" stroke="#8c0f24" stroke-width="2"/><ellipse cx="24" cy="140" rx="5" ry="4" fill="#fff" opacity=".7"/></svg></div>`],
   ['bulb', `<div id="eq" style="display:inline-block;padding:10px"><svg width="300" height="380" viewBox="0 0 100 126">
     <defs><radialGradient id="g" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#fffbe0"/><stop offset=".45" stop-color="#ffd84d"/><stop offset="1" stop-color="#f2a900"/></radialGradient>
     <linearGradient id="m" x1="0" x2="1"><stop offset="0" stop-color="#8aa0b8"/><stop offset=".5" stop-color="#e6eef6"/><stop offset="1" stop-color="#7b8fa6"/></linearGradient></defs>

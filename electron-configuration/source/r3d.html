@@ -72,13 +72,13 @@ window.renderScene = async (cfg) => {
     });
     root.rotation.y = 0.2;
   } else if (cfg.kind === 'lattice') {
-    const n = 3, a = 1.15;
+    const n = cfg.n || 3, a = cfg.a || 1.15, C1 = cfg.c1 ?? 0x34c759, C2 = cfg.c2 ?? 0x8e5cff, off = (n - 1) / 2;
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) for (let k = 0; k < n; k++) {
       const big = (i + j + k) % 2 === 0;
-      const m = new THREE.Mesh(new THREE.SphereGeometry(big ? 0.46 : 0.27, 48, 48), glossy(big ? 0x34c759 : 0x8e5cff, 0.1));
-      m.position.set((i - 1) * a, (j - 1) * a, (k - 1) * a); root.add(m);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(big ? (cfg.rb || 0.46) : (cfg.rs || 0.27), 48, 48), glossy(big ? C1 : C2, 0.1));
+      m.position.set((i - off) * a, (j - off) * a, (k - off) * a); root.add(m);
       const stick = (dx, dy, dz) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, a, 16), new THREE.MeshPhysicalMaterial({ color: 0xcfd8e3, roughness: .3, metalness: .2 }));
-        c.position.set((i - 1 + dx / 2) * a, (j - 1 + dy / 2) * a, (k - 1 + dz / 2) * a);
+        c.position.set((i - off + dx / 2) * a, (j - off + dy / 2) * a, (k - off + dz / 2) * a);
         if (dx) c.rotation.z = Math.PI / 2; if (dz) c.rotation.x = Math.PI / 2; root.add(c); };
       if (i < n - 1) stick(1, 0, 0); if (j < n - 1) stick(0, 1, 0); if (k < n - 1) stick(0, 0, 1);
     }
@@ -93,6 +93,17 @@ window.renderScene = async (cfg) => {
         root.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 60, 0.035, 8), new THREE.MeshPhysicalMaterial({ color: 0xff8c00, emissive: 0xff8c00, emissiveIntensity: 0.45, transparent: true, opacity: 0.85 - r * 0.15 }))); });
     }
     root.rotation.y = 0.15;
+  } else if (cfg.kind === 'beaker') {
+    const pts = [[0, -1.6], [1.15, -1.6], [1.2, -1.55], [1.2, 1.5], [1.32, 1.62], [1.28, 1.66], [1.14, 1.52], [1.14, -1.5], [0, -1.5]].map(([x, y]) => new THREE.Vector2(x, y));
+    const glass = new THREE.Mesh(new THREE.LatheGeometry(pts, 96), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, thickness: 0.15, roughness: 0.04, ior: 1.45, transparent: true, opacity: 0.55, clearcoat: 1, side: THREE.DoubleSide }));
+    root.add(glass);
+    const liq = new THREE.Mesh(new THREE.CylinderGeometry(1.12, 1.12, 1.9, 96), new THREE.MeshPhysicalMaterial({ color: cfg.liquid || 0x4fb8ff, transmission: 0.3, roughness: 0.1, transparent: true, opacity: 0.5 }));
+    liq.position.y = -0.55; root.add(liq);
+    for (let i = 0; i < 26; i++) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), glossy(0xffffff, 0.15)); const a = i * 2.4, rr = 0.2 + (i % 5) * 0.17;
+      c.position.set(Math.cos(a) * rr, -1.42 + (i % 3) * 0.06, Math.sin(a) * rr); c.rotation.set(i, i * 2, 0); root.add(c); }
+    [-0.4, 0.4].forEach(x => { const e = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 3.1, 32), new THREE.MeshPhysicalMaterial({ color: 0x2b2f36, roughness: 0.45, metalness: 0.3 })); e.position.set(x, 0.35, 0); root.add(e); });
+    for (let i = 0; i < 14; i++) { const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 24, 24), glossy(i % 2 ? 0x34c759 : 0x8e5cff, 0.2)); s2.position.set(Math.sin(i * 1.7) * 0.85, -1.2 + (i * 0.11), Math.cos(i * 2.3) * 0.6); root.add(s2); }
+    root.rotation.x = 0.18;
   } else if (cfg.kind === 'sphere') {
     root.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), glossy(cfg.color, 0.12)));
     root.add(glow(cfg.color, 3.2, 0.4));
