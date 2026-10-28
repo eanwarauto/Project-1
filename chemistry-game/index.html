@@ -2,132 +2,147 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Poppins:wght@600;700;800&display=swap">
 <style>
-/* Layout: one lab console. Home lists the three chapters as stations; a round runs as a single focused card with a timer bar; the classroom board sits beside it on wide screens and under it on phones. */
+/* Layout: a lab bench. The story sits in a banner over the bench; each station is a drag-and-drop board with balls for electrons. The classroom board sits beside the bench on wide screens and under it on phones. */
 :root{
-  --bg:#f3f8fc; --panel:#ffffff; --ink:#132a4a; --muted:#5a7290; --line:#d3e2f0;
-  --c1:#0f9d8e; --c2:#6c4fe0; --c3:#e8335f; --gold:#f2a20c; --ok:#18a058; --bad:#e0442f;
-  --ion:#2a6fd6; --soft:#e9f3fc;
+  --bg:#eef6fc; --panel:#ffffff; --ink:#122a48; --muted:#56708f; --line:#cfe0ef; --soft:#e4f0fb;
+  --e:#f2a20c; --e2:#ffd45c; --c1:#0f9d8e; --c2:#6c4fe0; --c3:#e8335f;
+  --ok:#17955a; --bad:#dc4330; --ion:#2a6fd6;
   --display:"Cairo",Tahoma,Arial,sans-serif; --latin:"Poppins","Segoe UI",Arial,sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0c1828; --panel:#15263d; --ink:#e8f1fb; --muted:#9cb3cd; --line:#2a4262;
-  --c1:#3ccbb9; --c2:#a18cff; --c3:#ff6b8a; --gold:#ffc04d; --ok:#4fd08a; --bad:#ff7a66;
-  --ion:#6aa8ff; --soft:#1b3250; color-scheme:dark}}
+  --bg:#0b1727; --panel:#15263d; --ink:#e8f1fb; --muted:#9cb3cd; --line:#2a4262; --soft:#1b3250;
+  --e:#ffc04d; --e2:#ffe38a; --c1:#3ccbb9; --c2:#a18cff; --c3:#ff6b8a; --ok:#4fd08a; --bad:#ff7a66; --ion:#6aa8ff; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0c1828; --panel:#15263d; --ink:#e8f1fb; --muted:#9cb3cd; --line:#2a4262;
-  --c1:#3ccbb9; --c2:#a18cff; --c3:#ff6b8a; --gold:#ffc04d; --ok:#4fd08a; --bad:#ff7a66;
-  --ion:#6aa8ff; --soft:#1b3250; color-scheme:dark}
+  --bg:#0b1727; --panel:#15263d; --ink:#e8f1fb; --muted:#9cb3cd; --line:#2a4262; --soft:#1b3250;
+  --e:#ffc04d; --e2:#ffe38a; --c1:#3ccbb9; --c2:#a18cff; --c3:#ff6b8a; --ok:#4fd08a; --bad:#ff7a66; --ion:#6aa8ff; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-weight:700;direction:rtl;font-size:18px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:1120px;margin:0 auto;padding-block:16px 40px;display:grid;gap:18px}
-.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.wrap{max-width:1160px;margin:0 auto;padding-block:14px 36px;display:grid;gap:14px}
+.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 h1{font-size:clamp(28px,5vw,40px);font-weight:900;margin:0;line-height:1.15}
-.sub{color:var(--muted);font-size:18px;margin:4px 0 0;font-weight:600}
 .stats{display:flex;gap:10px;flex-wrap:wrap}
 .stat{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:8px 16px;min-width:96px;text-align:center}
-.stat b{display:block;font-family:var(--latin);font-size:26px;font-weight:800;color:var(--gold)}
+.stat b{display:block;font-family:var(--latin);font-size:26px;font-weight:800;color:var(--e)}
 .stat span{font-size:15px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
-@media (max-width:860px){.grid{grid-template-columns:1fr}}
-.card{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:22px;min-width:0}
-.name{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-input.nm{font:inherit;font-size:18px;font-weight:700;border:2px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--bg);color:var(--ink);min-width:0;flex:1}
-input.nm:focus-visible,button:focus-visible{outline:3px solid var(--ion);outline-offset:2px}
-.stations{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.station{border:0;text-align:start;cursor:pointer;color:var(--ink);font:inherit;background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:8px;position:relative;overflow:hidden;transition:transform .15s}
-.station:hover{transform:translateY(-3px)}
-.station::before{content:"";position:absolute;inset:0 auto 0 0;width:8px;background:var(--c)}
-.station .no{font-family:var(--latin);font-size:14px;color:var(--c);font-weight:800;letter-spacing:.04em}
-.station h2{margin:0;font-size:22px;font-weight:900;line-height:1.3}
-.station p{margin:0;color:var(--muted);font-size:16px;font-weight:600;line-height:1.6}
-.station .bar{height:10px;border-radius:99px;background:var(--soft);overflow:hidden;margin-top:4px}
-.station .bar i{display:block;height:100%;background:var(--c);width:0;transition:width .4s}
-.station .best{font-size:15px;color:var(--muted)}
-.station[disabled]{opacity:.55;cursor:not-allowed;transform:none}
-.lock{font-size:14px;color:var(--muted)}
+.stations{display:flex;gap:10px;flex-wrap:wrap}
+.tab{font:inherit;font-size:17px;font-weight:800;border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:10px 16px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.tab i{font-style:normal;width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;background:var(--c);color:#fff;font-size:15px}
+.tab[aria-selected="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--panel))}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:20px;min-width:0}
+.story{border-radius:22px;padding:16px 18px;background:color-mix(in srgb,var(--c) 12%,var(--panel));border:2px solid color-mix(in srgb,var(--c) 45%,var(--line));line-height:1.9;font-size:18px;font-weight:700}
+.story b{color:var(--c)}
+.stage-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 6px}
+.stage-h h2{margin:0;font-size:24px;font-weight:900}
+.chip{font-family:var(--latin);background:var(--soft);border-radius:999px;padding:6px 14px;font-size:16px;font-weight:800;white-space:nowrap}
+.task{font-size:19px;font-weight:800;margin:8px 0 12px;line-height:1.7}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;font-family:var(--latin)}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:640px){.bench{grid-template-columns:1fr}}
+.panel{background:var(--soft);border-radius:20px;padding:12px;min-width:0}
+.pool{min-height:86px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;border:2px dashed var(--c);border-radius:16px;padding:10px;background:var(--panel)}
+.label{font-size:15px;color:var(--muted);margin:0 0 6px;font-weight:700}
+.ball{width:44px;height:44px;border-radius:50%;display:inline-grid;place-items:center;cursor:grab;touch-action:none;user-select:none;
+  background:radial-gradient(circle at 34% 30%,#fff,var(--e2) 35%,var(--e) 70%,#9a6200);box-shadow:0 4px 10px rgba(0,0,0,.25),inset 0 -4px 6px rgba(0,0,0,.15);
+  font-family:var(--latin);font-weight:800;font-size:15px;color:#4a3000;transition:transform .15s}
+.ball:hover{transform:scale(1.08)}
+.ball.small{width:22px;height:22px;font-size:0;cursor:grab}
+.ball.ion{background:radial-gradient(circle at 34% 30%,#fff,#9bd0ff 40%,#2a6fd6 80%);color:#fff}
+.zone{min-height:72px;border-radius:16px;border:2px solid var(--line);background:var(--panel);padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;transition:border-color .2s,background .2s;min-width:0}
+.zone.over{border-color:var(--ion);background:color-mix(in srgb,var(--ion) 12%,var(--panel))}
+.zone.full{opacity:.8}
+.zone .zl{width:100%;text-align:center;font-family:var(--latin);font-size:14px;color:var(--muted);font-weight:800}
+.shells{display:grid;gap:10px}
+.shell{display:grid;grid-template-columns:80px 1fr;gap:10px;align-items:center}
+.shell .k{font-family:var(--latin);font-weight:800;color:var(--muted);font-size:15px;text-align:center}
+.atom{position:relative;width:240px;height:240px;margin:0 auto}
+.atom .nuc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:70px;height:70px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--c) 60%,color-mix(in srgb,var(--c) 60%,#000));color:#fff;font-family:var(--latin);font-weight:800;font-size:20px;text-shadow:0 2px 4px rgba(0,0,0,.3);z-index:2}
+.atom .ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;border:2px solid color-mix(in srgb,var(--c) 40%,var(--line))}
+.atom .eldot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--e);box-shadow:0 0 6px var(--e2);transform:translate(-50%,-50%)}
+.sidebtns{position:relative;width:240px;height:240px;margin:0 auto}
+.sidebtns .nuc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff,var(--c) 60%,color-mix(in srgb,var(--c) 60%,#000));color:#fff;font-family:var(--latin);font-weight:800;font-size:20px}
+.side{position:absolute;min-width:90px;min-height:54px;border-radius:14px;border:2px dashed var(--c);background:var(--panel);display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center;padding:6px}
+.side.r{right:0;top:50%;transform:translateY(-50%)}.side.l{left:0;top:50%;transform:translateY(-50%)}
+.side.t{top:0;left:50%;transform:translateX(-50%)}.side.b{bottom:0;left:50%;transform:translateX(-50%)}
+.side.over{border-style:solid;border-color:var(--ion)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.btn{font:inherit;font-size:18px;font-weight:900;border:0;border-radius:16px;padding:12px 20px;cursor:pointer;color:#fff;background:var(--c,var(--c1));box-shadow:0 5px 0 color-mix(in srgb,var(--c,var(--c1)) 60%,#000)}
+.btn.ghost{background:var(--soft);color:var(--ink);box-shadow:none;border:2px solid var(--line)}
+.btn:active{transform:translateY(2px)}
+button:focus-visible{outline:3px solid var(--ion);outline-offset:2px}
+.fb{border-radius:16px;padding:12px 14px;font-size:17px;line-height:1.8;display:none;margin-top:10px}
+.fb.show{display:block}
+.fb.ok{background:color-mix(in srgb,var(--ok) 14%,var(--panel));border:2px solid var(--ok)}
+.fb.bad{background:color-mix(in srgb,var(--bad) 12%,var(--panel));border:2px solid var(--bad)}
+.opts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:6px}
+.opt{font:inherit;font-size:20px;font-weight:800;color:var(--ink);background:var(--panel);border:3px solid var(--line);border-radius:16px;padding:12px;cursor:pointer;min-height:58px}
+.opt:hover:not(:disabled){border-color:var(--c)}
+.opt.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 16%,var(--panel))}
+.opt.bad{border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.tok{display:inline-flex;flex-direction:column;align-items:center;gap:2px;background:var(--panel);border:3px solid var(--c);border-radius:18px;padding:10px 14px;cursor:grab;touch-action:none;user-select:none;font-family:var(--latin);font-weight:800;font-size:24px;min-width:130px}
+.tok small{font-family:var(--display);font-size:14px;color:var(--muted);font-weight:700}
+.bin{min-height:120px;border-radius:18px;border:3px dashed var(--c);background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;padding:8px;min-width:0}
+.bin.over{border-style:solid;background:color-mix(in srgb,var(--ion) 12%,var(--panel))}
+.bin h4{margin:0;font-size:18px;font-weight:900;color:var(--c)}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.slot{min-height:120px;border-radius:18px;border:3px dashed var(--line);background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px}
+.slot.over{border-color:var(--ion);border-style:solid}
+.slot .n{font-family:var(--latin);font-weight:800;color:var(--muted);font-size:14px}
+.ionrow{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.ionbox{border-radius:18px;padding:12px 16px;text-align:center;font-family:var(--latin);font-weight:800;font-size:28px;background:var(--panel);border:3px solid var(--line);min-width:150px}
+.ionbox small{display:block;font-family:var(--display);font-size:14px;color:var(--muted);font-weight:700}
+.dropwrap{display:none}
+.end{display:grid;gap:12px;justify-items:center;text-align:center;padding:10px}
+.stars{font-size:48px;letter-spacing:6px;color:var(--e)}
 .board h3{margin:0 0 10px;font-size:20px;font-weight:900}
 .row{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:12px;background:var(--soft);margin-bottom:8px;font-size:17px}
 .row.me{outline:2px solid var(--ion)}
 .row b{font-family:var(--latin)}
-.hint{color:var(--muted);font-size:15px;font-weight:600;margin:6px 0 0;line-height:1.6}
-/* play */
-.play{display:grid;gap:16px}
-.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.chip{font-family:var(--latin);background:var(--soft);border-radius:999px;padding:6px 14px;font-size:16px;font-weight:800}
-.timer{height:14px;border-radius:99px;background:var(--soft);overflow:hidden}
-.timer i{display:block;height:100%;width:100%;background:var(--c);transition:width .25s linear,background .3s}
-.q{font-size:clamp(22px,3.6vw,30px);font-weight:900;line-height:1.5;margin:0}
-.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;font-family:var(--latin)}
-.opts{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
-.opt{font:inherit;font-size:22px;font-weight:800;color:var(--ink);background:var(--panel);border:3px solid var(--line);border-radius:18px;padding:16px 12px;cursor:pointer;min-height:64px;transition:transform .12s,border-color .2s}
-.opt:hover:not(:disabled){transform:translateY(-2px);border-color:var(--c)}
-.opt.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 16%,var(--panel))}
-.opt.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,var(--panel))}
-.opt:disabled{cursor:default}
-.ltrOpt{direction:ltr;font-family:var(--latin);font-weight:800;font-size:24px}
-.fb{border-radius:18px;padding:14px 16px;font-size:18px;font-weight:700;line-height:1.8;display:none}
-.fb.show{display:block}
-.fb.ok{background:color-mix(in srgb,var(--ok) 14%,var(--panel));border:2px solid var(--ok)}
-.fb.bad{background:color-mix(in srgb,var(--bad) 12%,var(--panel));border:2px solid var(--bad)}
-.btn{font:inherit;font-size:20px;font-weight:900;border:0;border-radius:18px;padding:14px 22px;cursor:pointer;color:#fff;background:var(--c);box-shadow:0 6px 0 color-mix(in srgb,var(--c) 60%,#000);justify-self:start}
-.btn.ghost{background:var(--soft);color:var(--ink);box-shadow:none;border:2px solid var(--line)}
-.btn:active{transform:translateY(3px)}
-/* lab bench for part 1 dots */
-.bench{display:grid;place-items:center;padding:10px 0}
-.atom{position:relative;width:260px;height:230px}
-.atom .sym{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:112px;height:112px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#fff,var(--c) 60%,color-mix(in srgb,var(--c) 70%,#000));font-family:var(--latin);font-weight:800;font-size:34px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.25)}
-.slot{position:absolute;width:56px;height:56px;border-radius:14px;border:2px dashed var(--c);background:var(--soft);cursor:pointer;display:grid;place-items:center;font:inherit;color:var(--ink);font-size:18px;font-weight:800;padding:0}
-.slot.r{right:0;top:50%;transform:translateY(-50%)}.slot.l{left:0;top:50%;transform:translateY(-50%)}
-.slot.t{top:0;left:50%;transform:translateX(-50%)}.slot.b{bottom:0;left:50%;transform:translateX(-50%)}
-.dot{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--gold) 50%,#a86a00);box-shadow:0 2px 5px rgba(0,0,0,.3);display:inline-block;margin:2px}
-.dots{display:flex;justify-content:center;gap:4px;flex-wrap:wrap;min-height:26px}
-/* ionic cards */
-.ions{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
-.ionbox{border-radius:20px;padding:14px;text-align:center;font-family:var(--latin);font-weight:800;font-size:30px;background:var(--soft);border:3px solid var(--line)}
-.ionbox small{display:block;font-family:var(--display);font-size:15px;color:var(--muted);font-weight:700}
-.plus{font-size:34px;color:var(--muted)}
-.ctitle{font-size:14px;color:var(--muted)}
-.end{text-align:center;display:grid;gap:14px;justify-items:center}
-.stars{font-size:54px;letter-spacing:6px;color:var(--gold)}
-.sbig{font-family:var(--latin);font-size:56px;font-weight:800}
-.foot{text-align:center;color:var(--muted);font-size:15px;margin-top:6px}
-.sig{font-family:var(--latin);font-weight:700;font-size:14px;direction:ltr;text-align:left;color:var(--ink)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.hint{color:var(--muted);font-size:15px;font-weight:600;margin:6px 0 0;line-height:1.7}
+.sig{font-family:var(--latin);font-weight:700;font-size:14px;direction:ltr;text-align:left}
+.foot{text-align:center;color:var(--muted);font-size:15px}
+.name{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+input.nm{font:inherit;font-size:17px;font-weight:700;border:2px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--bg);color:var(--ink);min-width:0;flex:1}
 .shake{animation:sh .35s}
 @keyframes sh{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .pop{animation:pp .45s}
-@keyframes pp{0%{transform:scale(.8)}60%{transform:scale(1.06)}100%{transform:none}}
+@keyframes pp{0%{transform:scale(.85)}60%{transform:scale(1.05)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
 <div class="wrap">
   <div class="top">
-    <div>
-      <h1>مختبر الروابط الأيونية</h1>
-      <p class="sub">ثلاث محطات: الإلكترونات والترتيب النقطي، ثم الصيغ، ثم خواص المركبات. العب بسرعة ودقة.</p>
-    </div>
+    <h1>مختبر الروابط الأيونية</h1>
     <div class="stats">
       <div class="stat"><b id="sPts">0</b><span>النقاط</span></div>
       <div class="stat"><b id="sStars">0</b><span>النجوم</span></div>
-      <div class="stat"><b id="sStreak">0</b><span>سلسلة</span></div>
     </div>
   </div>
+  <div class="stations" id="tabs" role="tablist"></div>
 
   <div class="grid">
-    <main id="main" class="card" aria-live="polite"></main>
+    <main class="card" id="main" aria-live="polite"></main>
     <aside class="card board">
       <h3>لوحة الفصل</h3>
-      <div id="peers"><p class="hint">الوضع الفردي. إذا فتحت الصفحة من نفس الرابط مع زميلاتك على أجهزتهن، تظهر نتائجكن هنا مباشرة.</p></div>
+      <div id="peers"><p class="hint">الوضع الفردي. إذا فتحت الصفحة من نفس الرابط مع زميلاتك على أجهزتهن، تظهر نقاطكن هنا مباشرة.</p></div>
       <p class="hint" id="roomNote"></p>
+      <div class="name">
+        <input class="nm" id="nm" maxlength="24" placeholder="اسمك في اللوحة">
+        <button class="btn" id="saveName" style="padding:8px 12px;font-size:16px">حفظ</button>
+      </div>
       <p class="sig" style="margin-top:14px">Eng.7IKAYA</p>
     </aside>
   </div>
-  <p class="foot">كل محطة 10 أسئلة، والإجابة الصحيحة بسرعة تعطيك نقاطاً إضافية.</p>
+  <p class="foot">اسحبي الكرات بالماوس أو بالإصبع، وأفلتيها في المكان الصحيح.</p>
 </div>
 
 <script>
-// ---------- data (values from the lesson book) ----------
+// ---------- chemistry data (from the lesson) ----------
 const EL = {
   H:{z:1,e:2.1,cfg:[1]}, Li:{z:3,e:1.0,cfg:[2,1]}, Be:{z:4,e:1.5,cfg:[2,2]}, B:{z:5,e:2.0,cfg:[2,3]},
   C:{z:6,e:2.5,cfg:[2,4]}, N:{z:7,e:3.0,cfg:[2,5]}, O:{z:8,e:3.5,cfg:[2,6]}, F:{z:9,e:4.0,cfg:[2,7]},
@@ -135,297 +150,385 @@ const EL = {
   S:{z:16,e:2.5,cfg:[2,8,6]}, Cl:{z:17,e:3.0,cfg:[2,8,7]}, K:{z:19,e:0.8,cfg:[2,8,8,1]}, Ca:{z:20,e:1.0,cfg:[2,8,8,2]}
 };
 const NAME = {H:'الهيدروجين',B:'البورون',C:'الكربون',Li:'الليثيوم',Be:'البيريليوم',N:'النيتروجين',O:'الأكسجين',F:'الفلور',Na:'الصوديوم',Mg:'المغنيسيوم',Al:'الألومنيوم',S:'الكبريت',Cl:'الكلور',K:'البوتاسيوم',Ca:'الكالسيوم'};
-const ANION = {N:'نيتريد',O:'أكسيد',F:'فلوريد',S:'كبريتيد',Cl:'كلوريد'};
-const CATION = {Li:'ليثيوم',Be:'بيريليوم',Na:'صوديوم',Mg:'مغنيسيوم',Al:'ألومنيوم',K:'بوتاسيوم',Ca:'كالسيوم'};
+const CAT = {Li:'ليثيوم',Be:'بيريليوم',Na:'صوديوم',Mg:'مغنيسيوم',Al:'ألومنيوم',K:'بوتاسيوم',Ca:'كالسيوم'};
+const AN = {N:'نيتريد',O:'أكسيد',F:'فلوريد',S:'كبريتيد',Cl:'كلوريد'};
 const valence = s => EL[s].cfg[EL[s].cfg.length-1];
 const ionCharge = s => { const v = valence(s); return v <= 3 ? v : -(8 - v); };
 const isMetal = s => ionCharge(s) > 0;
 const gcd = (a,b) => b ? gcd(b, a % b) : a;
-const sup = n => n === 1 ? '' : String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]).join('');
-const chargeTxt = q => (q > 0 ? '+' : '−') + (Math.abs(q) === 1 ? '' : Math.abs(q));
+const formula = (cat, an) => { const a = ionCharge(cat), b = -ionCharge(an), g = gcd(a,b); return cat + (b/g > 1 ? b/g : '') + an + (a/g > 1 ? a/g : ''); };
+const fHTML = f => f.replace(/(\d)/g,'<sub>$1</sub>');
 const LTR = s => `<span class="ltr">${s}</span>`;
-const formula = (cat, an) => { // crossover: cation charge becomes anion subscript
-  const a = ionCharge(cat), b = -ionCharge(an), g = gcd(a,b);
-  const cN = b/g, aN = a/g;
-  return cat + (cN > 1 ? cN : '') + an + (aN > 1 ? aN : '');
-};
-const formulaHTML = f => f.replace(/(\d)/g,'<sub>$1</sub>');
+const chg = q => (q > 0 ? '+' : '−') + (Math.abs(q) === 1 ? '' : Math.abs(q));
 const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } return a; };
-const pick = a => a[Math.random()*a.length|0];
 const uniq = a => [...new Set(a)];
+const CAPS = [2,8,8,2]; const SHELLS = ['K','L','M','N'];
+
+// ---------- stories and station data ----------
+const STORY = {
+  1:{title:'بناء الذرة', color:'var(--c1)', text:'أنتِ مهندسة في <b>مدينة الاستقرار</b>. كل ذرة مبنى من أدوار اسمها (K, L, M, N). الدور الأول يتسع لإلكترونين فقط، والبقية لثمانية. ابني الذرة بإلكتروناتها، ثم اكشفي <b>إلكترونات التكافؤ</b> (الموجودة في الدور الأخير) وارسميها كنقاط حول الرمز.'},
+  2:{title:'الصيغة والانتقال', color:'var(--c2)', text:'في المختبر، <b>الفلز يتخلص من إلكترونات</b> ليصبح كاتيوناً، و<b>اللافلز يستقبلها</b> ليصبح أنيوناً. انقلي الإلكترونات بينهما حتى يصل كل عنصر إلى الاستقرار، ثم اكتبي <b>صيغة المركب</b> واسمه.'},
+  3:{title:'ميزان الخواص', color:'var(--c3)', text:'المركبات الأيونية <b>صلبة</b>، وتوصل الكهرباء عند <b>الانصهار</b> أو <b>الذوبان</b>. ضعي كل رابطة على الميزان، واحسبي فرق السالبية الكهربائية، ثم رتّبي المركبات حسب <b>قوة خاصيتها الأيونية</b>.'}
+};
+const PAIRS2 = [['Na','Cl'],['Na','F'],['K','Cl'],['K','F'],['Li','F'],['Li','Cl'],['Mg','O'],['Ca','O'],['Mg','S'],['Ca','S']];
+const PAIRS3 = [['Na','Cl'],['Mg','O'],['K','F'],['Li','F'],['Ca','O'],['Al','O'],['N','Cl'],['O','H'],['C','O'],['H','Cl'],['S','O'],['Mg','Cl'],['B','F'],['N','H'],['C','H'],['Li','O']];
+const ELS1 = ['Li','Be','N','O','F','Na','Mg','Al','S','Cl','K','Ca'];
 
 // ---------- state ----------
-const S = { name: '', pts: 0, stars: 0, streak: 0, best: {1:0,2:0,3:0}, done: {1:false,2:false,3:false} };
-try { const saved = JSON.parse(localStorage.getItem('ionicGame') || 'null'); if (saved) Object.assign(S, saved); } catch {}
-const save = () => { try { localStorage.setItem('ionicGame', JSON.stringify(S)); } catch {} };
+const S = { name:'', pts:0, stars:0, best:{1:0,2:0,3:0} };
+try { Object.assign(S, JSON.parse(localStorage.getItem('ionicGame2') || '{}')); } catch {}
+const save = () => { try { localStorage.setItem('ionicGame2', JSON.stringify(S)); } catch {} };
 const $ = id => document.getElementById(id);
 const main = $('main');
-let R = null; // current round
-let room = null;
+let station = 1, lv = null, room = null;
+function refresh(){ $('sPts').textContent = S.pts; $('sStars').textContent = S.stars; }
+function announce(){ if (room) { try { room.presence({ name: S.name || 'طالبة', total: S.pts }); } catch {} } }
+function award(n){ S.pts += n; save(); refresh(); announce(); }
 
-function refreshStats(){ $('sPts').textContent = S.pts; $('sStars').textContent = S.stars; $('sStreak').textContent = S.streak; }
-function announce(){ if (room) { try { room.presence({ name: S.name || 'طالبة', pts: R ? R.score : 0, part: R ? R.part : 0, total: S.pts }); } catch {} } }
+// ---------- drag and drop (mouse, pen and touch) ----------
+function makeDrag(el, payload){
+  el.addEventListener('pointerdown', e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    const g = el.cloneNode(true);
+    Object.assign(g.style, {position:'fixed', pointerEvents:'none', zIndex:999, margin:0, opacity:.95, transform:'scale(1.12)',
+      left:(e.clientX - el.offsetWidth/2)+'px', top:(e.clientY - el.offsetHeight/2)+'px', width:el.offsetWidth+'px'});
+    document.body.appendChild(g);
+    el.style.opacity = .3;
+    const move = ev => { g.style.left = (ev.clientX - el.offsetWidth/2)+'px'; g.style.top = (ev.clientY - el.offsetHeight/2)+'px';
+      document.querySelectorAll('[data-zone].over').forEach(z => z.classList.remove('over'));
+      const z = hitZone(ev.clientX, ev.clientY); if (z) z.classList.add('over'); };
+    const up = ev => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      g.remove(); el.style.opacity = '';
+      document.querySelectorAll('[data-zone].over').forEach(z => z.classList.remove('over'));
+      const z = hitZone(ev.clientX, ev.clientY);
+      if (z && lv && lv.onDrop) lv.onDrop(z.dataset.zone, payload);
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  });
+}
+function hitZone(x, y){ const t = document.elementFromPoint(x, y); return t ? t.closest('[data-zone]') : null; }
+function shake(el){ if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+function feedback(ok, html){ const f = $('fb'); if (!f) return; f.className = 'fb show ' + (ok ? 'ok' : 'bad'); f.innerHTML = html; }
 
-// ---------- question builders ----------
-function p1Config(){
-  const s = pick(Object.keys(EL).filter(k => k !== 'H'));
-  const cfg = EL[s].cfg.join(' , ');
-  const wrong = uniq([
-    EL[s].cfg.map((v,i)=> i===EL[s].cfg.length-1 ? v+1 : v).join(' , '),
-    EL[s].cfg.slice(0,-1).concat([EL[s].cfg.at(-1)-1]).join(' , '),
-    [2,8,8].concat(EL[s].cfg.slice(3)).join(' , ') === cfg ? '2 , 8 , 4' : [2,8,8].concat(EL[s].cfg.slice(3)).join(' , '),
-    '2 , 8 , 2 , 1'
-  ]).filter(x => x !== cfg).slice(0,3);
-  return { part:1, kind:'config', s, prompt:`الترتيب الإلكتروني لذرة ${NAME[s]} (${LTR(s)}) حسب مستويات الطاقة الرئيسية؟`,
-    opts: shuffle([cfg, ...wrong]).map(o => ({t:LTR(o), ok:o===cfg})),
-    fb:`الترتيب الصحيح: ${LTR(cfg)}. إلكترونات التكافؤ هي إلكترونات المستوى الخارجي، وهي ${valence(s)} هنا.` };
+// ---------- station 1: build an atom, then draw valence dots ----------
+let DECK = {};
+function newL1(){
+  const s = DECK[1][lv_idx];
+  return { st:1, s, stage:'build', placed:[0,0,0,0], target:EL[s].cfg, mistakes:0, pool:EL[s].z, sidesPlaced:{r:0,l:0,t:0,b:0}, v:valence(s), dotsPool:valence(s), attempt:0, got:0 };
 }
-function p1Valence(){
-  const s = pick(Object.keys(EL).filter(k => k !== 'H'));
-  const v = valence(s);
-  const opts = uniq([v, v+1, v-1 > 0 ? v-1 : v+2, 8-v === v ? v+3 : 8-v, 2]).filter(x=>x>0&&x<=8&&x!==v).slice(0,3);
-  return { part:1, kind:'valence', s, prompt:`كم عدد إلكترونات التكافؤ في ذرة ${NAME[s]} (${LTR(s)})؟`,
-    opts: shuffle([v, ...opts]).map(o => ({t:String(o), ok:o===v})),
-    fb:`إلكترونات التكافؤ هي الموجودة في أعلى مستوى طاقة. في ${LTR(s)} الترتيب ${LTR(EL[s].cfg.join(' , '))} وآخر مستوى فيه ${v}.` };
-}
-function p1Dots(){
-  const s = pick(Object.keys(EL).filter(k => k !== 'H'));
-  return { part:1, kind:'dots', s, v: valence(s), placed:{r:0,l:0,t:0,b:0} };
-}
-function p2Charge(){
-  const s = pick(Object.keys(EL).filter(k => k !== 'H'));
-  const q = ionCharge(s);
-  const opts = uniq([q, -q, q+1, q-1, 0]).filter(x=>x!==0 && Math.abs(x)<=3).slice(0,3);
-  if (opts.length < 3) opts.push(q>0? -1 : 1);
-  return { part:2, kind:'charge', s, prompt:`ما شحنة أيون ${NAME[s]} (${LTR(s)}) المتوقع عند استقراره؟`,
-    opts: shuffle(uniq([q, ...opts]).slice(0,4)).map(o => ({t:`<span class="ltrOpt">${chargeTxt(o)}</span>`, ok:o===q})),
-    fb:`${NAME[s]} ${isMetal(s)?'فلز يفقد':'لافلز يكتسب'} ${Math.abs(q)} ${Math.abs(q)===1?'إلكتروناً':'إلكترونات'} ليصل للاستقرار، فتكون شحنته ${chargeTxt(q)}.` };
-}
-function p2Formula(){
-  const c = pick(Object.keys(CATION)), a = pick(Object.keys(ANION));
-  const right = formula(c, a);
-  const cq = ionCharge(c), aq = -ionCharge(a);
-  const wrong = uniq([
-    c + a,                                   // not balanced
-    a + c,                                   // reversed order
-    c + (cq ? '' : '') + a + String(Math.abs(cq)), // extra digit after the anion
-    c + String(aq) + a,                      // charges written as digits
-  ]).filter(x => x !== right && x.length > 0 && !/^\d/.test(x)).slice(0,3);
-  return { part:2, kind:'formula', c, a, prompt:`ما الصيغة الكيميائية الصحيحة لمركب ${CATION[c]} مع ${ANION[a]}؟`,
-    opts: shuffle([right, ...wrong]).map(o => ({t:`<span class="ltrOpt">${formulaHTML(o)}</span>`, ok:o===right})),
-    fb:`طريقة التبادل: شحنة ${LTR(c)} (${chargeTxt(cq)}) تصبح عدد ذرات ${LTR(a)}، وشحنة ${LTR(a)} (${chargeTxt(-aq)}) تصبح عدد ذرات ${LTR(c)}. الصيغة: ${LTR(formulaHTML(right))}.` };
-}
-function p2Name(){
-  const c = pick(Object.keys(CATION)), a = pick(Object.keys(ANION));
-  const f = formula(c, a);
-  const right = `${CATION[c]} ${ANION[a]}`;
-  const names = shuffle(Object.keys(CATION)).slice(0,3).flatMap(x => Object.keys(ANION).slice(0,1).map(y => `${CATION[x]} ${ANION[y]}`));
-  const wrong = uniq(names.filter(x => x !== right)).slice(0,3);
-  return { part:2, kind:'name', c, a, prompt:`ما اسم المركب ${LTR(formulaHTML(f))}؟`,
-    opts: shuffle([right, ...wrong]).map(o => ({t:o, ok:o===right})),
-    fb:`${LTR(formulaHTML(f))} هو ${right}. نبدأ باسم الفلز ثم اسم اللافلز، وتتغير نهاية اسم اللافلز (مثل: كلوريد، أكسيد، فلوريد).` };
-}
-function p3Bond(){
-  const pairs = [['Na','Cl'],['Mg','O'],['K','F'],['Li','F'],['Ca','O'],['Al','O'],['N','Cl'],['O','H'],['C','O'],['H','Cl'],['S','O'],['Mg','Cl'],['B','F'],['N','H']];
-  const [x,y] = pick(pairs);
-  const d = Math.abs(EL[x].e - EL[y].e);
-  const ionic = d >= 1.7;
-  return { part:3, kind:'bond', x, y, d, prompt:`الرابطة بين ${NAME[x]} (${LTR(x)}) و${NAME[y]} (${LTR(y)}): ${LTR(`${EL[x].e} − ${EL[y].e} = ${d.toFixed(1)}`)}. ما نوع الرابطة؟`,
-    opts: [{t:'أيونية', ok:ionic},{t:'تساهمية', ok:!ionic}],
-    fb:`الفرق في السالبية الكهربائية ${LTR(d.toFixed(1))}. إذا كان الفرق أكبر من أو يساوي 1.7 تكون الرابطة أيونية، وغير ذلك تكون تساهمية.` };
-}
-function p3Rank(){
-  const trio = shuffle([['Mg','O'],['Na','F'],['Li','Cl'],['K','Cl'],['Ca','O'],['Mg','Cl'],['Li','F'],['Na','Cl']]).slice(0,3);
-  const withD = trio.map(([x,y]) => ({x,y,d: Math.abs(EL[x].e - EL[y].e)}));
-  const best = withD.reduce((a,b)=> b.d > a.d ? b : a);
-  const ties = withD.filter(o => o.d === best.d).length;
-  if (ties > 1) return p3Rank();
-  return { part:3, kind:'rank', prompt:'أي المركبات له أعلى خاصية أيونية؟',
-    opts: withD.map(o => ({t:`<span class="ltrOpt">${formulaHTML(formula(o.x, o.y))}</span>`, ok:o===best})),
-    fb:`الخاصية الأيونية تزيد بزيادة الفرق في السالبية الكهربائية. أعلى فرق في هذه المجموعة للمركب ${LTR(formulaHTML(formula(best.x,best.y)))} وهو ${LTR(best.d.toFixed(1))}.` };
-}
-function p3Property(){
-  const right = 'توصل الكهرباء وهي مصهورة أو مذابة في الماء';
-  const wrong = ['توصل الكهرباء وهي صلبة', 'درجة انصهارها منخفضة جداً', 'لا تذوب في الماء أبداً'];
-  return { part:3, kind:'prop', prompt:'أي عبارة تصف خاصية صحيحة للمركبات الأيونية؟',
-    opts: shuffle([right, ...wrong]).map(o => ({t:o, ok:o===right})),
-    fb:'أيوناتها مقيدة في الشبكة البلورية وهي صلبة فلا توصل الكهرباء. عند الصهر أو الذوبان تتحرك الأيونات بحرية فتوصل الكهرباء. درجات انصهارها مرتفعة.' };
-}
-
-const BUILD = {
-  1: [p1Config, p1Valence, p1Dots],
-  2: [p2Charge, p2Formula, p2Name],
-  3: [p3Bond, p3Rank, p3Property]
-};
-const TITLE = {1:'إلكترونات التكافؤ والترتيب النقطي', 2:'المركبات الأيونية والصيغ', 3:'خواص المركبات الأيونية'};
-const COLOR = {1:'var(--c1)', 2:'var(--c2)', 3:'var(--c3)'};
-const LIMIT = {1:15, 2:15, 3:20};
-const TOTAL = 10;
-
-function startRound(part){
-  R = { part, i:0, score:0, correct:0, q:null, timer:null, left:LIMIT[part], answered:false, log:[] };
-  nextQ(); announce();
-}
-function nextQ(){
-  clearInterval(R.timer); R.answered = false; R.left = LIMIT[R.part];
-  if (R.i >= TOTAL) return endRound();
-  const build = BUILD[R.part];
-  R.q = pick(build)();
-  R.i++;
-  renderQ();
-  R.timer = setInterval(tick, 100);
-}
-function tick(){
-  R.left -= 0.1;
-  const bar = $('tbar'); if (bar) bar.style.width = Math.max(0, R.left / LIMIT[R.part] * 100) + '%';
-  if (R.left <= 0 && !R.answered) { answer(null); }
-}
-function answer(ok, el){
-  if (R.answered) return; R.answered = true; clearInterval(R.timer);
-  const q = R.q;
-  let good = ok === true;
-  if (good) {
-    const bonus = Math.round(Math.max(0, R.left) / LIMIT[R.part] * 6);
-    const streakBonus = Math.min(R.log.filter(x=>x).slice(-3).length, 3) * 2;
-    const gain = 10 + bonus + streakBonus;
-    R.score += gain; S.pts += gain; R.correct++; S.streak++; R.log.push(true);
-    if (el) el.classList.add('ok');
-  } else {
-    S.streak = 0; R.log.push(false);
-    if (el) { el.classList.add('bad'); main.classList.add('shake'); setTimeout(()=>main.classList.remove('shake'),400); }
+function pick(a){ return a[Math.random()*a.length|0]; }
+function renderL1(){
+  const l = lv;
+  const cnt = l.placed.reduce((a,b)=>a+b,0);
+  const poolN = EL[l.s].z - cnt;
+  if (l.stage === 'build') {
+    main.innerHTML = `${head(1,`المحطة الأولى · ${l.idx+1} / 5`, `الذرة ${NAME[l.s]}`)}
+      <div class="stage-h"><h2>المرحلة أ: ابني الذرة</h2><span class="chip">الإلكترونات: ${cnt} / ${EL[l.s].z}</span></div>
+      <p class="task">اسحبي الإلكترونات من المخزن إلى الدور الصحيح. الدور الأول يتسع لإلكترونين، والباقي لثمانية.</p>
+      <div class="bench">
+        <div class="panel">
+          <p class="label">النواة</p>
+          <div class="atom" id="atomv">${atomSVG(l.s, l.placed)}</div>
+        </div>
+        <div class="panel">
+          <p class="label">الأدوار (K, L, M, N)</p>
+          <div class="shells">${SHELLS.map((n,i)=>`<div class="shell"><div class="k">${n}<br>${CAPS[i]}</div>
+            <div class="zone" data-zone="shell${i}" style="min-height:56px">${balls(l.placed[i], 'ball', CAPS[i])}</div></div>`).join('')}</div>
+          <p class="label" style="margin-top:10px">المخزن (${poolN} إلكترون)</p>
+          <div class="zone pool" data-zone="pool" style="min-height:78px">${balls(poolN,'ball')}</div>
+        </div>
+      </div>
+      <div class="btns"><button class="btn" id="chk">تحقق من الأدوار</button><button class="btn ghost" id="rst">ابدئي من جديد</button></div>
+      <div class="fb" id="fb"></div>`;
+    wireDrops(1);
+    $('chk').onclick = checkBuild;
+    $('rst').onclick = () => { l.placed = [0,0,0,0]; l.mistakes = 0; renderL1(); };
+  } else if (l.stage === 'dots') {
+    const pool = l.v - Object.values(l.sidesPlaced).reduce((a,b)=>a+b,0);
+    main.innerHTML = `${head(1,`المحطة الأولى · ${l.idx+1} / 5`, `${NAME[l.s]} (${LTR(l.s)})`)}
+      <div class="stage-h"><h2>المرحلة ب: ارسمي إلكترونات التكافؤ</h2><span class="chip">المطلوب: ${l.v}</span></div>
+      <p class="task">إلكترونات التكافؤ هي إلكترونات الدور الأخير، وعددها <span class="ltr">${l.v}</span>. ضعيها حول الرمز بحيث لا يزيد كل جانب عن نقطتين.</p>
+      <div class="bench">
+        <div class="panel"><div class="sidebtns" id="sidev">
+          <div class="nuc">${l.s}</div>
+          ${['r','l','t','b'].map(sd=>`<div class="side ${sd}" data-zone="side-${sd}" style="${sidePos(sd)}">${balls(l.sidesPlaced[sd],'ball small')}</div>`).join('')}
+        </div></div>
+        <div class="panel">
+          <p class="label">مخزن إلكترونات التكافؤ</p>
+          <div class="zone pool" data-zone="pool2" style="min-height:90px">${balls(pool,'ball')}</div>
+          <p class="hint" style="margin-top:12px">كل جانب يتسع لنقطتين. اسحبي النقطة من المخزن إلى أي جانب، أو أعيديها للمخزن.</p>
+        </div>
+      </div>
+      <div class="btns"><button class="btn" id="chk2">تحقق من النقاط</button><button class="btn ghost" id="rst2">إعادة</button></div>
+      <div class="fb" id="fb"></div>`;
+    wireDrops(2);
+    $('chk2').onclick = checkDots;
+    $('rst2').onclick = () => { l.sidesPlaced = {r:0,l:0,t:0,b:0}; renderL1(); };
   }
-  // highlight correct options
-  document.querySelectorAll('.opt').forEach(b => { if (b.dataset.ok === '1') b.classList.add('ok'); b.disabled = true; });
-  const fb = $('fb');
-  fb.className = 'fb show ' + (good ? 'ok' : 'bad');
-  fb.innerHTML = (good ? '<b>أحسنتِ! ✓</b> ' : (ok === null ? '<b>انتهى الوقت.</b> ' : '<b>ليس هذا.</b> ')) + q.fb;
-  $('next').hidden = false;
-  refreshStats(); save(); announce();
 }
-function renderQ(){
-  const q = R.q, part = R.part;
-  const head = `<div class="hud"><span class="chip">${TITLE[part]} · ${R.i} / ${TOTAL}</span><span class="chip">النقاط: ${R.score}</span></div>
-    <div class="timer"><i id="tbar" style="background:${COLOR[part]}"></i></div>`;
-  let body = '';
-  if (q.kind === 'dots') {
-    body = `<p class="q">ضع الإلكترونات (النقاط) حول رمز ${NAME[q.s]} (${LTR(q.s)}). عدد إلكترونات التكافؤ: <span class="ltr">${q.v}</span>. كل جهة تتسع لنقطتين فقط.</p>
-      <div class="bench"><div class="atom" id="atom">
-        <div class="sym" style="--c:${COLOR[part]}">${q.s}</div>
-        <button class="slot r" data-side="r" aria-label="إضافة نقطة يمين">+</button>
-        <button class="slot l" data-side="l" aria-label="إضافة نقطة يسار">+</button>
-        <button class="slot t" data-side="t" aria-label="إضافة نقطة فوق">+</button>
-        <button class="slot b" data-side="b" aria-label="إضافة نقطة تحت">+</button>
-      </div></div>
-      <div class="dots" id="dots"></div>
-      <div class="ions"><span></span><button class="btn ghost" id="reset">إعادة</button><button class="btn" id="check">تحقق</button></div>`;
+function sidePos(sd){ return ({r:'right:0;top:50%;transform:translateY(-50%)', l:'left:0;top:50%;transform:translateY(-50%)', t:'top:0;left:50%;transform:translateX(-50%)', b:'bottom:0;left:50%;transform:translateX(-50%)'})[sd]; }
+function balls(n, cls, max){ let h=''; for (let i=0;i<n;i++) h += `<span class="${cls}" data-ball="1"></span>`; return h; }
+function atomSVG(sym, placed){
+  // rings sized by shell; electrons drawn on each ring by count
+  const rings = placed.map((n,i)=> n>0 ? i : -1).filter(i=>i>=0);
+  let h = `<div class="nuc" style="--c:var(--c1)">${sym}</div>`;
+  const R = [48, 74, 100, 118];
+  SHELLS.forEach((nm,i)=>{ if (i>3) return; const r = R[i]; h += `<div class="ring" style="width:${r*2}px;height:${r*2}px;opacity:${placed[i]||i===0?1:.35}"></div>`;
+    for (let k=0;k<placed[i];k++){ const a = -Math.PI/2 + k*2*Math.PI/Math.max(placed[i],1);
+      h += `<div class="eldot" style="left:${120+r*Math.cos(a)}px;top:${120+r*Math.sin(a)}px"></div>`; } });
+  return h.replace(/<div class="nuc" style="--c:var\(--c1\)">/, '<div class="nuc" style="--c:var(--c1)">');
+}
+function wireDrops(stage){
+  const l = lv;
+  if (stage === 1) {
+    main.querySelectorAll('[data-zone^="shell"]').forEach(z => z.querySelectorAll('[data-ball]').forEach(b => makeDrag(b, {from: z.dataset.zone})));
+    main.querySelectorAll('[data-zone="pool"] [data-ball]').forEach(b => makeDrag(b, {from:'pool'}));
+    l.onDrop = (zone, p) => {
+      if (zone === 'pool' && p.from !== 'pool') { const i = +p.from.slice(5); if (l.placed[i] > 0) l.placed[i]--; }
+      else if (zone.startsWith('shell') && p.from === 'pool') { const i = +zone.slice(5); const left = EL[l.s].z - l.placed.reduce((a,b)=>a+b,0);
+        if (left > 0 && l.placed[i] < CAPS[i]) l.placed[i]++; else shake(main.querySelector(`[data-zone="${zone}"]`)); }
+      else if (zone.startsWith('shell') && p.from.startsWith('shell')) { const from = +p.from.slice(5), to = +zone.slice(5);
+        if (from !== to && l.placed[to] < CAPS[to] && l.placed[from] > 0) { l.placed[from]--; l.placed[to]++; } }
+      renderL1();
+    };
   } else {
-    body = `<p class="q">${q.prompt}</p>
-      <div class="opts">${q.opts.map((o,i)=>`<button class="opt" data-i="${i}" data-ok="${o.ok?1:0}">${o.t}</button>`).join('')}</div>`;
+    main.querySelectorAll('[data-zone^="side-"] [data-ball]').forEach(b => makeDrag(b, {from: b.parentElement.dataset.zone}));
+    main.querySelectorAll('[data-zone="pool2"] [data-ball]').forEach(b => makeDrag(b, {from:'pool2'}));
+    l.onDrop = (zone, p) => {
+      const total = () => Object.values(l.sidesPlaced).reduce((a,b)=>a+b,0);
+      if (zone.startsWith('side-') && p.from === 'pool2') { const sd = zone.slice(5); if (total() < l.v && l.sidesPlaced[sd] < 2) l.sidesPlaced[sd]++; else shake(main.querySelector(`[data-zone="${zone}"]`)); }
+      else if (zone === 'pool2' && p.from.startsWith('side-')) { const sd = p.from.slice(5); if (l.sidesPlaced[sd] > 0) l.sidesPlaced[sd]--; }
+      else if (zone.startsWith('side-') && p.from.startsWith('side-')) { const a = p.from.slice(5), b = zone.slice(5);
+        if (a !== b && l.sidesPlaced[b] < 2 && l.sidesPlaced[a] > 0) { l.sidesPlaced[a]--; l.sidesPlaced[b]++; } }
+      renderL1();
+    };
   }
-  main.innerHTML = `<div class="play">${head}${body}<div class="fb" id="fb" role="status"></div>
-    <button class="btn" id="next" hidden>${R.i >= TOTAL ? 'عرض النتيجة' : 'السؤال التالي ←'}</button></div>`;
-  if (q.kind === 'dots') {
-    q.placed = {r:0,l:0,t:0,b:0};
-    main.querySelectorAll('.slot').forEach(b => b.onclick = () => placeDot(b.dataset.side));
-    $('reset').onclick = () => { q.placed = {r:0,l:0,t:0,b:0}; drawDots(); };
-    $('check').onclick = () => checkDots();
-    drawDots();
+}
+function checkBuild(){
+  const l = lv, t = [0,1,2,3].map(i => EL[l.s].cfg[i] || 0);
+  const ok = l.placed.every((n,i) => n === t[i]);
+  if (ok) {
+    l.stage = 'dots'; l.v = valence(l.s);
+    award(l.mistakes ? 8 : 15);
+    feedback(true, `<b>أحسنتِ!</b> الترتيب: <span class="ltr">${EL[l.s].cfg.join(' , ')}</span>. الدور الأخير فيه ${valence(l.s)} إلكترونات تكافؤ.`);
+    renderL1(); feedback(true, `<b>أحسنتِ!</b> الترتيب: <span class="ltr">${EL[l.s].cfg.join(' , ')}</span>. الدور الأخير فيه ${valence(l.s)} إلكترونات تكافؤ.`);
   } else {
-    main.querySelectorAll('.opt').forEach(b => b.onclick = () => answer(b.dataset.ok === '1', b));
+    l.mistakes++;
+    shake($('atomv'));
+    const hint = l.mistakes >= 2 ? ` الترتيب الصحيح: <span class="ltr">${EL[l.s].cfg.join(' , ')}</span>.` : ' فكّري: الدور الأول إلكترونان فقط.';
+    feedback(false, `<b>لم تكتمل بعد.</b>${hint}`);
   }
-  $('next').onclick = () => { if (R.i >= TOTAL) endRound(); else nextQ(); };
-  $('tbar').style.width = '100%';
-  // no default focus so the first tap is never lost
-}
-function placeDot(side){
-  if (R.answered) return;
-  const p = R.q.placed; const total = p.r+p.l+p.t+p.b;
-  if (total >= R.q.v) return;
-  if (p[side] >= 2) return;
-  p[side]++; drawDots();
-}
-function drawDots(){
-  const p = R.q.placed;
-  const dots = $('dots'); if (!dots) return;
-  const n = p.r+p.l+p.t+p.b;
-  dots.innerHTML = Array.from({length:n}).map(()=>'<span class="dot"></span>').join('') + `<span class="chip" style="margin-inline-start:8px">${n} / ${R.q.v}</span>`;
-  document.querySelectorAll('.slot').forEach(b => { b.textContent = p[b.dataset.side] ? p[b.dataset.side] : '+'; });
 }
 function checkDots(){
-  if (R.answered) return;
-  const p = R.q.placed, n = p.r+p.l+p.t+p.b;
-  const sides = Object.values(p).filter(x=>x>0).length;
-  if (n !== R.q.v) { $('fb').className='fb show bad'; $('fb').innerHTML = `<b>الأعداد لا تطابق.</b> عدد النقاط ${n} والمطلوب ${R.q.v}.`; return; }
-  const ok = R.q.v <= 8 && (sides >= 1);
-  // a full answer is correct: any valid placement with at most 2 per side, matching the valence count
-  answer(ok, null);
-  const fb = $('fb'); fb.innerHTML = (ok ? '<b>أحسنتِ! ✓</b> ' : '<b>راجعي الترتيب.</b> ') + `ترتيب النقاط يوضح إلكترونات التكافؤ فقط. عدد الإلكترونات ${R.q.v} لأن المستوى الخارجي فيه ${R.q.v} إلكترونات.`;
-  document.querySelectorAll('.slot').forEach(b => b.disabled = true);
-  $('check').disabled = true;
+  const l = lv, total = Object.values(l.sidesPlaced).reduce((a,b)=>a+b,0);
+  if (total !== l.v) { shake(main.querySelector('#sidev')); feedback(false, `<b>العدد ليس ${l.v}.</b> عدد النقاط الآن ${total}. إلكترونات التكافؤ هي الموجودة في الدور الأخير، وعددها ${l.v}.`); return; }
+  award(15);
+  feedback(true, `<b>أحسنتِ!</b> ${NAME[l.s]} فيه ${l.v} إلكترونات تكافؤ.`);
+  l.idx = (l.idx || 0); nextLevel();
 }
-function endRound(){
-  clearInterval(R.timer);
-  const part = R.part, pct = R.correct / TOTAL;
-  const st = pct >= 0.9 ? 3 : pct >= 0.7 ? 2 : pct >= 0.5 ? 1 : 0;
-  S.stars += st;
-  S.best[part] = Math.max(S.best[part] || 0, R.score);
-  if (pct >= 0.5) S.done[part] = true;
-  save(); refreshStats(); announce();
+function nextLevel(){
+  const L = lv; setTimeout(()=>{ lv = null; pickLevel(1, L.idx + 1); }, 1100);
+}
+
+// ---------- station 2: transfer electrons, then write the formula ----------
+function newL2(){
+  const [m, n] = DECK[2][lv_idx];
+  const q = ionCharge(m);
+  return { st:2, m, n, q, stage:'transfer', moved:0, vM:valence(m), vN:valence(n), mistakes:0, idx: 0 };
+}
+function renderL2(){
+  const l = lv;
+  if (l.stage === 'transfer') {
+    const mLeft = l.vM - l.moved, nNow = l.vN + l.moved;
+    main.innerHTML = `${head(2,`المحطة الثانية · ${l.idx+1} / 5`, `${CAT[l.m]} مع ${AN[l.n]}`)}
+      <div class="stage-h"><h2>المرحلة أ: انقلي الإلكترونات</h2><span class="chip">المنقول: ${l.moved} / ${l.q}</span></div>
+      <p class="task">الفلز ${NAME[l.m]} (${LTR(l.m)}) يفقد <span class="ltr">${l.q}</span> ${l.q===1?'إلكتروناً':'إلكترونات'} ليصل للاستقرار، واللافلز ${NAME[l.n]} (${LTR(l.n)}) يحتاج ${LTR(8 - l.vN)} ليكتمل. اسحبي الإلكترونات من الفلز إلى اللافلز.</p>
+      <div class="bench">
+        <div class="panel">
+          <p class="label">الفلز ${LTR(l.m)} (إلكترونات التكافؤ)</p>
+          <div class="zone pool" data-zone="metal" style="min-height:110px">${balls(mLeft,'ball')}</div>
+        </div>
+        <div class="panel">
+          <p class="label">اللافلز ${LTR(l.n)} (إلكترونات التكافؤ)</p>
+          <div class="zone pool" data-zone="nonmetal" style="min-height:110px">${balls(nNow,'ball')}</div>
+        </div>
+      </div>
+      <div class="btns"><button class="btn ghost" id="rst3">إعادة</button></div>
+      <div class="fb" id="fb"></div>`;
+    main.querySelectorAll('[data-zone="metal"] [data-ball]').forEach(b => makeDrag(b, {from:'metal'}));
+    main.querySelectorAll('[data-zone="nonmetal"] [data-ball]').forEach(b => makeDrag(b, {from:'nonmetal'}));
+    l.onDrop = (zone, p) => {
+      if (zone === 'nonmetal' && p.from === 'metal' && l.moved < l.q && l.vM - l.moved > 0) l.moved++;
+      else if (zone === 'nonmetal' && p.from === 'metal') { l.mistakes++; shake(main.querySelector('[data-zone="nonmetal"]')); feedback(false, `<b>يكفي ${l.q}.</b> الفلز يفقد ${l.q} فقط.`); return; }
+      if (l.moved === l.q) { l.stage = 'formula'; award(l.mistakes ? 8 : 15); renderL2(); return; }
+      renderL2();
+    };
+    $('rst3').onclick = () => { l.moved = 0; renderL2(); };
+  } else {
+    const ionM = `${LTR(l.m)}<sup>${chg(ionCharge(l.m))}</sup>`, ionN = `${LTR(l.n)}<sup>${chg(ionCharge(l.n))}</sup>`;
+    const right = formula(l.m, l.n);
+    const wrong = uniq([ l.m+l.n, l.n+l.m, l.m + l.n + String(Math.abs(l.q)), l.m + String(l.q) + l.n ]).filter(x=>x!==right && !/^\d/.test(x)).slice(0,3);
+    const opts = shuffle([right, ...wrong]);
+    main.innerHTML = `${head(2,`المحطة الثانية · ${l.idx+1} / 5`, `${CAT[l.m]} مع ${AN[l.n]}`)}
+      <div class="stage-h"><h2>المرحلة ب: الصيغة والاسم</h2></div>
+      <div class="ionrow">
+        <div class="ionbox">${ionM}<small>${CAT[l.m]}</small></div>
+        <span class="chip">+</span>
+        <div class="ionbox">${ionN}<small>${AN[l.n]}</small></div>
+      </div>
+      <p class="task">اكتبي الصيغة الكيميائية للمركب. الفكرة: شحنة كل أيون تصبح عدد ذرات الأيون الآخر.</p>
+      <div class="opts">${opts.map(o=>`<button class="opt" data-ok="${o===right?1:0}" style="--c:var(--c2)">${fHTML(o)}</button>`).join('')}</div>
+      <div class="fb" id="fb"></div>`;
+    main.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      if (b.disabled) return;
+      if (b.dataset.ok === '1') {
+        b.classList.add('ok'); award(15);
+        main.querySelectorAll('.opt').forEach(x=>x.disabled=true);
+        feedback(true, `<b>أحسنتِ!</b> ${LTR(fHTML(right))} = ${CAT[l.m]} ${AN[l.n]}. ${LTR(l.m)} شحنته ${chg(ionCharge(l.m))}، و${LTR(l.n)} شحنته ${chg(ionCharge(l.n))}، فتبادلنا الأعداد.`);
+        setTimeout(()=>{ lv=null; pickLevel(2, l.idx+1); }, 1400);
+      } else { b.classList.add('bad'); b.disabled = true; shake(b); l.mistakes++; feedback(false, `<b>ليس هذا.</b> تذكّري: شحنة ${LTR(l.m)} هي ${chg(ionCharge(l.m))}، وشحنة ${LTR(l.n)} هي ${chg(ionCharge(l.n))}.`); }
+    });
+  }
+}
+
+// ---------- station 3: classify bonds, then rank by ionic character ----------
+function newL3(){
+  const picked = DECK[3][lv_idx].map(([x,y]) => ({x, y, d: Math.abs(EL[x].e - EL[y].e)}));
+  return { st:3, items: picked.map(o=>({...o, ionic: o.d >= 1.7})), stage:'classify', placed:{}, idx:0, mistakes:0 };
+}
+function tokHTML(o){ return `<div class="tok" data-tok="${o.x}${o.y}" style="--c:var(--c3)"><span>${fHTML(formula(o.x,o.y))}</span><small>${NAME[o.x]} (${EL[o.x].e}) · ${NAME[o.y]} (${EL[o.y].e})</small></div>`; }
+function renderL3(){
+  const l = lv;
+  if (l.stage === 'classify') {
+    const left = l.items.filter(o => !(o.x+o.y in l.placed));
+    main.innerHTML = `${head(3,`المحطة الثالثة · ${l.idx+1} / 5`, 'ميزان الروابط')}
+      <div class="stage-h"><h2>المرحلة أ: صنّفي الرابطة</h2><span class="chip">المتبقي: ${left.length}</span></div>
+      <p class="task">احسبي فرق السالبية الكهربائية لكل مركب، ثم اسحبيه إلى: أيونية (إذا الفرق 1.7 أو أكثر) أو تساهمية.</p>
+      <div class="bench">
+        <div class="panel"><p class="label">المركبات</p><div class="zone pool" data-zone="pool3" style="min-height:140px;flex-direction:column">${left.map(tokHTML).join('')}</div></div>
+        <div class="panel" style="display:grid;gap:10px">
+          <div class="bin" data-zone="bin-ionic" style="--c:var(--c3)"><h4>أيونية</h4><span class="hint">فرق ≥ 1.7</span></div>
+          <div class="bin" data-zone="bin-cov" style="--c:var(--c1)"><h4>تساهمية</h4><span class="hint">فرق &lt; 1.7</span></div>
+        </div>
+      </div>
+      <div class="fb" id="fb"></div>`;
+    main.querySelectorAll('[data-tok]').forEach(t => makeDrag(t, {tok:t.dataset.tok}));
+    l.onDrop = (zone, p) => {
+      const o = l.items.find(i => i.x+i.y === p.tok); if (!o) return;
+      if (zone !== 'bin-ionic' && zone !== 'bin-cov') return;
+      const right = (zone === 'bin-ionic') === o.ionic;
+      if (right) { l.placed[p.tok] = true; award(10); feedback(true, `<b>صحيح.</b> ${LTR(fHTML(formula(o.x,o.y)))}: الفرق <span class="ltr">${o.d.toFixed(1)}</span> ${o.ionic?'≥ 1.7 فهي أيونية':'&lt; 1.7 فهي تساهمية'}.`); }
+      else { l.mistakes++; feedback(false, `<b>لا.</b> الفرق بين ${NAME[o.x]} و${NAME[o.y]} هو <span class="ltr">${o.d.toFixed(1)}</span>. الأيونية عند 1.7 أو أكثر.`); }
+      if (Object.keys(l.placed).length === l.items.length) { l.stage = 'rank'; setTimeout(renderL3, 900); }
+      renderL3();
+    };
+  } else {
+    const sorted = [...l.items].sort((a,b)=>a.d-b.d);
+    const cur = l.rankPlaced || [null,null,null];
+    const pool = l.items.filter(o => !cur.some(c => c && c.x+c.y === o.x+o.y));
+    main.innerHTML = `${head(3,`المحطة الثالثة · ${l.idx+1} / 5`, 'ترتيب الخاصية الأيونية')}
+      <div class="stage-h"><h2>المرحلة ب: رتّبي من الأقل إلى الأعلى</h2></div>
+      <p class="task">الخاصية الأيونية تزيد كلما زاد فرق السالبية الكهربائية. ضعي المركبات في الخانات: الأقل يسار، والأعلى يمين.</p>
+      <div class="slots">${[0,1,2].map(i=>`<div class="slot" data-zone="slot${i}"><span class="n">${i===0?'الأقل':i===1?'الوسط':'الأعلى'}</span>${cur[i]?tokHTML(cur[i]):''}</div>`).join('')}</div>
+      <div class="panel" style="margin-top:12px"><div class="zone pool" data-zone="pool4" style="min-height:90px;flex-direction:row;gap:8px">${pool.map(tokHTML).join('')}</div></div>
+      <div class="btns"><button class="btn" id="chk4">تحقق من الترتيب</button><button class="btn ghost" id="rst4">إعادة</button></div>
+      <div class="fb" id="fb"></div>`;
+    main.querySelectorAll('[data-tok]').forEach(t => makeDrag(t, {tok:t.dataset.tok, from:t.parentElement.dataset.zone}));
+    l.onDrop = (zone, p) => {
+      const rp = l.rankPlaced || [null,null,null];
+      const o = l.items.find(i => i.x+i.y === p.tok);
+      if (zone.startsWith('slot')) { const i = +zone.slice(4); const from = p.from && p.from.startsWith('slot') ? +p.from.slice(4) : -1;
+        const prev = rp[i]; rp[i] = o; if (from>=0) rp[from] = prev; else if (prev) { /* displaced token returns to pool */ } }
+      else if (zone === 'pool4' && p.from && p.from.startsWith('slot')) { rp[+p.from.slice(4)] = null; }
+      l.rankPlaced = rp; renderL3();
+    };
+    $('chk4').onclick = () => {
+      const rp = l.rankPlaced || [];
+      if (rp.filter(Boolean).length < 3) { feedback(false, '<b>ضعي المركبات الثلاثة أولاً.</b>'); return; }
+      const ok = rp.every((o,i) => o.x+o.y === sorted[i].x+sorted[i].y);
+      if (ok) { award(25); feedback(true, `<b>ممتاز!</b> الترتيب الصحيح من الأقل إلى الأعلى: ${sorted.map(o=>LTR(fHTML(formula(o.x,o.y)))).join(' &lt; ')}.`); setTimeout(()=>{ lv=null; pickLevel(3, l.idx+1); }, 1600); }
+      else { l.mistakes++; shake(main.querySelector('.slots')); feedback(false, '<b>ليس بالترتيب الصحيح.</b> احسبي الفرق لكل مركب، والأكبر فرقاً له أعلى خاصية أيونية.'); }
+    };
+    $('rst4').onclick = () => { l.rankPlaced = [null,null,null]; renderL3(); };
+  }
+}
+
+// ---------- shared page pieces ----------
+function head(n, step, title){
+  const s = STORY[n];
+  return `<div class="story" style="--c:${s.color}"><b>${s.title}</b><br>${s.text}</div>
+    <div class="stage-h"><span class="chip">${step}</span><span class="chip">${title}</span></div>`;
+}
+let lv_idx = 0;
+function pickLevel(n, idx){
+  if (idx >= 5) return endStation(n);
+  lv_idx = idx;
+  if (idx === 0) DECK[n] = makeDeck(n);
+  lv = n===1 ? newL1() : n===2 ? newL2() : newL3();
+  lv.idx = idx;
+  if (n===1) renderL1(); else if (n===2) renderL2(); else renderL3();
+  main.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function makeDeck(n){
+  // five different levels per station, so nothing repeats inside a station
+  if (n === 1) return shuffle(ELS1).slice(0,5);
+  if (n === 2) return shuffle(PAIRS2).slice(0,5);
+  // each level: three compounds whose differences are all different, so the ranking has one answer
+  const levels = []; const seen = new Set();
+  for (let tries = 0; levels.length < 5 && tries < 500; tries++) {
+    const trio = []; const ds = new Set();
+    for (const [x,y] of shuffle(PAIRS3)) { const d = +Math.abs(EL[x].e - EL[y].e).toFixed(2); if (!ds.has(d)) { ds.add(d); trio.push([x,y]); } if (trio.length === 3) break; }
+    if (trio.length < 3) continue;
+    const key = trio.map(t => t.join('')).sort().join('|');
+    if (!seen.has(key)) { seen.add(key); levels.push(trio); }
+  }
+  return levels;
+}
+function endStation(n){
+  const earned = S.best[n];
+  S.best[n] = Math.max(S.best[n]||0, 1);
+  S.stars += 1; save(); refresh(); announce();
   main.innerHTML = `<div class="end">
-    <h2 style="margin:0;font-size:28px">${TITLE[part]}</h2>
-    <div class="stars" aria-label="${st} نجوم">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
-    <div class="sbig">${R.correct} / ${TOTAL}</div>
-    <p class="hint" style="font-size:18px">حصلتِ على <b class="ltr">${R.score}</b> نقطة في هذه المحطة.</p>
-    <div class="ions" style="grid-template-columns:auto auto;gap:10px">
-      <button class="btn" id="again">أعيدي المحطة</button>
-      <button class="btn ghost" id="home">كل المحطات</button>
+    <h2 style="margin:0;font-size:28px">أكملتِ ${STORY[n].title}</h2>
+    <div class="stars">★★★</div>
+    <p class="hint" style="font-size:18px">${n===1?'الآن تعرفين كيف تبنين الذرة وتكشفين إلكترونات التكافؤ.':n===2?'الآن تعرفين كيف ينتقل الإلكترون لتتكون الأيونات، ثم تكتبين الصيغة.':'الآن تعرفين الخواص الأيونية وترتيبها.'}</p>
+    <div class="btns" style="justify-content:center">
+      <button class="btn" id="again">العب المحطة من جديد</button>
+      ${n<3?`<button class="btn ghost" id="next">المحطة التالية ←</button>`:''}
     </div></div>`;
-  $('again').onclick = () => startRound(part);
-  $('home').onclick = () => home();
+  $('again').onclick = () => pickLevel(n, 0);
+  if ($('next')) $('next').onclick = () => pickLevel(n+1, 0);
+}
+function setStation(n){
+  station = n;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', +t.dataset.n === n));
+  pickLevel(n, 0);
+}
+function buildTabs(){
+  $('tabs').innerHTML = [1,2,3].map(n=>`<button class="tab" role="tab" data-n="${n}" style="--c:${STORY[n].color}"><i>${n}</i>${STORY[n].title}</button>`).join('');
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => setStation(+t.dataset.n));
 }
 
-// ---------- home ----------
-function home(){
-  R = null;
-  const stations = [1,2,3].map(p => {
-    const locked = p > 1 && !S.done[p-1];
-    return `<button class="station" style="--c:${COLOR[p]}" data-p="${p}" ${locked?'disabled':''}>
-      <span class="no">المحطة ${p}</span>
-      <h2>${TITLE[p]}</h2>
-      <p>${p===1?'اكتشفي عدد إلكترونات التكافؤ، وارسمي الترتيب النقطي حول الذرة.':p===2?'أيون كل عنصر، والصيغة الصحيحة للمركب، واسمه.':'حددي نوع الرابطة، ورتّبي المركبات، واعرفي خواصها.'}</p>
-      <div class="bar"><i style="width:${S.best[p]?Math.min(100, S.best[p]/1.2):0}%"></i></div>
-      <span class="best">أفضل نتيجة: <b class="ltr">${S.best[p]||0}</b> ${locked?'<span class="lock">· أكملي المحطة السابقة لفتحها</span>':''}</span>
-    </button>`;
-  }).join('');
-  main.innerHTML = `<div style="display:grid;gap:16px">
-    <div class="name"><input class="nm" id="nm" maxlength="24" placeholder="اكتبي اسمك ليظهر في لوحة الفصل" value="${S.name.replace(/"/g,'&quot;')}"><button class="btn" id="saveName" style="padding:12px 18px;font-size:18px">حفظ الاسم</button></div>
-    <div class="stations">${stations}</div>
-    <p class="hint">كل سؤال له وقت محدود. الإجابة الصحيحة السريعة تعطيك نقاطاً أكثر، والسلسلة الصحيحة تضاعف المكافأة.</p>
-  </div>`;
-  $('saveName').onclick = () => { S.name = ($('nm').value || '').trim() || S.name; save(); announce(); };
-  main.querySelectorAll('.station').forEach(b => b.onclick = () => { if (!S.name) { S.name = ($('nm').value||'').trim() || 'طالبة'; save(); } startRound(+b.dataset.p); });
-  refreshStats();
-  // progress bars grow after first paint
-  setTimeout(() => main.querySelectorAll('.station .bar i').forEach(i => i.style.width = i.style.width), 50);
-}
-
-// ---------- classroom room (live scores of everyone playing at the same time) ----------
+// ---------- classroom board ----------
 function renderPeers(list){
-  const rows = (list||[]).map(p => `<div class="row${p.me?' me':''}"><span>${escapeHtml(p.name||'طالبة')}</span><b>${p.total||0}</b></div>`).join('');
-  $('peers').innerHTML = rows || '<p class="hint">لا يوجد زميلات متصلات الآن.</p>';
+  const rows = (list||[]).map(p => `<div class="row${p.me?' me':''}"><span>${esc(p.name||'طالبة')}</span><b>${p.total||0}</b></div>`).join('');
+  $('peers').innerHTML = rows || '<p class="hint">لا توجد زميلات متصلات الآن.</p>';
 }
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 (async () => {
   try {
     if (!window.claude || !window.claude.use) return;
     room = await claude.use('room');
     if (!room) { $('roomNote').textContent = 'الوضع الفردي: لا توجد لوحة مباشرة في هذا العرض.'; return; }
-    $('roomNote').textContent = 'اللوحة مباشرة: تظهر نقاط الزميلات أثناء اللعب.';
-    room.onPeers(list => renderPeers(list.map(p => ({...p, me: p.you || p.me, name: (p.presence && p.presence.name) || p.name, total: (p.presence && p.presence.total) || 0}))));
+    $('roomNote').textContent = 'اللوحة مباشرة: تظهر نقاط زميلاتك أثناء اللعب.';
+    room.onPeers(list => renderPeers(list.map(p => ({...p, me: !!p.you || !!p.me, name: (p.presence && p.presence.name) || p.name, total: (p.presence && p.presence.total) || 0}))));
     announce();
   } catch { room = null; }
 })();
 
-refreshStats();
-home();
+$('nm').value = S.name || '';
+$('saveName').onclick = () => { S.name = ($('nm').value || '').trim().slice(0,24) || S.name; save(); announce(); };
+buildTabs(); refresh(); setStation(1);
 </script>
