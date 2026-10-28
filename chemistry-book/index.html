@@ -184,6 +184,22 @@ table.t th{background:#e9f5fd;font-weight:700}
 .bl .row{gap:8px}
 .bl select{max-width:100%}
 .tokbox .msg{margin-top:4px}
+
+.vlew{position:relative;min-height:150px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:14px;background:radial-gradient(circle at 50% 45%,#ffffff,#e6f4fc)}
+.vlew .lw{position:relative;z-index:1}
+.vlew.stable .sym{animation:pulse 1.4s ease-in-out infinite}
+.vlew.stable::after{content:"";position:absolute;left:50%;top:50%;width:200px;height:72px;margin:-36px 0 0 -100px;border:3px solid #f2b134;border-radius:50%;box-shadow:0 0 16px #f2b13488;transform:rotateX(70deg);animation:orb 2.4s linear infinite;pointer-events:none}
+@keyframes pulse{50%{transform:scale(1.12)}}
+@keyframes orb{from{transform:rotateX(70deg) rotateZ(0)}to{transform:rotateX(70deg) rotateZ(360deg)}}
+.fly{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffd0d0,#e5484d 55%,#8a0b0f);box-shadow:0 0 12px #e5484d;z-index:2}
+.fly.in{animation:flyin .6s ease-in both}
+.fly.out{animation:flyout .6s ease-in both}
+@keyframes flyin{from{transform:translate(130px,-90px);opacity:0}to{transform:none;opacity:1}}
+@keyframes flyout{from{transform:none;opacity:1}to{transform:translate(130px,-90px);opacity:0}}
+.dot.red{background:radial-gradient(circle at 35% 35%,#ffd0d0,#e5484d 55%,#8a0b0f)}
+.vinfo{font-size:14.5px;line-height:1.8}
+.vstat{font-weight:700;min-height:22px}
+.vstat.ok{color:var(--green)}
 </style>
 </head>
 <body>
@@ -333,10 +349,11 @@ function mountScenes(root){
 }
 
 /* ---------- أدوات التفاعل ---------- */
-function lewisHTML(sym,mini){
-  const e=byS[sym],v=valence(e.z),sd=[0,0,0,0];
-  for(let k=0;k<v;k++)sd[k%4]++;
-  const side=(n,c)=>`<div class="side ${c}">${'<i class="dot"></i>'.repeat(n)}</div>`;
+function lewisHTML(sym,mini,base,count){
+  const e=byS[sym],v=valence(e.z);base=base??v;count=count??v;
+  const sd=[[],[],[],[]];
+  for(let k=0;k<count;k++)sd[k%4].push(count>base&&k>=base?'red':'');
+  const side=(arr,c)=>`<div class="side ${c}">${arr.map(x=>`<i class="dot ${x}"></i>`).join('')}</div>`;
   return `<div class="lw ${mini?'mini':''}" dir="ltr">${side(sd[0],'t')}${side(sd[3],'l')}<div class="sym">${sym}</div>${side(sd[1],'r')}${side(sd[2],'b')}</div>`;
 }
 function bindPT(root){
@@ -401,17 +418,35 @@ function bindCfg(root){
 function bindVal(root){
   const vs=root.querySelector('.vsel');if(!vs)return;
   const out=root.querySelector('.vout');
-  const upd=()=>{
-    const e=byS[vs.value],v=valence(e.z);let beh;
-    if(e.z===2||v===8)beh='مستقر أصلًا — لا يفقد ولا يكتسب';
-    else if(e.z===1)beh='يكتسب إلكترونًا واحدًا ليصل إلى تركيب الهيليوم';
-    else if(v===4)beh='يشارك 4 إلكترونات ولا يفقد أو يكتسب بسهولة';
-    else if(v<=3)beh=`يفقد ${v} إلكترون(ات) ليصل إلى المستوى المستقر`;
-    else beh=`يكتسب ${8-v} إلكترون(ات) ليكتمل مستواه الخارجي`;
-    const exc=[1,3,4,5].includes(e.z)?'<br><span class="note">استثناء: لا يحقق هذا العنصر قاعدة الثمانية (يصل إلى 2 أو يكتفي بما يصل له).</span>':'';
-    out.innerHTML=lewisHTML(e.s,true)+`<b>${e.n}</b> · إلكترونات التكافؤ: <b>${v}</b> · التكافؤ: <b>${valency(e.z)}</b><br>${beh}${exc}`;
-  };
-  vs.onchange=upd;upd();
+  let k=0,busy=false;
+  function info(z){
+    const v=valence(z);
+    if(z===2||v===8)return{mode:'none',lab:'مستقرة أصلًا — لا تفقد ولا تكتسب'};
+    if(z===1)return{mode:'gain',lab:'اكتساب إلكترون'};
+    if(v===4)return{mode:'share',lab:'مشاركة — لا تفقد ولا تكتسب بسهولة'};
+    if(v<=3)return{mode:'lose',lab:'فقدان إلكترون'};
+    return{mode:'gain',lab:'اكتساب إلكترون'};
+  }
+  function draw(fly){
+    const e=byS[vs.value],v=valence(e.z),inf=info(e.z);
+    const n=Math.max(0,Math.min(8,v+k));
+    const stable=(inf.mode==='lose'&&n===0)||(inf.mode==='gain'&&(e.z===1?n===2:n===8));
+    const can=inf.mode==='gain'?(e.z===1?k<1:v+k<8):inf.mode==='lose'?v+k>0:false;
+    out.innerHTML=`<div class="vlew ${stable?'stable':''}">${fly?`<i class="fly ${fly}"></i>`:''}${lewisHTML(e.s,true,v,n)}</div>
+    <div class="vinfo"><b>${e.n}</b> · إلكترونات التكافؤ: <b>${v}</b> · التكافؤ: <b>${valency(e.z)}</b></div>
+    <div class="row"><button class="btn p" data-react ${can&&!busy?'':'disabled'}>${inf.lab} ⚡</button><button class="btn g" data-reset>إعادة</button></div>
+    <div class="vstat ${stable?'ok':''}">${stable?'مستقرة ✓ — اكتمل المستوى الخارجي':`عدد إلكترونات المستوى الخارجي الآن: ${n}`}</div>`;
+    const r=out.querySelector('[data-react]');if(r)r.onclick=react;
+    out.querySelector('[data-reset]').onclick=()=>{if(busy)return;k=0;draw()};
+  }
+  function react(){
+    if(busy)return;
+    const gain=info(byS[vs.value].z).mode==='gain';
+    busy=true;draw(gain?'in':'out');
+    setTimeout(()=>{k+=gain?1:-1;busy=false;draw()},650);
+  }
+  vs.onchange=()=>{k=0;busy=false;draw()};
+  draw();
 }
 function bindFill(root){
   $$('[data-check]',root).forEach(btn=>btn.onclick=()=>{
@@ -485,7 +520,7 @@ function bindIon(root){
 const DIFFS=Array.from({length:41},(_,i)=>(i/10).toFixed(1));
 const valOf=el=>el.classList.contains('stp')?el.dataset.val:el.value;
 const setMsg=(box,ok,text)=>{const m=$('.msg',box);if(!m)return;m.className='msg '+(ok?'ok':'no');m.textContent=text};
-function cfgSel(ans){const set=[...new Set(Array.from({length:20},(_,i)=>config(i+1).join(',')))];return `<select data-ans="${ans}"><option value="">اختر</option>${set.map(c=>`<option>${c}</option>`).join('')}</select>`}
+function cfgSel(ans){const set=[...new Set(Array.from({length:20},(_,i)=>config(i+1).join(',')))];return `<select dir="ltr" data-ans="${ans}"><option value="">اختر</option>${set.map(c=>`<option>${c}</option>`).join('')}</select>`}
 function stpHTML(ans,max=8,sm=false){return `<span class="stp${sm?' sm':''}" data-min="0" data-max="${max}" data-val="0" data-ans="${ans}"><button class="btn g" data-dn>−</button><b class="val">0</b><button class="btn g" data-up>+</button></span>`}
 function diffSel(){return `<select class="dsel"><option value="">اختر الفرق</option>${DIFFS.map(v=>`<option>${v}</option>`).join('')}</select>`}
 
@@ -774,7 +809,7 @@ ${foot('')}`,
 <div class="box" data-box>
 <table class="t">
 <tr><th>الذرة</th><th><span class="f">K</span></th><th><span class="f">N</span></th><th><span class="f">C</span></th><th><span class="f">H</span></th></tr>
-<tr><th>الترتيب الإلكتروني</th><td>${cfgSel('2,8,8,1')}</td><td>${cfgSel('2,5')}</td><td>2 , 4</td><td>${cfgSel('1')}</td></tr>
+<tr><th>الترتيب الإلكتروني</th><td>${cfgSel('2,8,8,1')}</td><td>${cfgSel('2,5')}</td><td><span class="f">2 , 4</span></td><td>${cfgSel('1')}</td></tr>
 <tr><th>إلكترونات التكافؤ</th><td>${stpHTML('1',8,true)}</td><td>${stpHTML('5',8,true)}</td><td>4</td><td>${stpHTML('1',8,true)}</td></tr>
 </table>
 <p class="note">ارسم الترتيب النقطي بأداة لويس في الصفحة السابقة، ثم تحقق.</p>
@@ -806,9 +841,9 @@ ${foot('')}`,
 <div class="box" data-box>
 <table class="t">
 <tr><th>العنصر</th><th>الترتيب النقطي</th><th>الوصول للاستقرار (يفقد/يكتسب)</th><th>قاعدة الثمانية (يحقق/لا يحقق)</th></tr>
-<tr><td><span class="f">Li</span></td><td>${lewisHTML('Li',true)}</td><td><select data-ans="يفقد 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="لا يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
-<tr><td><span class="f">F</span></td><td>${lewisHTML('F',true)}</td><td><select data-ans="يكتسب 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
-<tr><td><span class="f">Mg</span></td><td>${lewisHTML('Mg',true)}</td><td><select data-ans="يفقد 2 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
+<tr><td><span class="f">Li</span></td><td></td><td><select data-ans="يفقد 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="لا يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
+<tr><td><span class="f">F</span></td><td></td><td><select data-ans="يكتسب 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
+<tr><td><span class="f">Mg</span></td><td></td><td><select data-ans="يفقد 2 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
 </table>
 <div class="row" style="margin-top:8px"><button class="btn p" data-check>تحقق</button><button class="btn g" data-hint>تلميح</button></div>
 <div class="hint">Li يصل إلى 2 إلكترون فقط (تركيب الهيليوم)، لذلك لا يحقق قاعدة الثمانية.</div>
