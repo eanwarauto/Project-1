@@ -128,6 +128,26 @@ table.t th{background:#e9f5fd;font-weight:700}
 @keyframes run{from{left:6%}to{left:88%}}
 .steps2 .cell{display:none}
 @media (max-width:860px){.pg{padding:14px 14px 10px}h2{font-size:18px}p{font-size:14px}}
+
+.lw.mini{width:150px;margin:4px auto}
+.lw.mini .side{min-width:0;min-height:0;border:0;background:transparent;padding:0}
+.lw.mini .side.l,.lw.mini .side.r{min-width:0;min-height:0}
+.lw.mini .sym{font-size:24px}
+.lw.mini .dot{width:9px;height:9px}
+.bcard{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:6px}
+.bldv{position:relative;width:150px;margin:4px auto 0;transform-origin:50% 100%;transition:transform .7s cubic-bezier(.3,.7,.3,1)}
+.bldv.wob{animation:wob 1.1s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:rotate(-3.5deg)}50%{transform:rotate(3.5deg)}}
+.bldv .roof{height:22px;border-radius:6px 6px 0 0;background:linear-gradient(#9aa6b5,#5b6676);margin:0 -10px;transform:scaleY(0);transform-origin:bottom;transition:transform .6s .25s}
+.bldv.done .roof{transform:scaleY(1)}
+.bldv .fl{display:grid;gap:5px;padding:6px;background:#e1eaf3;border:2px solid #7d8da0;border-top:none}
+.bldv .fl.out{grid-template-columns:repeat(4,1fr);border-top:2px solid #7d8da0;min-height:60px}
+.bldv .fl.in{grid-template-columns:repeat(2,1fr);background:#d3dfeb}
+.win{display:block;height:20px;border-radius:3px;background:#aab7c7;border:1px solid #7d8da0;transition:background .3s,box-shadow .3s}
+.win.on{background:linear-gradient(#fff6c2,#ffd35a);box-shadow:0 0 9px #ffd35a99}
+.bldv .base{height:10px;background:#5e6a7a;border-radius:0 0 4px 4px;margin:0 -10px}
+.atm{display:flex;gap:6px;justify-content:center}
+.atm .shl{width:72px;height:60px}
 </style>
 </head>
 <body>
@@ -277,22 +297,36 @@ function mountScenes(root){
 }
 
 /* ---------- أدوات التفاعل ---------- */
+function lewisHTML(sym,mini){
+  const e=byS[sym],v=valence(e.z),sd=[0,0,0,0];
+  for(let k=0;k<v;k++)sd[k%4]++;
+  const side=(n,c)=>`<div class="side ${c}">${'<i class="dot"></i>'.repeat(n)}</div>`;
+  return `<div class="lw ${mini?'mini':''}" dir="ltr">${side(sd[0],'t')}${side(sd[3],'l')}<div class="sym">${sym}</div>${side(sd[1],'r')}${side(sd[2],'b')}</div>`;
+}
 function bindPT(root){
   $$('.pt button',root).forEach(b=>b.onclick=()=>{
     $$('.pt button',root).forEach(x=>x.classList.remove('sel'));b.classList.add('sel');
     const e=byS[b.dataset.s],cfg=config(e.z),v=cfg.at(-1);
     $('.info',root).innerHTML=`<b>${e.n}</b> (<span class="f">${e.s}</span>) · العدد الذري ${e.z}<br>الترتيب الإلكتروني: <span class="f">${cfg.join(', ')}</span> · إلكترونات التكافؤ: <b>${v}</b> · المجموعة: ${e.g}`;
+    $('.info',root).insertAdjacentHTML('beforeend',lewisHTML(e.s,true));
   });
 }
 function bindBld(root){
-  $$('.bld',root).forEach(b=>{
-    let o=+b.dataset.o;
+  $$('.bcard',root).forEach(card=>{
+    const b=card.querySelector('.bldv');let o=+b.dataset.o;
+    const out=b.querySelector('.fl.out');
+    out.innerHTML='<i class="win"></i>'.repeat(8);
     const draw=()=>{
-      b.querySelector('.rows').innerHTML=`<div class="row"><span>المستوى 1</span>${'<i class="dot"></i>'.repeat(2)}</div><div class="row"><span>المستوى 2 (الخارجي)</span>${'<i class="dot"></i>'.repeat(o)}</div>`;
-      const st=b.querySelector('.stt');st.textContent=o===8?'مستقر ✓ مثل الغاز النبيل':`غير مستقر — ينقصه ${8-o} إلكترون`;st.className='stt '+(o===8?'ok':'no');
+      [...out.children].forEach((w,i)=>w.classList.toggle('on',i<o));
+      const stable=o===8;
+      b.classList.toggle('done',stable);b.classList.toggle('wob',!stable);
+      card.querySelector('.ov').textContent=o;
+      const st=card.querySelector('.stt');
+      st.textContent=stable?'مستقر ✓ — اكتمل الطابق الخارجي وركّب السقف':`غير مستقر — ينقصه ${8-o} ${8-o===1?'عمود':'أعمدة'} لإكمال الطابق`;
+      st.className='stt '+(stable?'ok':'no');
     };
-    b.querySelector('[data-add]').onclick=()=>{o=Math.min(8,o+1);draw()};
-    b.querySelector('[data-rem]').onclick=()=>{o=Math.max(1,o-1);draw()};
+    card.querySelector('[data-add]').onclick=()=>{o=Math.min(8,o+1);draw()};
+    card.querySelector('[data-rem]').onclick=()=>{o=Math.max(1,o-1);draw()};
     draw();
   });
 }
@@ -319,7 +353,7 @@ function bindLewis(root){
 function bindCfg(root){
   const cs=root.querySelector('.cbsel');if(!cs)return;
   const ci=root.querySelector('.cbin'),shl=root.querySelector('.shells');
-  const upd=()=>{const z=+cs.value,c=config(z);ci.dataset.ans=c.join(',');shl.innerHTML=c.map((n,i)=>`<span class="shl"><small>n = ${i+1}</small><b>${n}</b></span>`).join('')};
+  const upd=()=>{const z=+cs.value,c=config(z);ci.dataset.ans=c.join(',');root.querySelector('.cbdots').innerHTML=lewisHTML(EL.find(e=>e.z===z).s,true);shl.innerHTML=c.map((n,i)=>`<span class="shl"><small>n = ${i+1}</small><b>${n}</b></span>`).join('')};
   cs.onchange=upd;upd();
 }
 function bindVal(root){
@@ -333,7 +367,7 @@ function bindVal(root){
     else if(v<=3)beh=`يفقد ${v} إلكترون(ات) ليصل إلى المستوى المستقر`;
     else beh=`يكتسب ${8-v} إلكترون(ات) ليكتمل مستواه الخارجي`;
     const exc=[1,3,4,5].includes(e.z)?'<br><span class="note">استثناء: لا يحقق هذا العنصر قاعدة الثمانية (يصل إلى 2 أو يكتفي بما يصل له).</span>':'';
-    out.innerHTML=`<b>${e.n}</b> · إلكترونات التكافؤ: <b>${v}</b> · التكافؤ: <b>${valency(e.z)}</b><br>${beh}${exc}`;
+    out.innerHTML=lewisHTML(e.s,true)+`<b>${e.n}</b> · إلكترونات التكافؤ: <b>${v}</b> · التكافؤ: <b>${valency(e.z)}</b><br>${beh}${exc}`;
   };
   vs.onchange=upd;upd();
 }
@@ -503,14 +537,22 @@ ${ptHTML()}
 ${foot('')}`,
 `<span class="lh">نشاط · هل المبنى مستقر؟</span>
 <h2>الاستقرار يبدأ من المستوى الخارجي</h2>
-<p>مبنيان متشابهان؛ أحدهما مكتمل والآخر لا. أضف طوابق (إلكترونات) إلى المبنى B وراقب.</p>
-<div class="bld-wrap">
-<div class="bld" data-o="8"><b>المبنى A</b><div class="rows"></div><div class="stt"></div><div class="row"><button class="btn g" data-add>+ إلكترون</button><button class="btn g" data-rem>− إلكترون</button></div></div>
-<div class="bld" data-o="5"><b>المبنى B</b><div class="rows"></div><div class="stt"></div><div class="row"><button class="btn g" data-add>+ إلكترون</button><button class="btn g" data-rem>− إلكترون</button></div></div>
-</div>
+<p>المبنى A مكتمل والمبنى B غير مكتمل. كل عمود في الطابق الخارجي يمثل إلكترونًا في المستوى الخارجي. أضف أعمدة إلى B وراقب ما يحدث.</p>
+<div class="bld-wrap"><div class="bcard"><b>المبنى A</b>
+<div class="bldv done" data-o="8"><div class="roof"></div><div class="fl out"></div><div class="fl in"><i class="win on"></i><i class="win on"></i></div><div class="base"></div></div>
+<div class="atm"><span class="shl"><small>n = 1</small><b>2</b></span><span class="shl"><small>n = 2</small><b class="ov">8</b></span></div>
+<div class="stt"></div>
+<div class="row"><button class="btn g" data-add>+ عمود (إلكترون)</button><button class="btn g" data-rem>− عمود</button></div></div><div class="bcard"><b>المبنى B</b>
+<div class="bldv wob" data-o="5"><div class="roof"></div><div class="fl out"></div><div class="fl in"><i class="win on"></i><i class="win on"></i></div><div class="base"></div></div>
+<div class="atm"><span class="shl"><small>n = 1</small><b>2</b></span><span class="shl"><small>n = 2</small><b class="ov">5</b></span></div>
+<div class="stt"></div>
+<div class="row"><button class="btn g" data-add>+ عمود (إلكترون)</button><button class="btn g" data-rem>− عمود</button></div></div></div>
 <div class="box"><b>سؤال:</b> ماذا يحدث للمبنى B عند إضافة الإلكترونات؟ ولماذا يبدو المبنى A أكثر استقرارًا؟</div>
 <div class="mcq" data-ans="b" data-good="صحيح: تستقر الذرة حين يكتمل مستواها الخارجي بـ 8 إلكترونات.">
 <button data-v="a">يبقى غير مستقر دائمًا</button><button data-v="b">يستقر عند اكتمال المستوى الخارجي (8)</button></div><div class="msg"></div>
+<div class="box"><b>ماذا يحتاج المبنى B ليستقر؟</b></div>
+<div class="mcq" data-ans="a" data-good="✓ الطابق الخارجي يكتمل بثمانية أعمدة، ثم يُركَّب السقف."><button data-v="a">إكمال الطابق الخارجي بـ 8 أعمدة ثم تركيب السقف</button><button data-v="b">عمود واحد يكفي</button><button data-v="c">إزالة الطابق الداخلي</button></div><div class="msg"></div>
+<div class="box"><b>الربط بالذرة:</b> الطابق الخارجي = المستوى الخارجي للذرة، والأعمدة = إلكترونات التكافؤ.<br>المبنى المكتمل (8 أعمدة) ⇔ الذرة المستقرة (8 إلكترونات، أو 2 للهيليوم).</div>
 ${foot('')}`,
 (root)=>{bindPT(root);bindBld(root)});
 
@@ -571,6 +613,7 @@ sp('الدرس 1-1 · الترتيب والثمانية',
 <div class="box" data-box>
 <div class="lwtop"><select class="cbsel">${optsZ(11)}</select></div>
 <div class="shells"></div>
+<div class="cbdots"></div>
 <p>اكتب الترتيب الإلكتروني (افصل بفاصلة):</p>
 <div class="row"><input class="inp cbin" data-ans="2,8,1"><button class="btn p" data-check>تحقق</button><button class="btn g" data-hint>تلميح</button></div>
 <div class="hint">يُملأ المستوى الأول بحد أقصى 2، ثم الثاني والثالث بحد 8.</div>
@@ -584,10 +627,10 @@ ${foot('')}`,
 <h3>تمرين (3)</h3>
 <div class="box" data-box>
 <table class="t">
-<tr><th>العنصر</th><th>الوصول للاستقرار (يفقد/يكتسب)</th><th>قاعدة الثمانية (يحقق/لا يحقق)</th></tr>
-<tr><td><span class="f">Li</span></td><td><select data-ans="يفقد 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="لا يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
-<tr><td><span class="f">F</span></td><td><select data-ans="يكتسب 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
-<tr><td><span class="f">Mg</span></td><td><select data-ans="يفقد 2 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
+<tr><th>العنصر</th><th>الترتيب النقطي</th><th>الوصول للاستقرار (يفقد/يكتسب)</th><th>قاعدة الثمانية (يحقق/لا يحقق)</th></tr>
+<tr><td><span class="f">Li</span></td><td>${lewisHTML('Li',true)}</td><td><select data-ans="يفقد 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="لا يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
+<tr><td><span class="f">F</span></td><td>${lewisHTML('F',true)}</td><td><select data-ans="يكتسب 1 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
+<tr><td><span class="f">Mg</span></td><td>${lewisHTML('Mg',true)}</td><td><select data-ans="يفقد 2 إلكترون"><option value="">اختر</option><option>يفقد 1 إلكترون</option><option>يفقد 2 إلكترون</option><option>يكتسب 1 إلكترون</option></select></td><td><select data-ans="يحقق"><option value="">اختر</option><option>يحقق</option><option>لا يحقق</option></select></td></tr>
 </table>
 <div class="row" style="margin-top:8px"><button class="btn p" data-check>تحقق</button><button class="btn g" data-hint>تلميح</button></div>
 <div class="hint">Li يصل إلى 2 إلكترون فقط (تركيب الهيليوم)، لذلك لا يحقق قاعدة الثمانية.</div>
