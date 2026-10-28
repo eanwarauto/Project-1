@@ -21,9 +21,17 @@ sub,sup{font-size:.7em;line-height:0}
 .btn.g{background:#eef6fc;color:var(--sea);border:1px solid var(--line);box-shadow:none}
 select,input,textarea{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:#fff;color:var(--ink)}
 input.inp{width:96px;text-align:center;direction:ltr}
-.t input.inp{width:74px}
+.t input.inp{width:58px;padding:4px 2px}
 .stage{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;perspective:2200px;min-height:0;overflow:auto}
-.book{width:min(1200px,100%);height:100%;max-height:840px;position:relative}
+.book{width:min(1200px,100%);height:100%;max-height:840px;position:relative;perspective:2400px;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.book input,.book select,.book textarea{-webkit-user-select:text;user-select:text}
+.leaf{position:absolute;top:0;bottom:0;width:50%;transform-style:preserve-3d;z-index:5;will-change:transform;border-radius:12px}
+.leaf.fw{right:0;transform-origin:left center}
+.leaf.bw{left:0;transform-origin:right center}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;overflow:hidden}
+.face.back{transform:rotateY(180deg)}
+.face>.pg{height:100%}
+.face::after{content:"";position:absolute;inset:0;border-radius:12px;background:linear-gradient(90deg,#0007,#0000 70%);opacity:var(--sh,0);pointer-events:none}
 .spread{display:flex;height:100%;border-radius:12px;box-shadow:0 28px 60px #0a2a4a55,0 2px 0 #fff8;transform-style:preserve-3d}
 .pg{flex:1;min-width:0;background:var(--paper);padding:20px 24px 12px;overflow:auto;display:flex;flex-direction:column;gap:11px}
 .pg.r{border-radius:0 12px 12px 0;box-shadow:inset 26px 0 28px -22px #0003}
@@ -49,7 +57,7 @@ ul.goals{margin:0;padding-right:20px;line-height:1.9;font-size:15px}
 .bad{background:#fde8e8!important;border-color:var(--red)!important}
 .hint{display:none;background:#fff8e1;border-right:4px solid var(--gold);padding:7px 10px;border-radius:8px;font-size:14px;margin-top:6px}
 .hint.on{display:block}
-table.t{border-collapse:collapse;width:100%;font-size:14px}
+table.t{border-collapse:collapse;width:100%;font-size:13px}
 table.t td,table.t th{border:1px solid var(--line);padding:6px 4px;text-align:center}
 table.t th{background:#e9f5fd;font-weight:700}
 .pt{display:grid;grid-template-columns:repeat(18,1fr);gap:4px;direction:ltr}
@@ -119,14 +127,7 @@ table.t th{background:#e9f5fd;font-weight:700}
 .circ.live .run:nth-child(2){animation-delay:.45s}.circ.live .run:nth-child(3){animation-delay:.9s}
 @keyframes run{from{left:6%}to{left:88%}}
 .steps2 .cell{display:none}
-@media (max-width:860px){
-  .spread{flex-direction:column;height:auto}
-  .book{height:auto}
-  .pg.r{border-radius:12px 12px 0 0;box-shadow:none}
-  .pg.l{border-radius:0 0 12px 12px;box-shadow:none}
-  .pg{min-height:auto}
-  .spread.af .pg.r,.spread.ab .pg.l{animation:none}
-}
+@media (max-width:860px){.pg{padding:14px 14px 10px}h2{font-size:18px}p{font-size:14px}}
 </style>
 </head>
 <body>
@@ -171,7 +172,7 @@ const optsSym=sel=>EL.map(e=>`<option value="${e.s}" ${e.s===sel?'selected':''}>
 const optsZ=sel=>EL.map(e=>`<option value="${e.z}" ${e.z===sel?'selected':''}>${e.z} · ${e.s} (${e.n})</option>`).join('');
 const optsList=(list,sel)=>list.map(s=>`<option value="${s}" ${s===sel?'selected':''}>${s} — ${byS[s].n}</option>`).join('');
 const ptHTML=()=>`<div class="pt">${EL.map(e=>`<button data-s="${e.s}" style="grid-column:${e.g};grid-row:${e.p}">${e.s}</button>`).join('')}</div>`;
-const foot=label=>`<div class="foot"><span>إعداد: نقطتين ميم دوت · أنوار الفضلي</span><span>${label}</span></div>`;
+const foot=label=>`<div class="foot"><span>إعداد: م.انوار الفضلي</span><span>${label}</span></div>`;
 
 /* ---------- محرك ثلاثي الأبعاد على Canvas ---------- */
 const scenes=[];
@@ -809,36 +810,89 @@ ${foot('')}`,
 ${foot('')}`,
 (root)=>{});
 
-/* ---------- المحرك: التنقل وتقليب الصفحات ---------- */
-let cur=0;
+/* ---------- المحرك: تقليب الصفحات باللمس أو الفأرة أو الأزرار ---------- */
+let cur=0,busy=false,drag=null;
 const book=$('#book'),posEl=$('#pos'),toc=$('#toc');
 toc.innerHTML=S.map((s,i)=>`<option value="${i}">${i} · ${s.title}</option>`).join('');
-toc.onchange=()=>go(+toc.value,1);
-$('#next').onclick=()=>go(cur+1,1);
-$('#prev').onclick=()=>go(cur-1,-1);
-document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')go(cur+1,1);if(e.key==='ArrowRight')go(cur-1,-1)});
+toc.onchange=()=>jump(+toc.value);
+$('#next').onclick=()=>turn(1);
+$('#prev').onclick=()=>turn(-1);
+document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')turn(1);if(e.key==='ArrowRight')turn(-1)});
 
 function initCommon(root){
   bindFill(root);bindSet(root);bindHints(root);bindMcq(root);bindSteps(root);
   mountScenes(root);bindPT(root);
-  $$('[data-go]',root).forEach(b=>b.onclick=()=>go(+b.dataset.go,1));
+  $$('[data-go]',root).forEach(b=>b.onclick=()=>jump(+b.dataset.go));
 }
-function show(i,dir){
-  const s=S[i];
-  book.innerHTML=`<section class="spread ${dir>0?'af':'ab'}"><article class="pg r">${s.r}</article><article class="pg l">${s.l}</article></section>`;
-  const root=book.firstElementChild;
-  initCommon(root);
-  s.init&&s.init(root);
-  posEl.textContent=`${i+1} / ${S.length}`;
-  toc.value=i;
+function show(i,anim){
+  cur=i;const s=S[i];
+  book.innerHTML=`<section class="spread ${anim>0?'af':anim<0?'ab':''}"><article class="pg r">${s.r}</article><article class="pg l">${s.l}</article></section>`;
+  const root=book.querySelector('.spread');
+  initCommon(root);s.init&&s.init(root);
+  posEl.textContent=`${i+1} / ${S.length}`;toc.value=i;
   history.replaceState(null,'','#'+i);
 }
-function go(i,dir){
-  if(i<0||i>=S.length)return;
-  cur=i;show(i,dir);
-  book.scrollTop=0;
+/* ورقة متحركة: الوجه الأمامي = الصفحة الحية، والخلفي = صفحة الهدف، والصفحة السفلية = صفحة الهدف على جانب المصدر */
+function makeLeaf(dir){
+  const t=cur+dir,side=dir>0?'r':'l',T=S[t];
+  const sp=book.querySelector('.spread'),live=sp.querySelector('.pg.'+side);
+  const under=document.createElement('article');under.className='pg '+side;under.innerHTML=dir>0?T.r:T.l;
+  live.replaceWith(under);
+  const leaf=document.createElement('div');leaf.className='leaf '+(dir>0?'fw':'bw');
+  const front=document.createElement('div');front.className='face front';
+  const back=document.createElement('div');back.className='face back';
+  const bp=document.createElement('article');bp.className='pg '+(dir>0?'l':'r');bp.innerHTML=dir>0?T.l:T.r;
+  back.appendChild(bp);front.appendChild(live);leaf.append(front,back);book.appendChild(leaf);
+  leaf.style.transform='rotateY(0deg)';
+  return{leaf,under,live,t,dir};
 }
-(()=>{const h=parseInt(location.hash.slice(1),10);cur=Number.isInteger(h)&&h>=0&&h<S.length?h:0;show(cur,1)})();
+const setAngle=(tn,a)=>{
+  tn.leaf.style.transform=`rotateY(${tn.dir>0?-a:a}deg)`;
+  tn.leaf.style.setProperty('--sh',(a/180*.45).toFixed(3));
+};
+function settle(tn,target,then){
+  busy=true;
+  tn.leaf.style.transition='transform .6s cubic-bezier(.3,.6,.3,1)';
+  requestAnimationFrame(()=>{setAngle(tn,target);setTimeout(then,620)});
+}
+function commit(tn){settle(tn,180,()=>{show(tn.t,0);busy=false})}
+function revert(tn){settle(tn,0,()=>{tn.under.replaceWith(tn.live);tn.leaf.remove();busy=false})}
+function turn(dir){
+  if(busy)return;const t=cur+dir;if(t<0||t>=S.length)return;
+  const tn=makeLeaf(dir);
+  requestAnimationFrame(()=>commit(tn));
+}
+function jump(i){if(busy||i<0||i>=S.length||i===cur)return;show(i,i>cur?1:-1)}
+
+/* اللمس والفأرة: اسحب من حافة الصفحة لتقليبها */
+const skip=e=>e.target.closest&&e.target.closest('input,select,textarea,button,canvas,a');
+book.addEventListener('pointerdown',e=>{
+  if(busy||e.button>0||skip(e))return;
+  const r=book.getBoundingClientRect();
+  drag={x:e.clientX,side:e.clientX>r.left+r.width/2?'r':'l',turn:null,p:0,W:r.width/2};
+});
+window.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const dx=e.clientX-drag.x;
+  if(!drag.turn){
+    if(Math.abs(dx)<12)return;
+    const dir=drag.side==='r'&&dx<0?1:drag.side==='l'&&dx>0?-1:0;
+    const t=cur+dir;
+    if(!dir||t<0||t>=S.length){drag=null;return}
+    drag.turn=makeLeaf(dir);busy=true;drag.turn.leaf.style.transition='none';
+  }
+  drag.p=Math.min(1,Math.abs(dx)/drag.W);
+  setAngle(drag.turn,drag.p*180);
+});
+const release=()=>{
+  if(!drag)return;const d=drag;drag=null;
+  if(!d.turn)return;
+  if(d.p>.4)commit(d.turn);else revert(d.turn);
+};
+window.addEventListener('pointerup',release);
+window.addEventListener('pointercancel',release);
+
+(()=>{const h=parseInt(location.hash.slice(1),10);show(Number.isInteger(h)&&h>=0&&h<S.length?h:0,0)})();
 </script>
 </body>
 </html>
