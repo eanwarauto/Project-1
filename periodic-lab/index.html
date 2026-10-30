@@ -103,6 +103,7 @@ bdi.eq,.ltr{direction:ltr;unicode-bidi:isolate}
 .cell.slotA{box-shadow:inset 0 -4px 0 var(--acc)}
 .cell:disabled{cursor:not-allowed;opacity:.35}
 .legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.legend .swatch{width:18px;height:18px;border-radius:5px;flex:none;background:color-mix(in srgb,var(--absorb) 50%,var(--surface));border:1px solid var(--line)}
 .legend .grad{flex:1;height:10px;border-radius:99px;background:linear-gradient(90deg,var(--surface),var(--acc));border:1px solid var(--line)}
 
 .missions{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
@@ -189,7 +190,7 @@ bdi.eq,.ltr{direction:ltr;unicode-bidi:isolate}
   <section class="game" data-g="ea" id="g-ea" hidden>
     <div class="panel">
       <span class="eyebrow">اللعبة الثانية · الميل الإلكتروني</span>
-      <p class="mission">اختاري عنصراً، ثم <b>أطلقي إلكتروناً</b> نحو الذرة. هل تقبله؟ وكم من الطاقة ينطلق منها عندما تكسبه؟</p>
+      <p class="mission">اختاري عنصراً، ثم <b>أطلقي إلكتروناً</b> نحو الذرة. هل <b>تنطلق</b> منها طاقة عندما تكسبه، أم تحتاج أن <b>تمتصّ</b> طاقة حتى يُضاف إليها؟</p>
       <div class="stage">
         <div class="cap" id="ea-cap"></div>
         <svg id="ea-svg" viewBox="0 0 640 340" role="img" aria-label="ذرة تكسب إلكتروناً"></svg>
@@ -197,20 +198,22 @@ bdi.eq,.ltr{direction:ltr;unicode-bidi:isolate}
       <div class="predict" id="ea-pred" hidden></div>
       <div class="controls">
         <button class="btn" id="ea-fire">أطلقي الإلكترون</button>
+        <button class="btn hold" id="ea-push" style="--acc:var(--absorb)" hidden>زوّدي الذرة بالطاقة</button>
         <button class="btn ghost" id="ea-reset">أعيدي التجربة</button>
       </div>
       <div class="meter">
-        <div class="row"><span>الطاقة التي انطلقت من الذرة</span><b class="ltr" id="ea-val">0 kJ/mol</b></div>
+        <div class="row"><span id="ea-lbl">الطاقة التي انطلقت من الذرة</span><b class="ltr" id="ea-val">0 kJ/mol</b></div>
         <div class="bar"><i id="ea-bar"></i></div>
       </div>
-      <div class="result" id="ea-res"><p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi></p></div>
+      <div class="result" id="ea-res"><p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi> عندما تكون <span class="tag rel">منطلقة</span>،
+  أو <bdi class="eq">X(g) + e⁻ + طاقة → X⁻(g)</bdi> عندما تكون <span class="tag abs">ممتصّة</span>.</p></div>
     </div>
     <aside class="panel">
       <span class="eyebrow">دفتر المختبر</span>
       <div class="ptable" id="ea-table"></div>
       <div class="legend"><span>أقل</span><span class="grad"></span><span>أكبر طاقة منطلقة</span></div>
+      <div class="legend"><span class="swatch"></span><span>الخانات البرتقالية: طاقة ممتصّة (الذرة احتاجت طاقة لتكسب الإلكترون)</span></div>
       <ul class="missions" id="ea-mis"></ul>
-      <p class="note">✕ تعني أن الذرة رفضت الإلكترون ولم تنطلق منها طاقة.</p>
     </aside>
     <div class="panel quiz" id="ea-quiz"></div>
   </section>
@@ -254,17 +257,17 @@ bdi.eq,.ltr{direction:ltr;unicode-bidi:isolate}
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const NS = 'http://www.w3.org/2000/svg';
 const COLS = ['1','2','13','14','15','16','17','18'];
-// symbol, Arabic name, Z, period, column (1..8 → groups 1,2,13..18), IE1 kJ/mol, EA released kJ/mol (null = not accepted), Pauling EN
+// symbol, Arabic name, Z, period, column (1..8 → groups 1,2,13..18), IE1 kJ/mol, EA kJ/mol (positive = released, negative = absorbed; absorbed values are estimates), Pauling EN
 const RAW = [
- ['H','هيدروجين',1,1,1,1312,73,2.20], ['He','هيليوم',2,1,8,2372,null,null],
- ['Li','ليثيوم',3,2,1,520,60,0.98], ['Be','بيريليوم',4,2,2,900,null,1.57], ['B','بورون',5,2,3,801,27,2.04], ['C','كربون',6,2,4,1086,122,2.55],
- ['N','نيتروجين',7,2,5,1402,null,3.04], ['O','أكسجين',8,2,6,1314,141,3.44], ['F','فلور',9,2,7,1681,328,3.98], ['Ne','نيون',10,2,8,2081,null,null],
- ['Na','صوديوم',11,3,1,496,53,0.93], ['Mg','مغنيسيوم',12,3,2,738,null,1.31], ['Al','ألومنيوم',13,3,3,578,42,1.61], ['Si','سيليكون',14,3,4,787,134,1.90],
- ['P','فوسفور',15,3,5,1012,72,2.19], ['S','كبريت',16,3,6,1000,200,2.58], ['Cl','كلور',17,3,7,1251,349,3.16], ['Ar','أرجون',18,3,8,1521,null,null],
+ ['H','هيدروجين',1,1,1,1312,73,2.20], ['He','هيليوم',2,1,8,2372,-50,null],
+ ['Li','ليثيوم',3,2,1,520,60,0.98], ['Be','بيريليوم',4,2,2,900,-48,1.57], ['B','بورون',5,2,3,801,27,2.04], ['C','كربون',6,2,4,1086,122,2.55],
+ ['N','نيتروجين',7,2,5,1402,-7,3.04], ['O','أكسجين',8,2,6,1314,141,3.44], ['F','فلور',9,2,7,1681,328,3.98], ['Ne','نيون',10,2,8,2081,-116,null],
+ ['Na','صوديوم',11,3,1,496,53,0.93], ['Mg','مغنيسيوم',12,3,2,738,-40,1.31], ['Al','ألومنيوم',13,3,3,578,42,1.61], ['Si','سيليكون',14,3,4,787,134,1.90],
+ ['P','فوسفور',15,3,5,1012,72,2.19], ['S','كبريت',16,3,6,1000,200,2.58], ['Cl','كلور',17,3,7,1251,349,3.16], ['Ar','أرجون',18,3,8,1521,-96,null],
  ['K','بوتاسيوم',19,4,1,419,48,0.82], ['Ca','كالسيوم',20,4,2,590,2,1.00], ['Ga','جاليوم',31,4,3,579,41,1.81], ['Ge','جرمانيوم',32,4,4,762,119,2.01],
- ['As','زرنيخ',33,4,5,947,78,2.18], ['Se','سيلينيوم',34,4,6,941,195,2.55], ['Br','بروم',35,4,7,1140,325,2.96], ['Kr','كريبتون',36,4,8,1351,null,null],
+ ['As','زرنيخ',33,4,5,947,78,2.18], ['Se','سيلينيوم',34,4,6,941,195,2.55], ['Br','بروم',35,4,7,1140,325,2.96], ['Kr','كريبتون',36,4,8,1351,-96,null],
  ['Rb','روبيديوم',37,5,1,403,47,0.82], ['Sr','سترونشيوم',38,5,2,550,5,0.95], ['In','إنديوم',49,5,3,558,29,1.78], ['Sn','قصدير',50,5,4,709,107,1.96],
- ['Sb','أنتيمون',51,5,5,834,101,2.05], ['Te','تيلوريوم',52,5,6,869,190,2.10], ['I','يود',53,5,7,1008,295,2.66], ['Xe','زينون',54,5,8,1170,null,null]
+ ['Sb','أنتيمون',51,5,5,834,101,2.05], ['Te','تيلوريوم',52,5,6,869,190,2.10], ['I','يود',53,5,7,1008,295,2.66], ['Xe','زينون',54,5,8,1170,-77,null]
 ];
 const EL = RAW.map(([s,ar,z,p,c,ie,ea,en]) => ({s,ar,z,p,c,ie,ea,en,g:COLS[c-1]}));
 const BY = Object.fromEntries(EL.map(e => [e.s, e]));
@@ -336,14 +339,15 @@ function buildTable(host, onPick, disabledFn){
     }
   }
 }
-function paintTable(host, done, fmt, lo, hi, selected){
+function paintTable(host, done, fmt, lo, hi, selected, tone){
   host.querySelectorAll('.cell').forEach(b => {
     const s = b.dataset.s, has = s in done;
     b.classList.toggle('done', has);
     b.classList.toggle('sel', selected.includes(s));
     b.querySelector('.v').textContent = has ? fmt(done[s]) : (b.disabled ? '—' : '؟');
-    const t = has ? Math.max(0, Math.min(1, (done[s] - lo) / (hi - lo))) : 0;
-    b.style.background = has ? `color-mix(in srgb, var(--acc) ${Math.round(8 + t * 72)}%, var(--surface))` : '';
+    const tn = has && tone ? tone(done[s]) : {t: has ? (done[s] - lo) / (hi - lo) : 0, c: 'var(--acc)'};
+    const t = Math.max(0, Math.min(1, tn.t));
+    b.style.background = has ? `color-mix(in srgb, ${tn.c} ${Math.round(8 + t * 72)}%, var(--surface))` : '';
     b.style.color = has && t > 0.55 ? '#fff' : '';
     if (has && t > 0.55) b.querySelector('.v').style.color = '#fff'; else b.querySelector('.v').style.color = '';
   });
@@ -513,8 +517,13 @@ const quizIE = Quiz($('ie-quiz'), 'أسئلة الاكتشاف: طاقة الت�
     <div><b>طاقة ممتصّة</b>الذرة تفقد إلكتروناً وينتج أيون موجب: <bdi class="eq">X + طاقة → X⁺ + e⁻</bdi></div>`);
 
 /* ============ GAME 2: ELECTRON AFFINITY ============ */
-const EA = { svg: $('ea-svg'), e: BY.Cl, busy: false, done: false, measured: {}, lastSym: null, pred: null, atom: null, total: 0 };
+// ea > 0: energy released when the atom gains an electron; ea < 0: energy the atom must absorb first.
+const EA = { svg: $('ea-svg'), e: BY.Cl, busy: false, done: false, measured: {}, pred: null, atom: null,
+  waiting: false, holding: false, E: 0, raf: 0, last: 0, warned: false, el: null, out: null, into: null };
 const EA_CX = 360, EA_CY = 175;
+const EA_RATE = 70; // kJ/mol supplied per second of holding
+const EA_EQ = `<p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi> عندما تكون <span class="tag rel">منطلقة</span>،
+  أو <bdi class="eq">X(g) + e⁻ + طاقة → X⁻(g)</bdi> عندما تكون <span class="tag abs">ممتصّة</span>.</p>`;
 defs(EA.svg);
 function eaDraw(){
   const svg = EA.svg; clearSvg(svg);
@@ -523,16 +532,25 @@ function eaDraw(){
   sv('rect', {x: 88, y: EA_CY - 9, width: 26, height: 18, rx: 4, fill: css('--release')}, gun);
   const t = sv('text', {x: 53, y: EA_CY + 50, 'text-anchor':'middle', fill: css('--stage-dim'), 'font-size': 15, 'font-family':'Cairo, sans-serif'}, gun); t.textContent = 'مدفع الإلكترونات';
   EA.atom = drawAtom(svg, EA.e, EA_CX, EA_CY, '#74C0FC');
-  EA.done = false; eaMeter(0);
+  EA.done = false; EA.waiting = false; EA.holding = false; EA.E = 0; EA.el = null;
+  $('ea-push').hidden = true; $('ea-push').classList.remove('on'); $('ea-fire').hidden = false;
+  eaMeter(0, false);
   caption('ea-cap', EA.e);
 }
-function eaMeter(v){ $('ea-val').textContent = Math.round(v) + ' kJ/mol'; $('ea-bar').style.width = Math.min(100, v / 360 * 100) + '%'; }
+function eaMeter(v, absorbed){
+  $('ea-lbl').textContent = absorbed ? 'الطاقة التي امتصّتها الذرة' : 'الطاقة التي انطلقت من الذرة';
+  $('ea-val').textContent = Math.round(v) + ' kJ/mol';
+  const bar = $('ea-bar'); bar.style.width = Math.min(100, v / 360 * 100) + '%';
+  bar.style.background = absorbed ? 'var(--absorb)' : '';
+}
 function eaFeedback(html){ $('ea-res').innerHTML = html; }
+function eaSlot(e){ return valence(e) < 8 ? slotAngle(valence(e)) : 5 * Math.PI / 8; }
 function eaFire(){
-  if (EA.busy || EA.done) return; EA.busy = true; $('ea-fire').disabled = true;
-  const e = EA.e, R = EA.atom.R, accepts = e.ea !== null;
-  const slot = valence(e) < 8 ? valence(e) : 0, a = slotAngle(slot);
-  const tx = accepts ? EA_CX + R * Math.cos(a) : EA_CX - R - 16, ty = accepts ? EA_CY - R * Math.sin(a) : EA_CY;
+  if (EA.busy || EA.done || EA.waiting) return; EA.busy = true; $('ea-fire').disabled = true;
+  const e = EA.e, R = EA.atom.R, releases = e.ea > 0, a = eaSlot(e);
+  const sx = EA_CX + R * Math.cos(a), sy = EA_CY - R * Math.sin(a);
+  // An atom that needs energy holds the electron outside its outer shell until energy is supplied
+  const tx = releases ? sx : EA_CX - R - 26, ty = releases ? sy : EA_CY;
   const el = sv('circle', {cx: 114, cy: EA_CY, r: 7, fill:'#FFE066', filter:`url(#${EA.svg.id}-glow)`}, EA.atom.g);
   const tag = sv('text', {x: 114, y: EA_CY - 14, 'text-anchor':'middle', fill:'#FFE066', 'font-size': 15, 'font-weight': 800, 'font-family':'Cairo, sans-serif'}, EA.atom.g); tag.textContent = 'e⁻';
   // curve around the atom when the slot is on the far side
@@ -541,10 +559,10 @@ function eaFire(){
     const x = (1-q)*(1-q)*114 + 2*(1-q)*q*mx + q*q*tx, y = (1-q)*(1-q)*EA_CY + 2*(1-q)*q*my + q*q*ty;
     el.setAttribute('cx', x); el.setAttribute('cy', y); tag.setAttribute('x', x); tag.setAttribute('y', y - 14); }, () => {
     tag.remove();
-    if (accepts) eaAccept(el); else eaReject(el, tx);
+    if (releases) eaRelease(el); else eaNeedEnergy(el, {x: tx, y: ty}, {x: sx, y: sy});
   });
 }
-function eaAccept(el){
+function eaRelease(el){
   const e = EA.e, R = EA.atom.R; el.setAttribute('fill', '#74C0FC');
   EA.atom.label.textContent = e.s + '⁻';
   const ring = sv('circle', {cx: EA_CX, cy: EA_CY, r: R, fill:'none', stroke: css('--release'), 'stroke-width': 4}, EA.svg);
@@ -556,57 +574,129 @@ function eaAccept(el){
       p.setAttribute('cx', EA_CX + r * Math.cos(a)); p.setAttribute('cy', EA_CY - r * Math.sin(a)); p.setAttribute('opacity', 1 - k); }, () => p.remove()); }
   const out = sv('text', {x: EA_CX, y: 22, 'text-anchor':'middle', fill: css('--release'), 'font-size': 16, 'font-weight': 800, 'font-family':'Cairo, sans-serif', direction:'rtl'}, EA.atom.g);
   out.textContent = 'طاقة تخرج من الذرة ↑';
-  tween(900, k => eaMeter(e.ea * ease(k)));
+  tween(900, k => eaMeter(e.ea * ease(k), false));
   sv('circle', {cx: EA_CX, cy: EA_CY, r: R + 18, fill:'none', stroke: css('--release'), 'stroke-width': 2, 'stroke-dasharray':'6 6'}, EA.atom.g);
   const small = e.ea < 10 ? ' كمية قليلة جداً، لأن الإلكترون يدخل مستوى فرعياً جديداً أبعد.' : '';
   eaDone(`<p><span class="tag rel">طاقة منطلقة</span> قبلت ذرة ${e.ar} الإلكترون، أي <b>كسبت</b> إلكتروناً، و<b>انطلقت</b> منها <b class="ltr">${e.ea} kJ/mol</b>، فأصبحت <b>أيوناً سالباً</b> <bdi class="ltr">${e.s}⁻</bdi>.${small}</p>
     <p class="eqline"><bdi class="eq">${e.s}(g) + e⁻ → ${e.s}⁻(g) + ${e.ea} kJ</bdi></p>`, e.ea);
 }
-function eaReject(el, x0){
+function eaWhy(e){
+  if (e.c === 8) return 'مستواها الأخير مكتمل بالإلكترونات ومستقر، فلا مكان للإلكترون الجديد فيه، ويجب أن يدخل مستوى طاقة جديداً أبعد عن النواة.';
+  if (e.s === 'N') return 'مستواها الفرعي p نصف ممتلئ ومستقر (استثناء).';
+  return 'مستواها الفرعي s ممتلئ بالإلكترونات ومستقر، فيدخل الإلكترون الجديد مستوى فرعياً أعلى طاقة.';
+}
+function eaNeedEnergy(el, out, into){
   const e = EA.e, R = EA.atom.R;
   const ring = sv('circle', {cx: EA_CX, cy: EA_CY, r: R + 4, fill:'none', stroke: css('--bad'), 'stroke-width': 4}, EA.svg);
   tween(600, k => ring.setAttribute('opacity', 1 - k), () => ring.remove());
-  tween(900, k => { el.setAttribute('cx', x0 - (x0 + 30) * ease(k)); el.setAttribute('cy', EA_CY + 90 * Math.sin(k * Math.PI)); }, () => el.remove());
-  const why = e.c === 8 ? 'غلافها الخارجي مكتمل ومستقر.' : e.s === 'N' ? 'مستواها الفرعي p نصف ممتلئ ومستقر (استثناء).' : 'مستواها الفرعي s ممتلئ ومستقر (استثناء).';
-  eaDone(`<p class="no">رفضت ذرة ${e.ar} الإلكترون وارتدّ عنها!</p><p>${why} لا تنطلق طاقة تقريباً، لذلك سجّلنا ✕ في الدفتر.</p>`, 0);
+  // energy source, like the one in game 1
+  const src = sv('g', {}, EA.svg);
+  sv('rect', {x: 30, y: 262, width: 120, height: 40, rx: 10, fill:'none', stroke: css('--absorb'), 'stroke-width': 3}, src);
+  const s = sv('text', {x: 90, y: 288, 'text-anchor':'middle', fill: css('--absorb'), 'font-size': 15, 'font-weight': 700, 'font-family':'Cairo, sans-serif'}, src); s.textContent = 'مصدر الطاقة';
+  EA.el = el; EA.out = out; EA.into = into; EA.E = 0; EA.warned = false;
+  EA.busy = false; EA.waiting = true;
+  $('ea-fire').hidden = true; const push = $('ea-push'); push.hidden = false; push.disabled = false;
+  eaMeter(0, true);
+  eaFeedback(`<p class="no">ذرة ${e.ar} لم تقبل الإلكترون بسهولة، فهو يقف خارج مستواها الأخير!</p>
+    <p>${eaWhy(e)} لذلك تحتاج الذرة أن <b>تمتصّ طاقة</b> حتى يُضاف إليها الإلكترون. <b>اضغطي مطوّلاً</b> على «زوّدي الذرة بالطاقة».</p>`);
+}
+function eaParticle(){
+  const p = sv('circle', {cx: 150, cy: 282, r: 4, fill: css('--absorb')}, EA.svg);
+  const x0 = 150, y0 = 282, x1 = EA.out.x + (Math.random() - .5) * 20, y1 = EA.out.y + 10;
+  tween(600, k => { p.setAttribute('cx', x0 + (x1 - x0) * k); p.setAttribute('cy', y0 + (y1 - y0) * k); p.setAttribute('opacity', 1 - k * .6); }, () => p.remove());
+}
+let eaSpawn = 0;
+function eaLoop(t){
+  const dt = Math.min(0.05, (t - EA.last) / 1000); EA.last = t;
+  if (!EA.waiting){ EA.raf = 0; return; }
+  const need = -EA.e.ea;
+  if (EA.holding){
+    EA.E += EA_RATE * dt; eaSpawn += dt; if (eaSpawn > 0.08){ eaSpawn = 0; eaParticle(); }
+    if (EA.E >= need){ EA.E = need; eaMeter(EA.E, true); EA.raf = 0; eaAbsorb(); return; }
+  } else if (EA.E > 0){
+    EA.E = Math.max(0, EA.E - EA_RATE * 3 * dt);
+    if (!EA.warned){ EA.warned = true; eaFeedback(`<p class="no">أفلتِّ الزر قبل أن تكفي الطاقة، فابتعد الإلكترون. ذرة ${EA.e.ar} تحتاج طاقة أكبر حتى تقبله، استمري بالضغط أطول.</p>`); }
+  }
+  const f = EA.E / need, j = EA.holding ? (Math.random() - .5) * 4 : 0;
+  EA.el.setAttribute('cx', EA.out.x + (EA.into.x - EA.out.x) * f * .6 + j); EA.el.setAttribute('cy', EA.out.y + (EA.into.y - EA.out.y) * f * .6 + j);
+  eaMeter(EA.E, true);
+  if (EA.holding || EA.E > 0) EA.raf = requestAnimationFrame(eaLoop); else EA.raf = 0;
+}
+function eaStart(){ const push = $('ea-push'); if (!EA.waiting || push.disabled) return; EA.holding = true; EA.warned = false; push.classList.add('on');
+  if (!EA.raf){ EA.last = performance.now(); EA.raf = requestAnimationFrame(eaLoop); } }
+function eaStop(){ EA.holding = false; $('ea-push').classList.remove('on'); }
+function eaAbsorb(){
+  const e = EA.e, need = -e.ea, el = EA.el, x0 = +el.getAttribute('cx'), y0 = +el.getAttribute('cy');
+  EA.waiting = false; eaStop(); $('ea-push').disabled = true; EA.busy = true;
+  tween(500, k => { el.setAttribute('cx', x0 + (EA.into.x - x0) * ease(k)); el.setAttribute('cy', y0 + (EA.into.y - y0) * ease(k)); }, () => {
+    el.setAttribute('fill', '#FFB27A');
+    EA.atom.label.textContent = e.s + '⁻';
+    sv('circle', {cx: EA_CX, cy: EA_CY, r: EA.atom.R + 18, fill:'none', stroke: css('--absorb'), 'stroke-width': 2, 'stroke-dasharray':'6 6'}, EA.atom.g);
+    const inn = sv('text', {x: EA_CX, y: 22, 'text-anchor':'middle', fill: css('--absorb'), 'font-size': 16, 'font-weight': 800, 'font-family':'Cairo, sans-serif', direction:'rtl'}, EA.atom.g);
+    inn.textContent = 'طاقة دخلت الذرة ↓';
+    eaDone(`<p><span class="tag abs">طاقة ممتصّة</span> امتصّت ذرة ${e.ar} نحو <b class="ltr">${need} kJ/mol</b> حتى <b>كسبت</b> الإلكترون، فأصبحت <b>أيوناً سالباً</b> <bdi class="ltr">${e.s}⁻</bdi> غير مستقر.</p>
+      <p>${eaWhy(e)} لذلك يكون الميل الإلكتروني لها <b>طاقة ممتصّة</b> وليس منطلقة.</p>
+      <p class="eqline"><bdi class="eq">${e.s}(g) + e⁻ + ${need} kJ → ${e.s}⁻(g)</bdi></p>
+      <p class="note">القيمة تقديرية؛ لأن هذا الأيون السالب غير مستقر ولا يمكن قياسه مباشرة.</p>`, e.ea);
+  });
 }
 function eaDone(html, v){
   const e = EA.e, isNew = !(e.s in EA.measured);
   let cmp = '';
-  if (EA.pred && EA.lastSym){
-    const prev = BY[EA.lastSym], pv = prev.ea || 0, bigger = v > pv, right = (EA.pred === 'more') === bigger;
-    cmp = `<p>${right ? '<span class="ok">توقعك صحيح!</span>' : '<span class="no">ليس كما توقعتِ.</span>'} الطاقة المنطلقة من ${e.ar} <b>${bigger ? 'أكبر' : 'أقل'}</b> من ${prev.ar} (${pv}). ${relation(e, prev)}</p>`;
+  if (EA.pred){
+    const kind = v > 0 ? 'rel' : 'abs', right = EA.pred === kind;
+    cmp = `<p>${right ? '<span class="ok">توقعك صحيح!</span>' : '<span class="no">ليس كما توقعتِ.</span>'} الميل الإلكتروني لذرة ${e.ar} طاقة <b>${kind === 'rel' ? 'منطلقة' : 'ممتصّة'}</b>.</p>`;
     if (right) addScore(10, 'توقع صحيح');
   }
   eaFeedback(html + cmp);
-  EA.measured[e.s] = v; EA.lastSym = e.s; EA.pred = null; EA.busy = false; EA.done = true;
+  EA.measured[e.s] = v; EA.pred = null; EA.busy = false; EA.done = true;
   if (isNew) addScore(5, 'عنصر جديد في الدفتر');
   eaRefresh();
 }
+function eaPredict(e){
+  const box = $('ea-pred');
+  if (e.s in EA.measured){ box.hidden = true; return; }
+  box.hidden = false; $('ea-fire').disabled = true;
+  box.innerHTML = `<p>توقعي أولاً: عند إضافة إلكترون إلى ذرة ${e.ar} <bdi class="ltr">${e.s}</bdi>، هل الطاقة منطلقة أم ممتصّة؟</p>
+    <button class="chip" data-p="rel" aria-pressed="false">منطلقة</button><button class="chip" data-p="abs" aria-pressed="false">ممتصّة</button>`;
+  box.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    if (EA.busy || EA.waiting || EA.done) return;
+    box.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c)); EA.pred = c.dataset.p; $('ea-fire').disabled = false; }));
+}
 function eaPick(e){
-  if (EA.busy) return;
+  if (EA.busy || EA.holding) return;
   EA.e = e; eaDraw(); $('ea-fire').disabled = false; EA.pred = null;
-  eaFeedback(`<p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi></p>`);
-  predictBox('ea', e, EA.lastSym, s => BY[s].ea, 'هل ستُطلق ذرة', 'طاقة أكبر أم أقل عند كسب إلكترون مقارنةً بـ', p => { EA.pred = p; $('ea-fire').disabled = false; });
+  eaFeedback(EA_EQ);
+  eaPredict(e);
   eaRefresh();
 }
 function eaRefresh(){
-  paintTable($('ea-table'), EA.measured, v => v === 0 ? '✕' : v, 0, 350, [EA.e.s]);
-  quizEA.update(paintMissions($('ea-mis'), EA.measured, 'أطلقي إلكتروناً على'));
+  // released cells shade blue by size; absorbed cells shade orange so the two kinds never look alike
+  paintTable($('ea-table'), EA.measured, v => Math.abs(v), 0, 350, [EA.e.s],
+    v => v > 0 ? {t: v / 350, c: 'var(--release)'} : {t: 0.35 + Math.abs(v) / 120 * 0.45, c: 'var(--absorb)'});
+  quizEA.update(paintMissions($('ea-mis'), EA.measured, 'أضيفي إلكتروناً إلى'));
 }
 $('ea-fire').addEventListener('click', eaFire);
-$('ea-reset').addEventListener('click', () => { if (!EA.busy){ eaDraw(); $('ea-fire').disabled = false; $('ea-pred').hidden = true; eaFeedback(`<p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi></p>`); } });
+const push = $('ea-push');
+push.addEventListener('pointerdown', ev => { ev.preventDefault(); try { push.setPointerCapture(ev.pointerId); } catch(_){} eaStart(); });
+['pointerup','pointercancel','lostpointercapture'].forEach(n => push.addEventListener(n, eaStop));
+push.addEventListener('contextmenu', ev => ev.preventDefault());
+push.addEventListener('keydown', ev => { if ((ev.key === ' ' || ev.key === 'Enter') && !ev.repeat){ ev.preventDefault(); eaStart(); } });
+push.addEventListener('keyup', ev => { if (ev.key === ' ' || ev.key === 'Enter') eaStop(); });
+$('ea-reset').addEventListener('click', () => { if (!EA.busy && !EA.holding){ eaDraw(); $('ea-fire').disabled = false; EA.pred = null; eaPredict(EA.e); eaFeedback(EA_EQ); } });
 
 const quizEA = Quiz($('ea-quiz'), 'أسئلة الاكتشاف: الميل الإلكتروني', [
-  {q:'عندما قبلت الذرة الإلكترون، هل الطاقة…', o:['منطلقة (خرجت من الذرة)','ممتصّة (دخلت الذرة)'], a:0, w:'رأيتِ الطاقة تخرج من الذرة على شكل وميض، فالميل الإلكتروني طاقة <b>منطلقة</b> عند إضافة إلكترون لذرة غازية.'},
-  {q:'في الميل الإلكتروني، الذرة…', o:['تكسب إلكتروناً','تفقد إلكتروناً'], a:0, w:'الإلكترون يُضاف إلى الغلاف الخارجي للذرة.'},
+  {q:'هل الميل الإلكتروني طاقة منطلقة دائماً؟', o:['لا، قد يكون طاقة منطلقة أو طاقة ممتصّة','نعم، منطلقة دائماً','لا، ممتصّة دائماً'], a:0, w:'الميل الإلكتروني هو الطاقة <b>المنطلقة أو الممتصّة</b> عند إضافة إلكترون إلى ذرة في الحالة الغازية: معظم العناصر تُطلق طاقة، وبعضها مثل المجموعة 18 تمتصّ طاقة.'},
+  {q:'عندما أضفتِ إلكتروناً إلى ذرة الكلور Cl، هل الطاقة…', o:['منطلقة (خرجت من الذرة)','ممتصّة (دخلت الذرة)'], a:0, w:'رأيتِ الطاقة تخرج من ذرة الكلور على شكل وميض بمجرد وصول الإلكترون.'},
+  {q:'لماذا يكون الميل الإلكتروني لعناصر المجموعة 18 طاقة ممتصّة؟', o:['لأن مستواها الأخير مكتمل ومستقر فتحتاج طاقة لإضافة إلكترون','لأن ينقصها إلكترون واحد','لأن نصف قطرها صغير جداً'], a:0, w:'مستواها الأخير مكتمل بالإلكترونات، فيجب أن يدخل الإلكترون الجديد مستوى طاقة جديداً أبعد عن النواة، ولذلك احتجتِ أن تزوّدي الذرة بطاقة.'},
+  {q:'في الميل الإلكتروني، الذرة…', o:['تكسب إلكتروناً','تفقد إلكتروناً'], a:0, w:'الإلكترون يُضاف إلى الذرة سواء كانت الطاقة منطلقة أو ممتصّة.'},
   {q:'ماذا ينتج عندما تكسب الذرة إلكتروناً؟', o:['أيون سالب','أيون موجب','غاز نبيل'], a:0, w:'يصبح عدد الإلكترونات أكبر من عدد البروتونات، فينتج أيون سالب مثل Cl⁻.'},
-  {q:'كيف يتغير الميل الإلكتروني عبر الدورة (من اليسار إلى اليمين)؟', o:['يزداد بشكل عام','يقل بشكل عام'], a:0, w:'تصغر الذرة ويزداد جذب النواة، فتجذب الإلكترون الجديد بقوة وتنطلق طاقة أكبر (مع استثناءات مثل المجموعتين 2 و15 و18).'},
+  {q:'كيف يتغير الميل الإلكتروني عبر الدورة (من اليسار إلى اليمين)؟', o:['يزداد بشكل عام','يقل بشكل عام'], a:0, w:'تصغر الذرة ويزداد جذب النواة، فتجذب الإلكترون الجديد بقوة وتنطلق طاقة أكبر (مع استثناءات مثل المجموعتين 2 و15، والمجموعة 18 التي تمتصّ طاقة).'},
   {q:'كيف يتغير الميل الإلكتروني خلال المجموعة (من أعلى إلى أسفل)؟', o:['يقل بشكل عام','يزداد بشكل عام'], a:0, w:'تكبر الذرة ويدخل الإلكترون الجديد غلافاً أبعد عن النواة، فيقل جذبه وتقل الطاقة المنطلقة. (استثناء: الكلور أعلى من الفلور لأن الفلور صغير جداً وإلكتروناته متزاحمة.)'},
-  {q:'أي مجموعة أطلقت أكبر طاقة عند كسب إلكترون؟', o:['المجموعة 17','المجموعة 1','المجموعة 18'], a:0, w:'ينقصها إلكترون واحد فقط ليكتمل غلافها الخارجي، أما المجموعة 18 فغلافها مكتمل فترفض الإلكترون.'}
-], `<div><b>عبر الدورة: يزداد</b>من اليسار إلى اليمين تنطلق طاقة أكبر لأن الذرة تصغر وجذب النواة يزداد.</div>
-    <div><b>خلال المجموعة: يقل</b>من أعلى إلى أسفل تنطلق طاقة أقل لأن الإلكترون الجديد يدخل غلافاً أبعد.</div>
-    <div><b>طاقة منطلقة</b>الذرة تكسب إلكتروناً وينتج أيون سالب: <bdi class="eq">X + e⁻ → X⁻ + طاقة</bdi></div>`);
+  {q:'أي مجموعة أطلقت أكبر طاقة عند كسب إلكترون؟', o:['المجموعة 17','المجموعة 1','المجموعة 18'], a:0, w:'ينقصها إلكترون واحد فقط ليكتمل مستواها الأخير، أما المجموعة 18 فمستواها الأخير مكتمل فتمتصّ طاقة ولا تُطلقها.'}
+], `<div><b>منطلقة أو ممتصّة</b>معظم العناصر تُطلق طاقة عند كسب إلكترون <bdi class="eq">X + e⁻ → X⁻ + طاقة</bdi>، والمجموعة 18 تمتصّها <bdi class="eq">X + e⁻ + طاقة → X⁻</bdi></div>
+    <div><b>عبر الدورة: يزداد</b>من اليسار إلى اليمين تنطلق طاقة أكبر لأن الذرة تصغر وجذب النواة يزداد، وأعلاها المجموعة 17.</div>
+    <div><b>خلال المجموعة: يقل</b>من أعلى إلى أسفل تنطلق طاقة أقل لأن الإلكترون الجديد يدخل غلافاً أبعد.</div>`);
 
 /* ============ GAME 3: ELECTRONEGATIVITY TUG OF WAR ============ */
 const EN = { svg: $('en-svg'), a: BY.H, b: BY.Cl, slot: 'a', busy: false, pred: null, used: {}, parts: null };
@@ -735,7 +825,7 @@ buildTable($('ie-table'), iePick);
 buildTable($('ea-table'), eaPick);
 buildTable($('en-table'), enPick, e => e.en === null);
 ieDraw(); ieRefresh();
-eaDraw(); eaRefresh();
+eaDraw(); eaPredict(EA.e); eaRefresh();
 enDraw(); enRefresh();
 show(GAMES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'ie');
 })();
