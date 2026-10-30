@@ -1,0 +1,744 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>مختبر الخواص الدورية</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Lalezar&display=swap">
+<style>
+/* Layout: a lab bench — three game tabs; each game puts a dark "lab screen" stage beside a periodic-table logbook, with the discovery quiz underneath */
+:root{
+  --bg:#F1F3F9; --surface:#FFFFFF; --sunk:#E6EAF3; --ink:#1A2036; --muted:#58627F; --line:#D5DBE8;
+  --absorb:#D9480F; --release:#1971C2; --pull:#6741D9; --good:#2B8A3E; --bad:#C92A2A;
+  --stage:#0E1630; --stage-ink:#E4E9F8; --stage-dim:#8D9BC6; --stage-line:#2F3C66;
+  --display:"Lalezar","Cairo",system-ui,sans-serif;
+  --body:"Cairo",system-ui,"Segoe UI",Tahoma,sans-serif;
+  --acc:var(--absorb);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1120; --surface:#161B2E; --sunk:#1E2540; --ink:#E6E9F4; --muted:#9AA3C2; --line:#2A3252;
+    --absorb:#FF8743; --release:#4DABF7; --pull:#9B7BFF; --good:#5BD47A; --bad:#FF6B6B;
+    --stage:#080D1E; --stage-line:#283563; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1120; --surface:#161B2E; --sunk:#1E2540; --ink:#E6E9F4; --muted:#9AA3C2; --line:#2A3252;
+  --absorb:#FF8743; --release:#4DABF7; --pull:#9B7BFF; --good:#5BD47A; --bad:#FF6B6B;
+  --stage:#080D1E; --stage-line:#283563; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{direction:rtl}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.25;text-wrap:balance;margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+bdi.eq,.ltr{direction:ltr;unicode-bidi:isolate}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.top h1{font-size:clamp(28px,5vw,44px)}
+.top p{margin:0;color:var(--muted)}
+.top .byline{color:var(--acc);font-weight:800;font-size:17px}
+.score{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-weight:700}
+.score b{font-family:var(--display);font-weight:400;font-size:24px;color:var(--acc);font-variant-numeric:tabular-nums}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tab{border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 12px;cursor:pointer;text-align:right;display:flex;flex-direction:column;gap:2px}
+.tab strong{font-family:var(--display);font-weight:400;font-size:clamp(17px,2.6vw,22px)}
+.tab span{font-size:13px;color:var(--muted)}
+.tab[data-g="ie"]{--acc:var(--absorb)} .tab[data-g="ea"]{--acc:var(--release)} .tab[data-g="en"]{--acc:var(--pull)}
+.tab[aria-selected="true"]{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--surface))}
+.tab[aria-selected="true"] strong{color:var(--acc)}
+
+/* game layout */
+.game{--acc:var(--absorb);display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+.game[data-g="ea"]{--acc:var(--release)} .game[data-g="en"]{--acc:var(--pull)}
+@media (max-width:900px){.game{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.mission{font-size:15px;margin:0}
+.mission b{color:var(--acc)}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--acc)}
+
+.stage{background:var(--stage);border-radius:14px;overflow:hidden;position:relative;color:var(--stage-ink)}
+.stage svg{display:block;width:100%;height:auto;direction:ltr}
+.cap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;padding:10px 14px;font-size:14px;color:var(--stage-dim);border-bottom:1px solid var(--stage-line)}
+.cap strong{color:var(--stage-ink);font-size:16px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:0;border-radius:12px;padding:12px 20px;font-weight:800;cursor:pointer;background:var(--acc);color:#fff;font-size:17px}
+.btn.ghost{background:var(--sunk);color:var(--ink);font-weight:700;font-size:15px;padding:10px 14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hold{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;min-width:190px}
+.hold.on{transform:scale(.97);box-shadow:0 0 0 6px color-mix(in srgb,var(--acc) 30%,transparent)}
+
+.meter{display:flex;flex-direction:column;gap:4px}
+.meter .row{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+.meter .row b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bar{height:14px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--acc);border-radius:99px}
+
+.predict{border:2px dashed var(--acc);border-radius:14px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.predict p{margin:0;flex:1 1 220px;font-weight:600}
+.chip{border:2px solid var(--acc);background:transparent;border-radius:99px;padding:4px 16px;font-weight:800;cursor:pointer;color:var(--acc)}
+.chip[aria-pressed="true"]{background:var(--acc);color:#fff}
+
+.result{border-radius:14px;padding:12px 14px;background:color-mix(in srgb,var(--acc) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--acc) 35%,var(--line))}
+.result p{margin:0}
+.result .eqline{font-size:19px;font-weight:800;margin-top:6px}
+.tag{display:inline-block;border-radius:6px;padding:0 8px;font-weight:800;font-size:14px}
+.tag.abs{background:color-mix(in srgb,var(--absorb) 18%,transparent);color:var(--absorb)}
+.tag.rel{background:color-mix(in srgb,var(--release) 18%,transparent);color:var(--release)}
+.ok{color:var(--good);font-weight:800} .no{color:var(--bad);font-weight:800}
+
+/* periodic table logbook */
+.ptable{direction:ltr;display:grid;grid-template-columns:20px repeat(8,minmax(0,1fr));gap:3px;font-variant-numeric:tabular-nums}
+.ptable .h{font-size:11px;color:var(--muted);text-align:center;align-self:end;font-weight:700}
+.ptable .ph{font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:center;font-weight:700}
+.cell{aspect-ratio:1/1.05;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;min-width:0}
+.cell .sy{font-weight:800;font-size:clamp(12px,1.6vw,16px);font-family:"Cairo",system-ui,sans-serif}
+.cell .v{font-size:clamp(8px,1vw,11px);color:var(--muted);font-weight:700}
+.cell.done .v{color:var(--ink)}
+.cell.sel{outline:3px solid var(--acc);outline-offset:-1px}
+.cell.slotA{box-shadow:inset 0 -4px 0 var(--acc)}
+.cell:disabled{cursor:not-allowed;opacity:.35}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.legend .grad{flex:1;height:10px;border-radius:99px;background:linear-gradient(90deg,var(--surface),var(--acc));border:1px solid var(--line)}
+
+.missions{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.missions li{display:flex;justify-content:space-between;gap:8px;font-size:14px;background:var(--sunk);border-radius:10px;padding:6px 10px}
+.missions li b{font-variant-numeric:tabular-nums}
+.missions li.ok b{color:var(--good)}
+.note{font-size:13px;color:var(--muted);margin:0}
+
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slot{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 10px;cursor:pointer;text-align:right}
+.slot small{display:block;color:var(--muted);font-size:12px}
+.slot strong{font-size:18px}
+.slot[aria-pressed="true"]{border-color:var(--acc)}
+.pairs{display:flex;flex-wrap:wrap;gap:6px}
+.pairs button{border:1px solid var(--line);background:var(--sunk);border-radius:99px;padding:2px 12px;cursor:pointer;font-weight:700;direction:ltr}
+
+/* quiz */
+.quiz{grid-column:1/-1}
+.quiz .qs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.q p{margin:0;font-weight:700}
+.q .opts{display:flex;flex-wrap:wrap;gap:6px}
+.q .opts button{border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:6px 12px;cursor:pointer;font-weight:600}
+.q .opts button.right{background:color-mix(in srgb,var(--good) 20%,var(--surface));border-color:var(--good)}
+.q .opts button.wrong{background:color-mix(in srgb,var(--bad) 16%,var(--surface));border-color:var(--bad)}
+.q .why{font-size:14px;color:var(--muted);margin:0}
+.lock{border:2px dashed var(--line);border-radius:14px;padding:14px;text-align:center;color:var(--muted)}
+.trend{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.trend div{border-radius:14px;padding:12px 14px;background:color-mix(in srgb,var(--acc) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--acc) 35%,var(--line))}
+.trend b{font-family:var(--display);font-weight:400;font-size:22px;color:var(--acc);display:block}
+
+.toast{position:fixed;inset-inline-start:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(50%);background:var(--ink);color:var(--bg);padding:8px 18px;border-radius:99px;font-weight:800;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>مختبر الخواص الدورية</h1>
+      <p>ثلاث تجارب تكتشفين فيها بنفسك كيف تتغيّر الخاصية عبر الدورة وخلال المجموعة.</p>
+      <p class="byline">إعداد: م.انوار الفضلي</p>
+    </div>
+    <div class="score" aria-live="polite">النقاط <b id="score">0</b></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-g="ie" aria-selected="true"><strong>انزعي الإلكترون</strong><span>طاقة التأين</span></button>
+    <button class="tab" role="tab" data-g="ea" aria-selected="false"><strong>اصطادي الإلكترون</strong><span>الميل الإلكتروني</span></button>
+    <button class="tab" role="tab" data-g="en" aria-selected="false"><strong>شدّ الحبل</strong><span>السالبية الكهربائية</span></button>
+  </nav>
+
+  <!-- ============ Game 1: Ionization energy ============ -->
+  <section class="game" data-g="ie" id="g-ie">
+    <div class="panel">
+      <span class="eyebrow">اللعبة الأولى · طاقة التأين</span>
+      <p class="mission">اختاري عنصراً من الجدول، ثم <b>اضغطي مطوّلاً</b> على زر «زوّدي الذرة بالطاقة» حتى ينفصل الإلكترون الخارجي. إذا أفلتِّ الزر مبكراً يرجع الإلكترون مكانه.</p>
+      <div class="stage">
+        <div class="cap" id="ie-cap"></div>
+        <svg id="ie-svg" viewBox="0 0 640 340" role="img" aria-label="ذرة يُنزع منها إلكترون"></svg>
+      </div>
+      <div class="predict" id="ie-pred" hidden></div>
+      <div class="controls">
+        <button class="btn hold" id="ie-hold">زوّدي الذرة بالطاقة</button>
+        <button class="btn ghost" id="ie-reset">أعيدي التجربة</button>
+      </div>
+      <div class="meter">
+        <div class="row"><span>الطاقة التي امتصّتها الذرة</span><b class="ltr" id="ie-val">0 kJ/mol</b></div>
+        <div class="bar"><i id="ie-bar"></i></div>
+      </div>
+      <div class="result" id="ie-res"><p>المعادلة العامة: <bdi class="eq">X(g) + طاقة → X⁺(g) + e⁻</bdi></p></div>
+    </div>
+    <aside class="panel">
+      <span class="eyebrow">دفتر المختبر</span>
+      <div class="ptable" id="ie-table"></div>
+      <div class="legend"><span>أقل</span><span class="grad"></span><span>أكبر طاقة تأين</span></div>
+      <ul class="missions" id="ie-mis"></ul>
+      <p class="note">أكملي المهمتين لتفتحي أسئلة الاكتشاف.</p>
+    </aside>
+    <div class="panel quiz" id="ie-quiz"></div>
+  </section>
+
+  <!-- ============ Game 2: Electron affinity ============ -->
+  <section class="game" data-g="ea" id="g-ea" hidden>
+    <div class="panel">
+      <span class="eyebrow">اللعبة الثانية · الميل الإلكتروني</span>
+      <p class="mission">اختاري عنصراً، ثم <b>أطلقي إلكتروناً</b> نحو الذرة. هل تقبله؟ وكم من الطاقة ينطلق منها عندما تكسبه؟</p>
+      <div class="stage">
+        <div class="cap" id="ea-cap"></div>
+        <svg id="ea-svg" viewBox="0 0 640 340" role="img" aria-label="ذرة تكسب إلكتروناً"></svg>
+      </div>
+      <div class="predict" id="ea-pred" hidden></div>
+      <div class="controls">
+        <button class="btn" id="ea-fire">أطلقي الإلكترون</button>
+        <button class="btn ghost" id="ea-reset">أعيدي التجربة</button>
+      </div>
+      <div class="meter">
+        <div class="row"><span>الطاقة التي انطلقت من الذرة</span><b class="ltr" id="ea-val">0 kJ/mol</b></div>
+        <div class="bar"><i id="ea-bar"></i></div>
+      </div>
+      <div class="result" id="ea-res"><p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi></p></div>
+    </div>
+    <aside class="panel">
+      <span class="eyebrow">دفتر المختبر</span>
+      <div class="ptable" id="ea-table"></div>
+      <div class="legend"><span>أقل</span><span class="grad"></span><span>أكبر طاقة منطلقة</span></div>
+      <ul class="missions" id="ea-mis"></ul>
+      <p class="note">✕ تعني أن الذرة رفضت الإلكترون ولم تنطلق منها طاقة.</p>
+    </aside>
+    <div class="panel quiz" id="ea-quiz"></div>
+  </section>
+
+  <!-- ============ Game 3: Electronegativity ============ -->
+  <section class="game" data-g="en" id="g-en" hidden>
+    <div class="panel">
+      <span class="eyebrow">اللعبة الثالثة · السالبية الكهربائية</span>
+      <p class="mission">اختاري عنصرين يرتبطان معاً. على حبل الرابطة زوج إلكترونات مشترك؛ <b>توقعي</b> أي العنصرين سيشدّ الحبل أقوى ويسحب الإلكترونات نحوه، ثم ابدئي الشد.</p>
+      <div class="slots">
+        <button class="slot" id="slotA" aria-pressed="true"><small>العنصر الأول</small><strong id="slotA-t">H</strong></button>
+        <button class="slot" id="slotB" aria-pressed="false"><small>العنصر الثاني</small><strong id="slotB-t">Cl</strong></button>
+      </div>
+      <div class="pairs" id="en-pairs"></div>
+      <div class="stage">
+        <div class="cap" id="en-cap"></div>
+        <svg id="en-svg" viewBox="0 0 640 300" role="img" aria-label="شد حبل الرابطة بين ذرتين"></svg>
+      </div>
+      <div class="predict" id="en-pred"></div>
+      <div class="controls">
+        <button class="btn" id="en-pull">ابدئي شدّ الحبل</button>
+      </div>
+      <div class="result" id="en-res"><p>العنصر الأعلى سالبية كهربائية يجذب إلكترونات الرابطة نحوه بقوة أكبر.</p></div>
+    </div>
+    <aside class="panel">
+      <span class="eyebrow">دفتر المختبر</span>
+      <p class="note">اضغطي خانة «العنصر الأول» أو «الثاني»، ثم اختاري العنصر من الجدول.</p>
+      <div class="ptable" id="en-table"></div>
+      <div class="legend"><span>أقل</span><span class="grad"></span><span>أعلى سالبية</span></div>
+      <ul class="missions" id="en-mis"></ul>
+      <p class="note">عناصر المجموعة 18 لا تكوّن روابط عادةً، لذلك لا تدخل هذه اللعبة.</p>
+    </aside>
+    <div class="panel quiz" id="en-quiz"></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NS = 'http://www.w3.org/2000/svg';
+const COLS = ['1','2','13','14','15','16','17','18'];
+// symbol, Arabic name, Z, period, column (1..8 → groups 1,2,13..18), IE1 kJ/mol, EA released kJ/mol (null = not accepted), Pauling EN
+const RAW = [
+ ['H','هيدروجين',1,1,1,1312,73,2.20], ['He','هيليوم',2,1,8,2372,null,null],
+ ['Li','ليثيوم',3,2,1,520,60,0.98], ['Be','بيريليوم',4,2,2,900,null,1.57], ['B','بورون',5,2,3,801,27,2.04], ['C','كربون',6,2,4,1086,122,2.55],
+ ['N','نيتروجين',7,2,5,1402,null,3.04], ['O','أكسجين',8,2,6,1314,141,3.44], ['F','فلور',9,2,7,1681,328,3.98], ['Ne','نيون',10,2,8,2081,null,null],
+ ['Na','صوديوم',11,3,1,496,53,0.93], ['Mg','مغنيسيوم',12,3,2,738,null,1.31], ['Al','ألومنيوم',13,3,3,578,42,1.61], ['Si','سيليكون',14,3,4,787,134,1.90],
+ ['P','فوسفور',15,3,5,1012,72,2.19], ['S','كبريت',16,3,6,1000,200,2.58], ['Cl','كلور',17,3,7,1251,349,3.16], ['Ar','أرجون',18,3,8,1521,null,null],
+ ['K','بوتاسيوم',19,4,1,419,48,0.82], ['Ca','كالسيوم',20,4,2,590,2,1.00], ['Ga','جاليوم',31,4,3,579,41,1.81], ['Ge','جرمانيوم',32,4,4,762,119,2.01],
+ ['As','زرنيخ',33,4,5,947,78,2.18], ['Se','سيلينيوم',34,4,6,941,195,2.55], ['Br','بروم',35,4,7,1140,325,2.96], ['Kr','كريبتون',36,4,8,1351,null,null],
+ ['Rb','روبيديوم',37,5,1,403,47,0.82], ['Sr','سترونشيوم',38,5,2,550,5,0.95], ['In','إنديوم',49,5,3,558,29,1.78], ['Sn','قصدير',50,5,4,709,107,1.96],
+ ['Sb','أنتيمون',51,5,5,834,101,2.05], ['Te','تيلوريوم',52,5,6,869,190,2.10], ['I','يود',53,5,7,1008,295,2.66], ['Xe','زينون',54,5,8,1170,null,null]
+];
+const EL = RAW.map(([s,ar,z,p,c,ie,ea,en]) => ({s,ar,z,p,c,ie,ea,en,g:COLS[c-1]}));
+const BY = Object.fromEntries(EL.map(e => [e.s, e]));
+
+const $ = id => document.getElementById(id);
+function sv(tag, attrs, parent){ const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+function tween(ms, fn, done){ ms = RM ? Math.min(ms, 120) : ms; const t0 = performance.now();
+  (function step(t){ const p = Math.min(1, (t - t0) / ms); fn(p); if (p < 1) requestAnimationFrame(step); else if (done) done(); })(t0); }
+const ease = p => 1 - Math.pow(1 - p, 3);
+function clearSvg(svg){ [...svg.children].forEach(n => { if (n.tagName !== 'defs') n.remove(); }); }
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- score & toast ---------- */
+let score = 0, toastT;
+function addScore(n, msg){ score += n; $('score').textContent = score;
+  const t = $('toast'); t.textContent = msg + '  +' + n; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
+
+/* ---------- atom drawing ---------- */
+function innerShells(e){ if (e.p === 1) return []; if (e.p === 2) return [2]; if (e.p === 3) return [2,8];
+  if (e.p === 4) return e.c <= 2 ? [2,8,8] : [2,8,18]; return e.c <= 2 ? [2,8,18,8] : [2,8,18,18]; }
+const valence = e => e.s === 'He' ? 2 : e.c;
+// More protons across a period pull every shell in a little; more shells down a group make the atom bigger.
+const shrink = e => 1 - 0.04 * (e.c - 1);
+const shellR = (e, k) => 30 + k * 22 * shrink(e);
+const SLOT_ORDER = [0,4,2,6,1,5,3,7];
+const slotAngle = i => SLOT_ORDER[i] * Math.PI / 4;
+
+function defs(svg){
+  const d = sv('defs', {}, svg);
+  const g = sv('radialGradient', {id: svg.id + '-nuc', cx:'40%', cy:'35%', r:'70%'}, d);
+  sv('stop', {offset:'0%', 'stop-color':'#FFD8A8'}, g); sv('stop', {offset:'100%', 'stop-color':'#E8590C'}, g);
+  const f = sv('filter', {id: svg.id + '-glow', x:'-50%', y:'-50%', width:'200%', height:'200%'}, d);
+  sv('feGaussianBlur', {stdDeviation:'3', result:'b'}, f);
+  const m = sv('feMerge', {}, f); sv('feMergeNode', {in:'b'}, m); sv('feMergeNode', {in:'SourceGraphic'}, m);
+}
+function drawAtom(svg, e, cx, cy, color){
+  const g = sv('g', {}, svg);
+  const inner = innerShells(e), n = e.p;
+  for (let k = 1; k <= n; k++) sv('circle', {cx, cy, r: shellR(e, k), fill:'none', stroke: css('--stage-line'), 'stroke-width': 1.5}, g);
+  inner.forEach((cnt, i) => { const r = shellR(e, i + 1);
+    for (let j = 0; j < cnt; j++){ const a = j / cnt * 2 * Math.PI + i * 0.3;
+      sv('circle', {cx: cx + r * Math.cos(a), cy: cy - r * Math.sin(a), r: 3, fill:'#8C9CCB'}, g); } });
+  const R = shellR(e, n), vals = [];
+  for (let i = 0; i < valence(e); i++){ const a = slotAngle(i);
+    vals.push(sv('circle', {cx: cx + R * Math.cos(a), cy: cy - R * Math.sin(a), r: 7, fill: color, filter:`url(#${svg.id}-glow)`}, g)); }
+  sv('circle', {cx, cy, r: 20, fill:`url(#${svg.id}-nuc)`}, g);
+  const label = sv('text', {x: cx, y: cy + 6, 'text-anchor':'middle', 'font-size': 17, 'font-weight': 800, fill:'#2B1200', 'font-family':'Cairo, system-ui, sans-serif'}, g);
+  label.textContent = e.s;
+  return {g, R, vals, label};
+}
+function caption(id, e){
+  $(id).innerHTML = `<strong>${e.ar} <bdi class="ltr">${e.s}</bdi></strong><span>العدد الذري ${e.z} · الدورة ${e.p} · المجموعة ${e.g} · عدد الأغلفة ${e.p}</span>`;
+}
+
+/* ---------- periodic table logbook ---------- */
+function buildTable(host, onPick, disabledFn){
+  host.innerHTML = '<div></div>' + COLS.map(c => `<div class="h">${c}</div>`).join('');
+  for (let p = 1; p <= 5; p++){
+    host.insertAdjacentHTML('beforeend', `<div class="ph">${p}</div>`);
+    for (let c = 1; c <= 8; c++){
+      const e = EL.find(x => x.p === p && x.c === c);
+      if (!e){ host.insertAdjacentHTML('beforeend', '<div></div>'); continue; }
+      const b = document.createElement('button');
+      b.className = 'cell'; b.dataset.s = e.s; b.title = e.ar;
+      b.innerHTML = `<span class="sy">${e.s}</span><span class="v">؟</span>`;
+      if (disabledFn && disabledFn(e)) b.disabled = true;
+      b.addEventListener('click', () => onPick(e));
+      host.appendChild(b);
+    }
+  }
+}
+function paintTable(host, done, fmt, lo, hi, selected){
+  host.querySelectorAll('.cell').forEach(b => {
+    const s = b.dataset.s, has = s in done;
+    b.classList.toggle('done', has);
+    b.classList.toggle('sel', selected.includes(s));
+    b.querySelector('.v').textContent = has ? fmt(done[s]) : (b.disabled ? '—' : '؟');
+    const t = has ? Math.max(0, Math.min(1, (done[s] - lo) / (hi - lo))) : 0;
+    b.style.background = has ? `color-mix(in srgb, var(--acc) ${Math.round(8 + t * 72)}%, var(--surface))` : '';
+    b.style.color = has && t > 0.55 ? '#fff' : '';
+    if (has && t > 0.55) b.querySelector('.v').style.color = '#fff'; else b.querySelector('.v').style.color = '';
+  });
+}
+// Missions: explore one period (5 elements) and one group (4 elements)
+function missionState(done){
+  const syms = Object.keys(done).map(s => BY[s]);
+  let bp = 0, bpN = 0, bg = 0, bgN = 0;
+  for (let p = 1; p <= 5; p++){ const n = syms.filter(e => e.p === p).length; if (n > bpN){ bpN = n; bp = p; } }
+  for (let c = 1; c <= 8; c++){ const n = syms.filter(e => e.c === c).length; if (n > bgN){ bgN = n; bg = c; } }
+  return {bp, bpN, bg: COLS[bg - 1], bgN, ok: bpN >= 5 && bgN >= 4};
+}
+function paintMissions(host, done, verb){
+  const m = missionState(done);
+  host.innerHTML =
+    `<li class="${m.bpN >= 5 ? 'ok' : ''}"><span>${verb} 5 عناصر من <b>نفس الدورة</b>${m.bpN ? ' (الدورة ' + m.bp + ')' : ''}</span><b>${Math.min(m.bpN,5)}/5</b></li>` +
+    `<li class="${m.bgN >= 4 ? 'ok' : ''}"><span>${verb} 4 عناصر من <b>نفس المجموعة</b>${m.bgN ? ' (المجموعة ' + m.bg + ')' : ''}</span><b>${Math.min(m.bgN,4)}/4</b></li>`;
+  return m.ok;
+}
+
+/* ---------- discovery quiz ---------- */
+function Quiz(host, title, qs, trend){
+  let unlocked = false, answered = 0;
+  function render(missions){
+    if (!unlocked){
+      host.innerHTML = `<h2>أسئلة الاكتشاف</h2><div class="lock">🔒 تُفتح الأسئلة بعد إكمال مهمتي دفتر المختبر: استكشفي عناصر من دورة واحدة ومن مجموعة واحدة.</div>`;
+      return;
+    }
+    host.innerHTML = `<h2>${title}</h2><div class="qs"></div><div class="trend" hidden></div>`;
+    const box = host.querySelector('.qs');
+    qs.forEach(q => {
+      const d = document.createElement('div'); d.className = 'q';
+      d.innerHTML = `<p>${q.q}</p><div class="opts"></div><p class="why" hidden></p>`;
+      const opts = d.querySelector('.opts');
+      q.o.forEach((o, i) => { const b = document.createElement('button'); b.textContent = o;
+        b.addEventListener('click', () => {
+          if (d.dataset.done) return; d.dataset.done = 1; answered++;
+          b.classList.add(i === q.a ? 'right' : 'wrong'); opts.children[q.a].classList.add('right');
+          const w = d.querySelector('.why'); w.hidden = false;
+          w.innerHTML = (i === q.a ? '<span class="ok">إجابة صحيحة! </span>' : '<span class="no">الإجابة الصحيحة مظللة بالأخضر. </span>') + q.w;
+          if (i === q.a) addScore(10, 'إجابة صحيحة');
+          if (answered === qs.length){ const t = host.querySelector('.trend'); t.hidden = false; t.innerHTML = trend; }
+        });
+        opts.appendChild(b); });
+      box.appendChild(d);
+    });
+  }
+  return { update(ok){ if (ok && !unlocked){ unlocked = true; render(); addScore(20, 'فتحتِ أسئلة الاكتشاف'); } else if (!host.innerHTML) render(); } };
+}
+
+/* ============ GAME 1: IONIZATION ENERGY ============ */
+const IE = { svg: $('ie-svg'), e: BY.Na, E: 0, holding: false, done: false, raf: 0, last: 0, warned: false,
+  measured: {}, lastSym: null, pred: null, atom: null, target: null, battery: null };
+const IE_RATE = 800; // kJ/mol supplied per second of holding
+const IE_CX = 380, IE_CY = 175;
+defs(IE.svg);
+function ieDraw(){
+  const svg = IE.svg; clearSvg(svg);
+  const scene = sv('g', {}, svg);
+  // energy source
+  const bat = sv('g', {}, scene);
+  sv('rect', {x: 22, y: 110, width: 78, height: 130, rx: 12, fill:'none', stroke: css('--absorb'), 'stroke-width': 3}, bat);
+  sv('rect', {x: 48, y: 100, width: 26, height: 12, rx: 3, fill: css('--absorb')}, bat);
+  IE.battery = sv('rect', {x: 28, y: 116, width: 66, height: 118, rx: 8, fill: css('--absorb'), opacity: .85}, bat);
+  const t = sv('text', {x: 61, y: 268, 'text-anchor':'middle', fill: css('--stage-dim'), 'font-size': 15, 'font-family':'Cairo, sans-serif'}, bat); t.textContent = 'مصدر الطاقة';
+  sv('path', {d: `M 108 ${IE_CY} L 222 ${IE_CY} M 212 ${IE_CY - 8} L 224 ${IE_CY} L 212 ${IE_CY + 8}`, stroke: css('--absorb'), 'stroke-width': 3, fill:'none', 'stroke-dasharray':'0', opacity: .7}, bat);
+  const arrow = sv('text', {x: 166, y: IE_CY - 16, 'text-anchor':'middle', fill: css('--absorb'), 'font-size': 14, 'font-weight': 700, 'font-family':'Cairo, sans-serif'}, bat); arrow.textContent = 'طاقة تدخل الذرة';
+  arrow.setAttribute('direction', 'rtl');
+  svg.appendChild(scene);
+  IE.atom = drawAtom(svg, IE.e, IE_CX, IE_CY, '#FFB27A');
+  IE.target = IE.atom.vals[0];
+  IE.target.setAttribute('fill', '#FFE066');
+  IE.E = 0; IE.done = false; IE.warned = false; ieMeter();
+  caption('ie-cap', IE.e);
+}
+function ieMeter(){ $('ie-val').textContent = Math.round(IE.E) + ' kJ/mol'; $('ie-bar').style.width = Math.min(100, IE.E / 2400 * 100) + '%';
+  if (IE.battery){ const f = 1 - Math.min(1, IE.E / 2400); IE.battery.setAttribute('height', 118 * f); IE.battery.setAttribute('y', 116 + 118 * (1 - f)); } }
+function ieParticle(){
+  const p = sv('circle', {cx: 100, cy: IE_CY + (Math.random() - .5) * 60, r: 4, fill: css('--absorb')}, IE.svg);
+  const x0 = 100, y0 = +p.getAttribute('cy'), x1 = IE_CX - 10, y1 = IE_CY + (Math.random() - .5) * 20;
+  tween(650, k => { p.setAttribute('cx', x0 + (x1 - x0) * k); p.setAttribute('cy', y0 + (y1 - y0) * k); p.setAttribute('opacity', 1 - k * .6); }, () => p.remove());
+}
+let ieSpawn = 0;
+function ieLoop(t){
+  const dt = Math.min(0.05, (t - IE.last) / 1000); IE.last = t;
+  if (IE.done){ IE.raf = 0; return; }
+  if (IE.holding){
+    IE.E += IE_RATE * dt; ieSpawn += dt; if (ieSpawn > 0.07){ ieSpawn = 0; ieParticle(); }
+    if (IE.E >= IE.e.ie){ IE.E = IE.e.ie; ieMeter(); ieIonize(); IE.raf = 0; return; }
+  } else if (IE.E > 0){
+    IE.E = Math.max(0, IE.E - IE_RATE * 3 * dt);
+    if (!IE.warned){ IE.warned = true; ieFeedback(`<p class="no">أفلتِّ الزر قبل أن تكفي الطاقة، فرجع الإلكترون إلى مكانه. ذرة ${IE.e.ar} تحتاج طاقة أكبر، استمري بالضغط أطول.</p>`); }
+  }
+  const R = IE.atom.R, f = IE.E / IE.e.ie, j = IE.holding ? (Math.random() - .5) * 4 : 0;
+  IE.target.setAttribute('cx', IE_CX + R + f * 60 + j); IE.target.setAttribute('cy', IE_CY + j);
+  ieMeter();
+  if (IE.holding || IE.E > 0) IE.raf = requestAnimationFrame(ieLoop); else IE.raf = 0;
+}
+function ieStart(){ if (IE.done || $('ie-hold').disabled) return; IE.holding = true; IE.warned = false; $('ie-hold').classList.add('on');
+  if (!IE.raf){ IE.last = performance.now(); IE.raf = requestAnimationFrame(ieLoop); } }
+function ieStop(){ IE.holding = false; $('ie-hold').classList.remove('on'); }
+function ieFeedback(html){ $('ie-res').innerHTML = html; }
+function ieIonize(){
+  IE.done = true; ieStop(); $('ie-hold').disabled = true;
+  const el = IE.target, x0 = +el.getAttribute('cx');
+  tween(900, k => { el.setAttribute('cx', x0 + (700 - x0) * ease(k)); el.setAttribute('cy', IE_CY - 60 * ease(k)); }, () => {});
+  const tag = sv('text', {x: 610, y: IE_CY - 72, 'text-anchor':'end', fill:'#FFE066', 'font-size': 18, 'font-weight': 800, 'font-family':'Cairo, sans-serif'}, IE.svg); tag.textContent = 'e⁻';
+  IE.atom.label.textContent = IE.e.s + '⁺';
+  sv('circle', {cx: IE_CX, cy: IE_CY, r: IE.atom.R + 18, fill:'none', stroke: css('--absorb'), 'stroke-width': 2, 'stroke-dasharray':'6 6'}, IE.atom.g);
+  const e = IE.e, isNew = !(e.s in IE.measured);
+  let cmp = '';
+  if (IE.pred && IE.lastSym){
+    const prev = BY[IE.lastSym], bigger = e.ie > prev.ie, right = (IE.pred === 'more') === bigger;
+    cmp = `<p>${right ? '<span class="ok">توقعك صحيح!</span>' : '<span class="no">ليس كما توقعتِ.</span>'} ذرة ${e.ar} احتاجت طاقة <b>${bigger ? 'أكبر' : 'أقل'}</b> من ${prev.ar} (${prev.ie}) بفرق ${Math.abs(e.ie - prev.ie)} kJ/mol. ${relation(e, prev)}</p>`;
+    if (right) addScore(10, 'توقع صحيح');
+  }
+  ieFeedback(`<p><span class="tag abs">طاقة ممتصّة</span> امتصّت ذرة ${e.ar} <b class="ltr">${e.ie} kJ/mol</b> حتى <b>فقدت</b> إلكترونها الخارجي، فأصبحت <b>أيوناً موجباً</b> <bdi class="ltr">${e.s}⁺</bdi>.</p>
+    <p class="eqline"><bdi class="eq">${e.s}(g) + ${e.ie} kJ → ${e.s}⁺(g) + e⁻</bdi></p>${cmp}`);
+  IE.measured[e.s] = e.ie; IE.lastSym = e.s; IE.pred = null;
+  if (isNew) addScore(5, 'عنصر جديد في الدفتر');
+  ieRefresh();
+}
+function relation(e, prev){
+  if (e.p === prev.p) return 'العنصران في <b>نفس الدورة</b>.';
+  if (e.c === prev.c) return 'العنصران في <b>نفس المجموعة</b>.';
+  return '';
+}
+function iePick(e){
+  if (IE.holding) return;
+  IE.e = e; ieDraw(); $('ie-hold').disabled = false; IE.pred = null;
+  ieFeedback(`<p>المعادلة العامة: <bdi class="eq">X(g) + طاقة → X⁺(g) + e⁻</bdi></p>`);
+  predictBox('ie', e, IE.lastSym, s => BY[s].ie, 'هل تحتاج ذرة', 'طاقة أكبر أم أقل لنزع إلكترونها من', p => { IE.pred = p; $('ie-hold').disabled = false; });
+  ieRefresh();
+}
+function predictBox(g, e, lastSym, val, pre, mid, onPick){
+  const box = $(g + '-pred'), btnId = g === 'ie' ? 'ie-hold' : 'ea-fire';
+  const done = g === 'ie' ? IE.measured : EA.measured;
+  if (!lastSym || lastSym === e.s || e.s in done){ box.hidden = true; return; }
+  const prev = BY[lastSym];
+  box.hidden = false; $(btnId).disabled = true;
+  box.innerHTML = `<p>توقعي أولاً: ${pre} ${e.ar} <bdi class="ltr">${e.s}</bdi> ${mid} ${prev.ar} <bdi class="ltr">${prev.s}</bdi>؟</p>
+    <button class="chip" data-p="more" aria-pressed="false">أكبر</button><button class="chip" data-p="less" aria-pressed="false">أقل</button>`;
+  box.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    box.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c)); onPick(c.dataset.p); }));
+}
+function ieRefresh(){
+  paintTable($('ie-table'), IE.measured, v => v, 400, 2400, [IE.e.s]);
+  quizIE.update(paintMissions($('ie-mis'), IE.measured, 'انزعي إلكتروناً من'));
+}
+const hold = $('ie-hold');
+hold.addEventListener('pointerdown', ev => { ev.preventDefault(); try { hold.setPointerCapture(ev.pointerId); } catch(_){} ieStart(); });
+['pointerup','pointercancel','lostpointercapture'].forEach(n => hold.addEventListener(n, ieStop));
+hold.addEventListener('contextmenu', ev => ev.preventDefault());
+hold.addEventListener('keydown', ev => { if ((ev.key === ' ' || ev.key === 'Enter') && !ev.repeat){ ev.preventDefault(); ieStart(); } });
+hold.addEventListener('keyup', ev => { if (ev.key === ' ' || ev.key === 'Enter') ieStop(); });
+$('ie-reset').addEventListener('click', () => { if (!IE.holding){ ieDraw(); $('ie-hold').disabled = false; $('ie-pred').hidden = true; ieFeedback(`<p>المعادلة العامة: <bdi class="eq">X(g) + طاقة → X⁺(g) + e⁻</bdi></p>`); } });
+
+const quizIE = Quiz($('ie-quiz'), 'أسئلة الاكتشاف: طاقة التأين', [
+  {q:'عندما نزعتِ الإلكترون، هل الطاقة…', o:['ممتصّة (دخلت الذرة)','منطلقة (خرجت من الذرة)'], a:0, w:'زوّدنا الذرة بطاقة من المصدر حتى انفصل الإلكترون، لذلك طاقة التأين طاقة <b>ممتصّة</b> والعملية ماصّة للطاقة.'},
+  {q:'في التأين، الذرة…', o:['تفقد إلكتروناً','تكسب إلكتروناً'], a:0, w:'طاقة التأين هي الطاقة اللازمة لنزع (فقد) إلكترون من الذرة في الحالة الغازية.'},
+  {q:'ماذا ينتج عن تأين الذرة؟', o:['أيون موجب + إلكترون','أيون سالب','ذرة متعادلة'], a:0, w:'بعد فقد إلكترون يصبح عدد البروتونات أكبر من عدد الإلكترونات، فينتج أيون موجب مثل Na⁺.'},
+  {q:'كيف تتغير طاقة التأين عبر الدورة (من اليسار إلى اليمين)؟', o:['تزداد','تقل','لا تتغير'], a:0, w:'يزداد عدد البروتونات وتصغر الذرة (لاحظي انكماش الأغلفة)، فتشتد جاذبية النواة ويصعب نزع الإلكترون.'},
+  {q:'كيف تتغير طاقة التأين خلال المجموعة (من أعلى إلى أسفل)؟', o:['تقل','تزداد','لا تتغير'], a:0, w:'يزداد عدد الأغلفة فيبتعد الإلكترون الخارجي عن النواة ويسهل نزعه.'},
+  {q:'أي العناصر أعلى طاقة تأين في كل دورة؟', o:['عناصر المجموعة 18','عناصر المجموعة 1','عناصر المجموعة 2'], a:0, w:'غلافها الخارجي مكتمل ومستقر جداً، فتحتاج أكبر طاقة لنزع إلكترون منها، وأقلها عناصر المجموعة 1.'}
+], `<div><b>عبر الدورة: تزداد</b>من اليسار إلى اليمين تكبر طاقة التأين لأن نصف القطر يقل وجذب النواة يزداد.</div>
+    <div><b>خلال المجموعة: تقل</b>من أعلى إلى أسفل تقل طاقة التأين لأن عدد الأغلفة يزداد والإلكترون يبتعد عن النواة.</div>
+    <div><b>طاقة ممتصّة</b>الذرة تفقد إلكتروناً وينتج أيون موجب: <bdi class="eq">X + طاقة → X⁺ + e⁻</bdi></div>`);
+
+/* ============ GAME 2: ELECTRON AFFINITY ============ */
+const EA = { svg: $('ea-svg'), e: BY.Cl, busy: false, done: false, measured: {}, lastSym: null, pred: null, atom: null, total: 0 };
+const EA_CX = 360, EA_CY = 175;
+defs(EA.svg);
+function eaDraw(){
+  const svg = EA.svg; clearSvg(svg);
+  const gun = sv('g', {}, svg);
+  sv('rect', {x: 18, y: EA_CY - 22, width: 70, height: 44, rx: 10, fill:'none', stroke: css('--release'), 'stroke-width': 3}, gun);
+  sv('rect', {x: 88, y: EA_CY - 9, width: 26, height: 18, rx: 4, fill: css('--release')}, gun);
+  const t = sv('text', {x: 53, y: EA_CY + 50, 'text-anchor':'middle', fill: css('--stage-dim'), 'font-size': 15, 'font-family':'Cairo, sans-serif'}, gun); t.textContent = 'مدفع الإلكترونات';
+  EA.atom = drawAtom(svg, EA.e, EA_CX, EA_CY, '#74C0FC');
+  EA.done = false; eaMeter(0);
+  caption('ea-cap', EA.e);
+}
+function eaMeter(v){ $('ea-val').textContent = Math.round(v) + ' kJ/mol'; $('ea-bar').style.width = Math.min(100, v / 360 * 100) + '%'; }
+function eaFeedback(html){ $('ea-res').innerHTML = html; }
+function eaFire(){
+  if (EA.busy || EA.done) return; EA.busy = true; $('ea-fire').disabled = true;
+  const e = EA.e, R = EA.atom.R, accepts = e.ea !== null;
+  const slot = valence(e) < 8 ? valence(e) : 0, a = slotAngle(slot);
+  const tx = accepts ? EA_CX + R * Math.cos(a) : EA_CX - R - 16, ty = accepts ? EA_CY - R * Math.sin(a) : EA_CY;
+  const el = sv('circle', {cx: 114, cy: EA_CY, r: 7, fill:'#FFE066', filter:`url(#${EA.svg.id}-glow)`}, EA.atom.g);
+  const tag = sv('text', {x: 114, y: EA_CY - 14, 'text-anchor':'middle', fill:'#FFE066', 'font-size': 15, 'font-weight': 800, 'font-family':'Cairo, sans-serif'}, EA.atom.g); tag.textContent = 'e⁻';
+  // curve around the atom when the slot is on the far side
+  const mx = (114 + tx) / 2, my = ty < EA_CY ? EA_CY - R - 60 : EA_CY + (ty > EA_CY ? R + 60 : 0);
+  tween(1000, k => { const q = ease(k);
+    const x = (1-q)*(1-q)*114 + 2*(1-q)*q*mx + q*q*tx, y = (1-q)*(1-q)*EA_CY + 2*(1-q)*q*my + q*q*ty;
+    el.setAttribute('cx', x); el.setAttribute('cy', y); tag.setAttribute('x', x); tag.setAttribute('y', y - 14); }, () => {
+    tag.remove();
+    if (accepts) eaAccept(el); else eaReject(el, tx);
+  });
+}
+function eaAccept(el){
+  const e = EA.e, R = EA.atom.R; el.setAttribute('fill', '#74C0FC');
+  EA.atom.label.textContent = e.s + '⁻';
+  const ring = sv('circle', {cx: EA_CX, cy: EA_CY, r: R, fill:'none', stroke: css('--release'), 'stroke-width': 4}, EA.svg);
+  tween(800, k => { ring.setAttribute('r', R + 90 * k); ring.setAttribute('opacity', 1 - k); }, () => ring.remove());
+  const n = Math.max(4, Math.round(e.ea / 14));
+  for (let i = 0; i < n; i++){ const a = i / n * 2 * Math.PI + Math.random() * .3;
+    const p = sv('circle', {cx: EA_CX, cy: EA_CY, r: 4, fill: css('--release')}, EA.svg);
+    tween(900 + Math.random() * 300, k => { const r = R * .6 + (R + 150) * ease(k);
+      p.setAttribute('cx', EA_CX + r * Math.cos(a)); p.setAttribute('cy', EA_CY - r * Math.sin(a)); p.setAttribute('opacity', 1 - k); }, () => p.remove()); }
+  const out = sv('text', {x: EA_CX, y: 22, 'text-anchor':'middle', fill: css('--release'), 'font-size': 16, 'font-weight': 800, 'font-family':'Cairo, sans-serif', direction:'rtl'}, EA.atom.g);
+  out.textContent = 'طاقة تخرج من الذرة ↑';
+  tween(900, k => eaMeter(e.ea * ease(k)));
+  sv('circle', {cx: EA_CX, cy: EA_CY, r: R + 18, fill:'none', stroke: css('--release'), 'stroke-width': 2, 'stroke-dasharray':'6 6'}, EA.atom.g);
+  const small = e.ea < 10 ? ' كمية قليلة جداً، لأن الإلكترون يدخل مستوى فرعياً جديداً أبعد.' : '';
+  eaDone(`<p><span class="tag rel">طاقة منطلقة</span> قبلت ذرة ${e.ar} الإلكترون، أي <b>كسبت</b> إلكتروناً، و<b>انطلقت</b> منها <b class="ltr">${e.ea} kJ/mol</b>، فأصبحت <b>أيوناً سالباً</b> <bdi class="ltr">${e.s}⁻</bdi>.${small}</p>
+    <p class="eqline"><bdi class="eq">${e.s}(g) + e⁻ → ${e.s}⁻(g) + ${e.ea} kJ</bdi></p>`, e.ea);
+}
+function eaReject(el, x0){
+  const e = EA.e, R = EA.atom.R;
+  const ring = sv('circle', {cx: EA_CX, cy: EA_CY, r: R + 4, fill:'none', stroke: css('--bad'), 'stroke-width': 4}, EA.svg);
+  tween(600, k => ring.setAttribute('opacity', 1 - k), () => ring.remove());
+  tween(900, k => { el.setAttribute('cx', x0 - (x0 + 30) * ease(k)); el.setAttribute('cy', EA_CY + 90 * Math.sin(k * Math.PI)); }, () => el.remove());
+  const why = e.c === 8 ? 'غلافها الخارجي مكتمل ومستقر.' : e.s === 'N' ? 'مستواها الفرعي p نصف ممتلئ ومستقر (استثناء).' : 'مستواها الفرعي s ممتلئ ومستقر (استثناء).';
+  eaDone(`<p class="no">رفضت ذرة ${e.ar} الإلكترون وارتدّ عنها!</p><p>${why} لا تنطلق طاقة تقريباً، لذلك سجّلنا ✕ في الدفتر.</p>`, 0);
+}
+function eaDone(html, v){
+  const e = EA.e, isNew = !(e.s in EA.measured);
+  let cmp = '';
+  if (EA.pred && EA.lastSym){
+    const prev = BY[EA.lastSym], pv = prev.ea || 0, bigger = v > pv, right = (EA.pred === 'more') === bigger;
+    cmp = `<p>${right ? '<span class="ok">توقعك صحيح!</span>' : '<span class="no">ليس كما توقعتِ.</span>'} الطاقة المنطلقة من ${e.ar} <b>${bigger ? 'أكبر' : 'أقل'}</b> من ${prev.ar} (${pv}). ${relation(e, prev)}</p>`;
+    if (right) addScore(10, 'توقع صحيح');
+  }
+  eaFeedback(html + cmp);
+  EA.measured[e.s] = v; EA.lastSym = e.s; EA.pred = null; EA.busy = false; EA.done = true;
+  if (isNew) addScore(5, 'عنصر جديد في الدفتر');
+  eaRefresh();
+}
+function eaPick(e){
+  if (EA.busy) return;
+  EA.e = e; eaDraw(); $('ea-fire').disabled = false; EA.pred = null;
+  eaFeedback(`<p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi></p>`);
+  predictBox('ea', e, EA.lastSym, s => BY[s].ea, 'هل ستُطلق ذرة', 'طاقة أكبر أم أقل عند كسب إلكترون مقارنةً بـ', p => { EA.pred = p; $('ea-fire').disabled = false; });
+  eaRefresh();
+}
+function eaRefresh(){
+  paintTable($('ea-table'), EA.measured, v => v === 0 ? '✕' : v, 0, 350, [EA.e.s]);
+  quizEA.update(paintMissions($('ea-mis'), EA.measured, 'أطلقي إلكتروناً على'));
+}
+$('ea-fire').addEventListener('click', eaFire);
+$('ea-reset').addEventListener('click', () => { if (!EA.busy){ eaDraw(); $('ea-fire').disabled = false; $('ea-pred').hidden = true; eaFeedback(`<p>المعادلة العامة: <bdi class="eq">X(g) + e⁻ → X⁻(g) + طاقة</bdi></p>`); } });
+
+const quizEA = Quiz($('ea-quiz'), 'أسئلة الاكتشاف: الميل الإلكتروني', [
+  {q:'عندما قبلت الذرة الإلكترون، هل الطاقة…', o:['منطلقة (خرجت من الذرة)','ممتصّة (دخلت الذرة)'], a:0, w:'رأيتِ الطاقة تخرج من الذرة على شكل وميض، فالميل الإلكتروني طاقة <b>منطلقة</b> عند إضافة إلكترون لذرة غازية.'},
+  {q:'في الميل الإلكتروني، الذرة…', o:['تكسب إلكتروناً','تفقد إلكتروناً'], a:0, w:'الإلكترون يُضاف إلى الغلاف الخارجي للذرة.'},
+  {q:'ماذا ينتج عندما تكسب الذرة إلكتروناً؟', o:['أيون سالب','أيون موجب','غاز نبيل'], a:0, w:'يصبح عدد الإلكترونات أكبر من عدد البروتونات، فينتج أيون سالب مثل Cl⁻.'},
+  {q:'كيف يتغير الميل الإلكتروني عبر الدورة (من اليسار إلى اليمين)؟', o:['يزداد بشكل عام','يقل بشكل عام'], a:0, w:'تصغر الذرة ويزداد جذب النواة، فتجذب الإلكترون الجديد بقوة وتنطلق طاقة أكبر (مع استثناءات مثل المجموعتين 2 و15 و18).'},
+  {q:'كيف يتغير الميل الإلكتروني خلال المجموعة (من أعلى إلى أسفل)؟', o:['يقل بشكل عام','يزداد بشكل عام'], a:0, w:'تكبر الذرة ويدخل الإلكترون الجديد غلافاً أبعد عن النواة، فيقل جذبه وتقل الطاقة المنطلقة. (استثناء: الكلور أعلى من الفلور لأن الفلور صغير جداً وإلكتروناته متزاحمة.)'},
+  {q:'أي مجموعة أطلقت أكبر طاقة عند كسب إلكترون؟', o:['المجموعة 17','المجموعة 1','المجموعة 18'], a:0, w:'ينقصها إلكترون واحد فقط ليكتمل غلافها الخارجي، أما المجموعة 18 فغلافها مكتمل فترفض الإلكترون.'}
+], `<div><b>عبر الدورة: يزداد</b>من اليسار إلى اليمين تنطلق طاقة أكبر لأن الذرة تصغر وجذب النواة يزداد.</div>
+    <div><b>خلال المجموعة: يقل</b>من أعلى إلى أسفل تنطلق طاقة أقل لأن الإلكترون الجديد يدخل غلافاً أبعد.</div>
+    <div><b>طاقة منطلقة</b>الذرة تكسب إلكتروناً وينتج أيون سالب: <bdi class="eq">X + e⁻ → X⁻ + طاقة</bdi></div>`);
+
+/* ============ GAME 3: ELECTRONEGATIVITY TUG OF WAR ============ */
+const EN = { svg: $('en-svg'), a: BY.H, b: BY.Cl, slot: 'a', busy: false, pred: null, used: {}, parts: null };
+const EN_CY = 150, AX = 120, BX = 520;
+const PAIRS = [['H','Cl'],['H','F'],['Na','Cl'],['H','O'],['C','O'],['Cl','Cl'],['C','H'],['K','Br']];
+function enRadius(e){ return 30 + e.p * 7; }
+function enDraw(){
+  const svg = EN.svg; svg.innerHTML = '';
+  defs(svg);
+  const a = EN.a, b = EN.b, ra = enRadius(a), rb = enRadius(b);
+  const g = sv('g', {}, svg);
+  const cloud = sv('ellipse', {cx: 320, cy: EN_CY, rx: 120, ry: 34, fill: css('--pull'), opacity: .22}, g);
+  const rope = sv('path', {d: `M ${AX + ra} ${EN_CY} L ${BX - rb} ${EN_CY}`, stroke:'#C8A06A', 'stroke-width': 7, 'stroke-linecap':'round', fill:'none', 'stroke-dasharray':'12 5'}, g);
+  // centre line of the bond
+  sv('line', {x1: 320, y1: EN_CY - 50, x2: 320, y2: EN_CY + 50, stroke: css('--stage-dim'), 'stroke-dasharray':'4 6', 'stroke-width': 1.5}, g);
+  const mid = sv('text', {x: 320, y: EN_CY + 68, 'text-anchor':'middle', fill: css('--stage-dim'), 'font-size': 13, 'font-family':'Cairo, sans-serif'}, g); mid.textContent = 'منتصف الرابطة';
+  const pair = sv('g', {}, g);
+  sv('rect', {x: -8, y: -26, width: 16, height: 52, rx: 4, fill:'#E03131', opacity: .9}, pair); // rope marker ribbon
+  sv('circle', {cx: -12, cy: -26, r: 8, fill:'#FFE066', filter:`url(#${svg.id}-glow)`}, pair);
+  sv('circle', {cx: 12, cy: -26, r: 8, fill:'#FFE066', filter:`url(#${svg.id}-glow)`}, pair);
+  pair.setAttribute('transform', `translate(320 ${EN_CY})`);
+  const atom = (e, x, r) => { const t = sv('g', {}, g);
+    sv('circle', {cx: 0, cy: 0, r, fill:`url(#${svg.id}-nuc)`}, t);
+    const s = sv('text', {x: 0, y: 8, 'text-anchor':'middle', 'font-size': 26, 'font-weight': 800, fill:'#2B1200', 'font-family':'Cairo, sans-serif'}, t); s.textContent = e.s;
+    const v = sv('text', {x: 0, y: r + 26, 'text-anchor':'middle', 'font-size': 16, 'font-weight': 700, fill: css('--stage-ink'), 'font-family':'Cairo, sans-serif'}, t); v.textContent = e.s in EN.used ? 'السالبية ' + e.en.toFixed(2) : 'السالبية ؟';
+    const d = sv('text', {x: 0, y: -r - 14, 'text-anchor':'middle', 'font-size': 24, 'font-weight': 800, fill: css('--stage-ink'), 'font-family':'Cairo, sans-serif'}, t);
+    t.setAttribute('transform', `translate(${x} ${EN_CY})`);
+    return {t, v, d, x}; };
+  EN.parts = {cloud, rope, pair, A: atom(a, AX, ra), B: atom(b, BX, rb)};
+  $('en-cap').innerHTML = `<strong>${a.ar} <bdi class="ltr">${a.s}</bdi> ⟷ ${b.ar} <bdi class="ltr">${b.s}</bdi></strong><span>زوج الإلكترونات المشترك على حبل الرابطة</span>`;
+  $('slotA-t').textContent = a.s; $('slotB-t').textContent = b.s;
+  enPredict();
+}
+function enPredict(){
+  const box = $('en-pred'), a = EN.a, b = EN.b; EN.pred = null; $('en-pull').disabled = true;
+  box.innerHTML = `<p>توقعي: من سيشدّ الحبل ويسحب زوج الإلكترونات نحوه؟</p>
+    <button class="chip" data-p="a" aria-pressed="false"><bdi>${a.s}</bdi></button><button class="chip" data-p="b" aria-pressed="false"><bdi>${b.s}</bdi></button><button class="chip" data-p="0" aria-pressed="false">تعادل</button>`;
+  box.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    if (EN.busy) return;
+    box.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c)); EN.pred = c.dataset.p; $('en-pull').disabled = false; }));
+}
+function enPull(){
+  if (EN.busy || !EN.pred) return; EN.busy = true; $('en-pull').disabled = true;
+  const a = EN.a, b = EN.b, P = EN.parts, diff = Math.abs(a.en - b.en);
+  const winner = diff < 0.005 ? '0' : (a.en > b.en ? 'a' : 'b');
+  const shift = winner === '0' ? 0 : 150 * (1 - Math.exp(-diff * 0.9)) * (winner === 'a' ? -1 : 1);
+  tween(2200, k => {
+    const wob = k < .55 ? Math.sin(k * 40) * 16 * (1 - k / .55) : 0;
+    const s = k < .55 ? 0 : shift * ease((k - .55) / .45);
+    const x = 320 + wob + s;
+    P.pair.setAttribute('transform', `translate(${x} ${EN_CY})`);
+    P.cloud.setAttribute('cx', x);
+    P.cloud.setAttribute('rx', 120 - Math.abs(s) * .25);
+    const lean = k < .55 ? Math.abs(Math.sin(k * 20)) * 8 : 8 * (1 - ease((k - .55) / .45));
+    P.A.t.setAttribute('transform', `translate(${AX - lean} ${EN_CY})`);
+    P.B.t.setAttribute('transform', `translate(${BX + lean} ${EN_CY})`);
+  }, () => enFinish(winner, diff));
+}
+function enFinish(winner, diff){
+  const a = EN.a, b = EN.b, P = EN.parts;
+  P.A.v.textContent = 'السالبية ' + a.en.toFixed(2); P.B.v.textContent = 'السالبية ' + b.en.toFixed(2);
+  const right = EN.pred === winner;
+  let html;
+  if (winner === '0'){
+    P.A.d.textContent = ''; P.B.d.textContent = '';
+    html = `<p><b>تعادل!</b> ${a.ar} و${b.ar} لهما السالبية نفسها (${a.en.toFixed(2)})، فشدّ كل منهما الحبل بالقوة نفسها وبقي زوج الإلكترونات في <b>منتصف الرابطة</b>، أي يتشاركانه بالتساوي.</p>`;
+  } else {
+    const W = winner === 'a' ? a : b, L = winner === 'a' ? b : a;
+    (winner === 'a' ? P.A : P.B).d.textContent = 'δ⁻'; (winner === 'a' ? P.B : P.A).d.textContent = 'δ⁺';
+    (winner === 'a' ? P.A : P.B).d.setAttribute('fill', '#74C0FC'); (winner === 'a' ? P.B : P.A).d.setAttribute('fill', '#FFA94D');
+    html = `<p><b>${W.ar}</b> سالبيته الكهربائية (${W.en.toFixed(2)}) أكبر من ${L.ar} (${L.en.toFixed(2)})، فشدّ حبل الرابطة أقوى و<b>سحب زوج الإلكترونات أقرب إليه</b>.</p>
+      <p>صار ${W.ar} يحمل شحنة جزئية سالبة <bdi class="ltr">δ⁻</bdi>، و${L.ar} شحنة جزئية موجبة <bdi class="ltr">δ⁺</bdi>. الفرق في السالبية = ${diff.toFixed(2)}؛ كلما زاد الفرق اقتربت الإلكترونات أكثر من العنصر الأقوى.</p>`;
+  }
+  html += `<p>${right ? '<span class="ok">توقعك صحيح!</span>' : '<span class="no">ليس كما توقعتِ.</span>'} ${enHint(a, b)}</p>`;
+  $('en-res').innerHTML = html;
+  if (right) addScore(10, 'توقع صحيح');
+  [a, b].forEach(e => { if (!(e.s in EN.used)){ EN.used[e.s] = e.en; addScore(5, 'عنصر جديد في الدفتر'); } });
+  EN.busy = false; enRefresh();
+  $('en-pred').querySelectorAll('.chip').forEach(c => c.disabled = true);
+}
+function enHint(a, b){
+  if (a.s === b.s) return 'الذرتان من العنصر نفسه.';
+  if (a.p === b.p) return 'العنصران في <b>نفس الدورة</b>: الأقرب إلى يمين الدورة سالبيته أكبر.';
+  if (a.c === b.c) return 'العنصران في <b>نفس المجموعة</b>: الأعلى في المجموعة سالبيته أكبر.';
+  return '';
+}
+function enPick(e){
+  if (EN.busy || e.en === null) return;
+  if (EN.slot === 'a'){ EN.a = e; enSlot('b'); } else { EN.b = e; enSlot('a'); }
+  enDraw(); enResetText(); enRefresh();
+}
+function enSlot(s){ EN.slot = s; $('slotA').setAttribute('aria-pressed', s === 'a'); $('slotB').setAttribute('aria-pressed', s === 'b'); }
+function enResetText(){ $('en-res').innerHTML = '<p>العنصر الأعلى سالبية كهربائية يجذب إلكترونات الرابطة نحوه بقوة أكبر.</p>'; }
+function enRefresh(){
+  paintTable($('en-table'), EN.used, v => v.toFixed(1), 0.8, 4.0, [EN.a.s, EN.b.s]);
+  quizEN.update(paintMissions($('en-mis'), EN.used, 'جرّبي'));
+}
+$('slotA').addEventListener('click', () => enSlot('a'));
+$('slotB').addEventListener('click', () => enSlot('b'));
+$('en-pull').addEventListener('click', enPull);
+$('en-pairs').innerHTML = '<span class="note">جرّبي:</span>' + PAIRS.map(([x, y]) => `<button data-a="${x}" data-b="${y}">${x}–${y}</button>`).join('');
+$('en-pairs').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+  if (EN.busy) return; EN.a = BY[btn.dataset.a]; EN.b = BY[btn.dataset.b]; enSlot('a'); enDraw(); enResetText(); enRefresh(); }));
+
+const quizEN = Quiz($('en-quiz'), 'أسئلة الاكتشاف: السالبية الكهربائية', [
+  {q:'في شدّ حبل الرابطة، من يسحب زوج الإلكترونات نحوه؟', o:['العنصر الأعلى سالبية كهربائية','العنصر الأقل سالبية كهربائية','لا أحد، تبقى في المنتصف دائماً'], a:0, w:'السالبية الكهربائية هي قدرة الذرة على جذب إلكترونات الرابطة نحوها.'},
+  {q:'العنصر الذي سحب الإلكترونات أقرب إليه يحمل شحنة جزئية…', o:['سالبة δ⁻','موجبة δ⁺'], a:0, w:'الإلكترونات سالبة، فاقترابها من الذرة يعطيها شحنة جزئية سالبة، والذرة الأخرى شحنة جزئية موجبة.'},
+  {q:'إذا ارتبطت ذرتان من العنصر نفسه مثل Cl–Cl…', o:['تبقى الإلكترونات في منتصف الرابطة','تنتقل الإلكترونات لإحداهما'], a:0, w:'سالبيتهما متساوية، فلا يفوز أحد في شدّ الحبل ويتشاركان الإلكترونات بالتساوي.'},
+  {q:'كيف تتغير السالبية الكهربائية عبر الدورة (من اليسار إلى اليمين)؟', o:['تزداد','تقل'], a:0, w:'تصغر الذرة ويزداد عدد البروتونات، فتجذب إلكترونات الرابطة بقوة أكبر.'},
+  {q:'كيف تتغير السالبية الكهربائية خلال المجموعة (من أعلى إلى أسفل)؟', o:['تقل','تزداد'], a:0, w:'يزداد عدد الأغلفة فتبتعد إلكترونات الرابطة عن النواة ويضعف جذبها.'},
+  {q:'أعلى عنصر سالبية كهربائية في الجدول الدوري هو…', o:['الفلور F','الكلور Cl','الأكسجين O'], a:0, w:'الفلور في أعلى يمين الجدول (عدا المجموعة 18)، وسالبيته 3.98 وهي الأعلى.'}
+], `<div><b>عبر الدورة: تزداد</b>من اليسار إلى اليمين يشدّ العنصر حبل الرابطة أقوى.</div>
+    <div><b>خلال المجموعة: تقل</b>من أعلى إلى أسفل يضعف الشد لأن الذرة تكبر.</div>
+    <div><b>الفائز يأخذ δ⁻</b>الأعلى سالبية يسحب الإلكترونات قربه ويحمل شحنة جزئية سالبة، والآخر δ⁺.</div>`);
+
+/* ---------- tabs ---------- */
+const GAMES = ['ie','ea','en'];
+function show(g){
+  GAMES.forEach(x => { $('g-' + x).hidden = x !== g; document.querySelector(`.tab[data-g="${x}"]`).setAttribute('aria-selected', x === g); });
+  document.documentElement.style.setProperty('--acc', `var(--${g === 'ie' ? 'absorb' : g === 'ea' ? 'release' : 'pull'})`);
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { show(t.dataset.g); try { history.replaceState(null, '', '#' + t.dataset.g); } catch(_){} }));
+
+/* ---------- boot ---------- */
+buildTable($('ie-table'), iePick);
+buildTable($('ea-table'), eaPick);
+buildTable($('en-table'), enPick, e => e.en === null);
+ieDraw(); ieRefresh();
+eaDraw(); eaRefresh();
+enDraw(); enRefresh();
+show(GAMES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'ie');
+})();
+</script>
+
+</body></html>
