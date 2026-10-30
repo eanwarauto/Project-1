@@ -518,7 +518,7 @@ const quizIE = Quiz($('ie-quiz'), 'أسئلة الاكتشاف: طاقة الت�
 
 /* ============ GAME 2: ELECTRON AFFINITY ============ */
 // ea > 0: energy released when the atom gains an electron; ea < 0: energy the atom must absorb first.
-const EA = { svg: $('ea-svg'), e: BY.Cl, busy: false, done: false, measured: {}, pred: null, atom: null,
+const EA = { svg: $('ea-svg'), e: BY.Cl, busy: false, done: false, measured: {}, lastSym: null, pred: null, atom: null,
   waiting: false, holding: false, E: 0, raf: 0, last: 0, warned: false, el: null, out: null, into: null };
 const EA_CX = 360, EA_CY = 175;
 const EA_RATE = 70; // kJ/mol supplied per second of holding
@@ -581,7 +581,7 @@ function eaRelease(el){
     <p class="eqline"><bdi class="eq">${e.s}(g) + e⁻ → ${e.s}⁻(g) + ${e.ea} kJ</bdi></p>`, e.ea);
 }
 function eaWhy(e){
-  if (e.c === 8) return 'مستواها الأخير مكتمل بالإلكترونات ومستقر، فلا مكان للإلكترون الجديد فيه، ويجب أن يدخل مستوى طاقة جديداً أبعد عن النواة.';
+  if (e.c === 8) return 'مستواها الأخير مكتمل بالإلكترونات ومستقر، فلا مكان للإلكترون الجديد فيه، ويجب أن يدخل مستوى طاقة جديداً أبعد عن النواة؛ لذلك تحتاج الغازات النبيلة طاقة أكبر لإضافة إلكترون إليها.';
   if (e.s === 'N') return 'مستواها الفرعي p نصف ممتلئ ومستقر (استثناء).';
   return 'مستواها الفرعي s ممتلئ بالإلكترونات ومستقر، فيدخل الإلكترون الجديد مستوى فرعياً أعلى طاقة.';
 }
@@ -635,7 +635,7 @@ function eaAbsorb(){
     const inn = sv('text', {x: EA_CX, y: 22, 'text-anchor':'middle', fill: css('--absorb'), 'font-size': 16, 'font-weight': 800, 'font-family':'Cairo, sans-serif', direction:'rtl'}, EA.atom.g);
     inn.textContent = 'طاقة دخلت الذرة ↓';
     eaDone(`<p><span class="tag abs">طاقة ممتصّة</span> امتصّت ذرة ${e.ar} نحو <b class="ltr">${need} kJ/mol</b> حتى <b>كسبت</b> الإلكترون، فأصبحت <b>أيوناً سالباً</b> <bdi class="ltr">${e.s}⁻</bdi> غير مستقر.</p>
-      <p>${eaWhy(e)} لذلك يكون الميل الإلكتروني لها <b>طاقة ممتصّة</b> وليس منطلقة.</p>
+      <p>${eaWhy(e)} فيكون الميل الإلكتروني لها <b>طاقة ممتصّة</b> وليست منطلقة.</p>
       <p class="eqline"><bdi class="eq">${e.s}(g) + e⁻ + ${need} kJ → ${e.s}⁻(g)</bdi></p>
       <p class="note">القيمة تقديرية؛ لأن هذا الأيون السالب غير مستقر ولا يمكن قياسه مباشرة.</p>`, e.ea);
   });
@@ -643,31 +643,23 @@ function eaAbsorb(){
 function eaDone(html, v){
   const e = EA.e, isNew = !(e.s in EA.measured);
   let cmp = '';
-  if (EA.pred){
-    const kind = v > 0 ? 'rel' : 'abs', right = EA.pred === kind;
-    cmp = `<p>${right ? '<span class="ok">توقعك صحيح!</span>' : '<span class="no">ليس كما توقعتِ.</span>'} الميل الإلكتروني لذرة ${e.ar} طاقة <b>${kind === 'rel' ? 'منطلقة' : 'ممتصّة'}</b>.</p>`;
+  if (EA.pred && EA.lastSym){
+    // compare the amount of energy, whether it was released or absorbed
+    const prev = BY[EA.lastSym], pv = EA.measured[prev.s], bigger = Math.abs(v) > Math.abs(pv), right = (EA.pred === 'more') === bigger;
+    const kind = x => x > 0 ? 'منطلقة' : 'ممتصّة';
+    cmp = `<p>${right ? '<span class="ok">توقعك صحيح!</span>' : '<span class="no">ليس كما توقعتِ.</span>'} طاقة الميل الإلكتروني لذرة ${e.ar} (${Math.abs(v)} ${kind(v)}) <b>${bigger ? 'أكبر' : 'أقل'}</b> من ${prev.ar} (${Math.abs(pv)} ${kind(pv)}). ${relation(e, prev)}</p>`;
     if (right) addScore(10, 'توقع صحيح');
   }
   eaFeedback(html + cmp);
-  EA.measured[e.s] = v; EA.pred = null; EA.busy = false; EA.done = true;
+  EA.measured[e.s] = v; EA.lastSym = e.s; EA.pred = null; EA.busy = false; EA.done = true;
   if (isNew) addScore(5, 'عنصر جديد في الدفتر');
   eaRefresh();
-}
-function eaPredict(e){
-  const box = $('ea-pred');
-  if (e.s in EA.measured){ box.hidden = true; return; }
-  box.hidden = false; $('ea-fire').disabled = true;
-  box.innerHTML = `<p>توقعي أولاً: عند إضافة إلكترون إلى ذرة ${e.ar} <bdi class="ltr">${e.s}</bdi>، هل الطاقة منطلقة أم ممتصّة؟</p>
-    <button class="chip" data-p="rel" aria-pressed="false">منطلقة</button><button class="chip" data-p="abs" aria-pressed="false">ممتصّة</button>`;
-  box.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
-    if (EA.busy || EA.waiting || EA.done) return;
-    box.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c)); EA.pred = c.dataset.p; $('ea-fire').disabled = false; }));
 }
 function eaPick(e){
   if (EA.busy || EA.holding) return;
   EA.e = e; eaDraw(); $('ea-fire').disabled = false; EA.pred = null;
   eaFeedback(EA_EQ);
-  eaPredict(e);
+  predictBox('ea', e, EA.lastSym, s => BY[s].ea, 'هل تكون طاقة الميل الإلكتروني لذرة', 'أكبر أم أقل من', p => { EA.pred = p; $('ea-fire').disabled = false; });
   eaRefresh();
 }
 function eaRefresh(){
@@ -683,7 +675,7 @@ push.addEventListener('pointerdown', ev => { ev.preventDefault(); try { push.set
 push.addEventListener('contextmenu', ev => ev.preventDefault());
 push.addEventListener('keydown', ev => { if ((ev.key === ' ' || ev.key === 'Enter') && !ev.repeat){ ev.preventDefault(); eaStart(); } });
 push.addEventListener('keyup', ev => { if (ev.key === ' ' || ev.key === 'Enter') eaStop(); });
-$('ea-reset').addEventListener('click', () => { if (!EA.busy && !EA.holding){ eaDraw(); $('ea-fire').disabled = false; EA.pred = null; eaPredict(EA.e); eaFeedback(EA_EQ); } });
+$('ea-reset').addEventListener('click', () => { if (!EA.busy && !EA.holding){ eaDraw(); $('ea-fire').disabled = false; $('ea-pred').hidden = true; eaFeedback(EA_EQ); } });
 
 const quizEA = Quiz($('ea-quiz'), 'أسئلة الاكتشاف: الميل الإلكتروني', [
   {q:'هل الميل الإلكتروني طاقة منطلقة دائماً؟', o:['لا، قد يكون طاقة منطلقة أو طاقة ممتصّة','نعم، منطلقة دائماً','لا، ممتصّة دائماً'], a:0, w:'الميل الإلكتروني هو الطاقة <b>المنطلقة أو الممتصّة</b> عند إضافة إلكترون إلى ذرة في الحالة الغازية: معظم العناصر تُطلق طاقة، وبعضها مثل المجموعة 18 تمتصّ طاقة.'},
@@ -825,7 +817,7 @@ buildTable($('ie-table'), iePick);
 buildTable($('ea-table'), eaPick);
 buildTable($('en-table'), enPick, e => e.en === null);
 ieDraw(); ieRefresh();
-eaDraw(); eaPredict(EA.e); eaRefresh();
+eaDraw(); eaRefresh();
 enDraw(); enRefresh();
 show(GAMES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'ie');
 })();
