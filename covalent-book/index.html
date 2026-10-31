@@ -227,12 +227,37 @@ table.t th{background:#eaf4fb}
 @keyframes toR{from{transform:translateX(-40px)}to{transform:translateX(50px)}}
 .ml{position:absolute;width:20px;height:20px;border:2px solid #496b8a;border-radius:6px;transform:rotate(30deg);animation:vib .6s ease-in-out infinite alternate}
 @media (max-width:860px){.pg{padding:14px 14px 10px}h2{font-size:18px}p{font-size:14px}.goals2,.piewrap{grid-template-columns:1fr}.mrow{grid-template-columns:1fr}}
+.bbsvg{touch-action:none}
+.lsvg .ue{fill:#ffcc33;stroke:#e08a00;stroke-width:1.5;filter:drop-shadow(0 0 5px #ffb400);animation:uep 1.1s ease-in-out infinite}
+@keyframes uep{50%{opacity:.55}}
+.lsvg .ueh{fill:transparent;cursor:grab}
+.lsvg .ueg:hover .ue{fill:#ffe27a}
+.lsvg .pair{cursor:pointer}
+.lsvg .es{filter:drop-shadow(0 0 4px #e5484d)}
+.lsvg .zone{fill:rgba(31,157,99,.08);stroke:#1f9d63;stroke-width:2;stroke-dasharray:7 5;animation:dash 1.2s linear infinite}
+.lsvg .ztxt{font:700 11px Tahoma,sans-serif;fill:#1f9d63;text-anchor:middle}
+.lsvg .ring{fill:none;stroke-width:3}
+.lsvg .ring.ok{stroke:#1f9d63;filter:drop-shadow(0 0 6px #1f9d63)}
+.lsvg .ring.less{stroke:#efb63a;stroke-dasharray:4 4}
+.lsvg .ghost{opacity:.35}
+.lsvg .ghost.done{opacity:.12}
+.lsvg .burst{fill:none;stroke:#ffcc33;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:burst .75s ease-out forwards}
+.lsvg .burst.b2{stroke:#1f9d63;animation-delay:.12s}
+@keyframes burst{from{transform:scale(.3);opacity:1}to{transform:scale(3.4);opacity:0}}
+.fe{position:fixed;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#ffcc33 50%,#e08a00);box-shadow:0 0 16px 6px #ffcc3399;pointer-events:none;z-index:999}
+.bb,.cb{position:relative;overflow:hidden}
+.bbtip{text-align:center;min-height:26px}
+.pill.pairs{background:#eef0ff;border-color:#c7c2f5;color:#4b3cc4}
+.conf{position:absolute;inset:0;pointer-events:none;z-index:4}
+.conf i{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;animation:cf 1.7s ease-in forwards}
+@keyframes cf{to{top:105%;opacity:.2;transform:rotate(540deg) translateX(30px)}}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="bar">
     <h1>الكتاب الحي · الروابط التساهمية والتناسقية <small>· الصف العاشر</small></h1>
+    <button class="btn" id="snd" title="الصوت">🔊</button>
     <select id="toc" aria-label="الانتقال إلى"></select>
     <button class="btn" id="prev">→ السابق</button>
     <span class="pos" id="pos"></span>
@@ -423,25 +448,30 @@ function bindMV(el){
 /* ===================== الترتيب النقطي (SVG) ===================== */
 let UID=0;
 const edot=(x,y)=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.4" class="en"/>`;
+const udot=(x,y,a,gs)=>`<g class="ueg" data-a="${a}"${gs?` data-g="${gs}"`:''}><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="17" class="ueh"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" class="ue"/></g>`;
 function lewisSVG(o){
   const W=o.w||360,H=o.h||220,id='L'+(++UID),used=[...new Set(o.atoms.map(a=>a.e))];
-  let g=`<defs>${used.map(e=>`<radialGradient id="${id}${e}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="${ATOM[e].c[0]}"/><stop offset="1" stop-color="${ATOM[e].c[1]}"/></radialGradient>`).join('')}<marker id="${id}ar" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e0a100"/></marker></defs>`;
-  (o.bonds||[]).forEach(b=>{
+  let g=`<defs>${used.map(e=>`<radialGradient id="${id}${e}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="${ATOM[e].c[0]}"/><stop offset="1" stop-color="${ATOM[e].c[1]}"/></radialGradient>`).join('')}<marker id="${id}ar" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e0a100"/></marker></defs>`,top='';
+  if(o.zone)g+=`<ellipse cx="${o.zone.x}" cy="${o.zone.y}" rx="${o.zone.rx}" ry="${o.zone.ry}" class="zone"/><text x="${o.zone.x}" y="${o.zone.y+o.zone.ry+16}" class="ztxt">منطقة المشاركة</text>`;
+  (o.bonds||[]).forEach((b,bi)=>{
     const A=o.atoms[b.a],B=o.atoms[b.b],dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
     if(b.mode==='lines'){for(let j=0;j<b.k;j++){const off=(j-(b.k-1)/2)*7,x1=A.x+ux*23+nx*off,y1=A.y+uy*23+ny*off,x2=B.x-ux*23+nx*off,y2=B.y-uy*23+ny*off;
       if(b.co!=null){const [sx,sy,ex,ey]=b.co===b.a?[x1,y1,x2,y2]:[x2,y2,x1,y1];g+=`<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" class="lco" marker-end="url(#${id}ar)"/>`}
       else g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="lb"/>`}}
-    else{const f=.5+(b.shift||0),mx=A.x+dx*f,my=A.y+dy*f;for(let j=0;j<b.k;j++){const off=(j-(b.k-1)/2)*15,cx=mx+nx*off,cy=my+ny*off,cl=b.co!=null?'ec':'es';g+=`<circle cx="${cx-ux*5}" cy="${cy-uy*5}" r="4.6" class="${cl}"/><circle cx="${cx+ux*5}" cy="${cy+uy*5}" r="4.6" class="${cl}"/>`}}
+    else{const f=.5+(b.shift||0),mx=A.x+dx*f,my=A.y+dy*f;for(let j=0;j<b.k;j++){const off=(j-(b.k-1)/2)*15,cx=mx+nx*off,cy=my+ny*off,cl=b.co!=null?'ec':'es';g+=`<g class="pair" data-bi="${bi}"><circle cx="${cx}" cy="${cy}" r="13" class="ueh"/><circle cx="${cx-ux*5}" cy="${cy-uy*5}" r="4.6" class="${cl}"/><circle cx="${cx+ux*5}" cy="${cy+uy*5}" r="4.6" class="${cl}"/></g>`}}
   });
-  o.atoms.forEach(a=>{
-    g+=`<circle cx="${a.x}" cy="${a.y}" r="18" fill="url(#${id}${a.e})" style="filter:drop-shadow(0 2px 3px #0003)"/><text x="${a.x}" y="${a.y+6}" class="lsym ${a.e==='H'?'dk':''}">${a.e}</text>`;
+  o.atoms.forEach((a,idx)=>{
+    let ag=a.ring?`<circle cx="${a.x}" cy="${a.y}" r="26" class="ring ${a.ring}"/>`:'';
+    ag+=`<circle cx="${a.x}" cy="${a.y}" r="18" fill="url(#${id}${a.e})" style="filter:drop-shadow(0 2px 3px #0003)"/><text x="${a.x}" y="${a.y+6}" class="lsym ${a.e==='H'?'dk':''}">${a.e}</text>`;
     const R=31,pos={t:[a.x,a.y-R,1,0],b:[a.x,a.y+R,1,0],l:[a.x-R,a.y,0,1],r:[a.x+R,a.y,0,1]};
-    Object.entries(a.sides||{}).forEach(([sd,n])=>{if(!n)return;const [x,y,px,py]=pos[sd];g+=n===1?edot(x,y):edot(x-px*6,y-py*6)+edot(x+px*6,y+py*6)});
-    if(a.d)g+=`<text x="${a.x+22}" y="${a.y-24}" class="ldl ${a.d==='-'?'neg':'pos'}">δ${a.d==='-'?'−':'+'}</text>`;
+    Object.entries(a.sides||{}).forEach(([sd,n])=>{if(!n)return;const [x,y,px,py]=pos[sd];if(n===1){if(a.drag)top+=udot(x,y,idx,a.gs);else ag+=edot(x,y)}else ag+=edot(x-px*6,y-py*6)+edot(x+px*6,y+py*6)});
+    if(a.d)ag+=`<text x="${a.x+22}" y="${a.y-24}" class="ldl ${a.d==='-'?'neg':'pos'}">δ${a.d==='-'?'−':'+'}</text>`;
+    g+=a.ghost?`<g class="ghost ${a.ghost}">${ag}</g>`:ag;
   });
   if(o.br){const xs=o.atoms.map(a=>a.x),ys=o.atoms.map(a=>a.y),x0=Math.min(...xs)-44,x1=Math.max(...xs)+44,y0=Math.min(...ys)-38,y1=Math.max(...ys)+38;
     g+=`<path d="M${x0+10},${y0} H${x0} V${y1} H${x0+10}" class="lbr"/><path d="M${x1-10},${y0} H${x1} V${y1} H${x1-10}" class="lbr"/><text x="${x1+8}" y="${y0+14}" class="lchg">${o.br}</text>`}
-  return `<svg viewBox="0 0 ${W} ${H}" class="lsvg">${g}</svg>`;
+  if(o.burst)g+=`<circle cx="${o.burst.x}" cy="${o.burst.y}" r="10" class="burst"/><circle cx="${o.burst.x}" cy="${o.burst.y}" r="10" class="burst b2"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" class="lsvg">${g}${top}</svg>`;
 }
 function arrange(v,need,k,pairsOrder,singlesOrder){
   const e=Math.max(0,v-k);let u=Math.max(0,Math.min(e,need-k)),lp=Math.floor((e-u)/2);if((e-u)%2)u++;
@@ -452,19 +482,21 @@ function arrange(v,need,k,pairsOrder,singlesOrder){
   return sd;
 }
 const OPP={l:'r',r:'l',t:'b',b:'t'},POS={l:[-100,0],r:[100,0],t:[0,-78],b:[0,78]};
-function bbSVG(e,k,lines){
-  const E=ELB[e],need=E.t-E.v,x1=k?122:110,x2=k?238:250;
+function bbSVG(e,k,lines,opt={}){
+  const E=ELB[e],need=E.t-E.v,x1=k?122:110,x2=k?238:250,can=k<need,ring=k?(can?'less':'ok'):'';
   const L=arrange(E.v,need,k,k?['l','t','b']:['l','t','b','r'],k?['t','b','l']:['r','t','b','l']);
   const R=arrange(E.v,need,k,k?['r','t','b']:['r','t','b','l'],k?['t','b','r']:['l','t','b','r']);
-  return lewisSVG({atoms:[{e,x:x1,y:100,sides:L},{e,x:x2,y:100,sides:R}],bonds:k?[{a:0,b:1,k,mode:lines?'lines':'dots'}]:[],w:360,h:200});
+  return lewisSVG({atoms:[{e,x:x1,y:100,sides:L,drag:can,ring},{e,x:x2,y:100,sides:R,drag:can,ring}],bonds:k?[{a:0,b:1,k,mode:lines?'lines':'dots'}]:[],w:360,h:200,zone:can?{x:180,y:100,rx:k?30:46,ry:50}:null,burst:opt.burst});
 }
-function cbSVG(ce,pe,n,lines,showD){
-  const C=ELB[ce],Pp=ELB[pe],cx=180,cy=115,bs=['l','r','b','t'].slice(0,n),free=['t','b','r','l'].filter(s=>!bs.includes(s));
-  const sides=arrange(C.v,C.t-C.v,n,free,['l','r','b','t'].slice(n));
+function cbSVG(ce,pe,bonded,lines,showD,opt={}){
+  const C=ELB[ce],Pp=ELB[pe],cx=180,cy=115,n=bonded.length,can=n<C.t-C.v;
+  const free=['t','b','r','l'].filter(s=>!bonded.includes(s)),gOrder=['l','r','b','t'].filter(s=>!bonded.includes(s));
+  const sides=arrange(C.v,C.t-C.v,n,free,gOrder);
   const enC=ATOM[ce].en,enP=ATOM[pe].en,dC=showD&&enC!==enP?(enC>enP?'-':'+'):'',dP=dC?(dC==='-'?'+':'-'):'';
-  const atoms=[{e:ce,x:cx,y:cy,sides,d:dC}],bonds=[];
-  bs.forEach((sd,i)=>{const [ox,oy]=POS[sd],ps=arrange(Pp.v,Pp.t-Pp.v,1,['t','b','l','r'].filter(x=>x!==OPP[sd]),[]);atoms.push({e:pe,x:cx+ox,y:cy+oy,sides:ps,d:dP});bonds.push({a:0,b:i+1,k:1,mode:lines?'lines':'dots',shift:showD&&enC!==enP?(enP>enC?.15:-.15):0})});
-  return lewisSVG({atoms,bonds,w:360,h:235});
+  const atoms=[{e:ce,x:cx,y:cy,sides,d:dC,drag:can,ring:n?(can?'less':'ok'):''}],bonds=[];
+  bonded.forEach(sd=>{const [ox,oy]=POS[sd],ps=arrange(Pp.v,Pp.t-Pp.v,1,['t','b','l','r'].filter(x=>x!==OPP[sd]),[]);atoms.push({e:pe,x:cx+ox,y:cy+oy,sides:ps,d:dP});bonds.push({a:0,b:atoms.length-1,k:1,mode:lines?'lines':'dots',shift:showD&&enC!==enP?(enP>enC?.15:-.15):0})});
+  gOrder.forEach(sd=>{const [ox,oy]=POS[sd],inner=OPP[sd],ps=arrange(Pp.v,Pp.t-Pp.v,0,['t','b','l','r'].filter(x=>x!==inner),[inner]);atoms.push({e:pe,x:cx+ox,y:cy+oy,sides:ps,ghost:can?'g':'g done',drag:can,gs:sd})});
+  return lewisSVG({atoms,bonds,w:360,h:235,burst:opt.burst});
 }
 function cobSVG(m,done){
   if(m==='H2O'){const cx=180,cy=135,atoms=[{e:'O',x:cx,y:cy,sides:done?{b:2}:{t:2,b:2}},{e:'H',x:cx-100,y:cy},{e:'H',x:cx+100,y:cy}],bonds=[{a:0,b:1,k:1,mode:'lines'},{a:0,b:2,k:1,mode:'lines'}];
@@ -475,46 +507,96 @@ function cobSVG(m,done){
   return lewisSVG({atoms,bonds,w:360,h:260,br:done?'+':''});
 }
 
+/* ===================== صوت واحتفال ===================== */
+let AC=null,MUTE=false;
+function sfx(kind){
+  if(MUTE)return;
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const notes=kind==='win'?[523,659,784,1047]:kind==='undo'?[392,262]:kind==='no'?[220]:[660,990];
+    notes.forEach((f,i)=>{const o=AC.createOscillator(),gn=AC.createGain(),t=AC.currentTime+i*.09;o.type=kind==='no'?'triangle':'sine';o.frequency.value=f;gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(.12,t+.02);gn.gain.exponentialRampToValueAtTime(.001,t+.28);o.connect(gn).connect(AC.destination);o.start(t);o.stop(t+.32)});
+  }catch(e){}
+}
+function confetti(el){
+  const c=document.createElement('div');c.className='conf';
+  const cols=['#ffcc33','#1f9d63','#e5484d','#3b97cf','#8a7cf0'];
+  c.innerHTML=Array.from({length:26},(_,i)=>`<i style="left:${(i*37)%100}%;background:${cols[i%5]};animation-delay:${(i%7)*.06}s;transform:rotate(${i*29}deg)"></i>`).join('');
+  el.appendChild(c);setTimeout(()=>c.remove(),1900);
+}
+function dragElectron(wrap,H,onDrop){
+  wrap.addEventListener('pointerdown',e=>{
+    const g=e.target.closest('.ueg');if(!g)return;e.preventDefault();
+    const fe=document.createElement('div');fe.className='fe';document.body.appendChild(fe);
+    const place=ev=>{fe.style.left=ev.clientX+'px';fe.style.top=ev.clientY+'px'};place(e);g.style.opacity='0';
+    const mv=ev=>place(ev);
+    const up=ev=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);fe.remove();
+      const r=$('svg',wrap).getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*360,y=(ev.clientY-r.top)/r.height*H;
+      if(!onDrop({a:+g.dataset.a,gs:g.dataset.g,x,y}))g.style.opacity=''};
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+  });
+}
+
 /* ===================== المختبرات التفاعلية ===================== */
 function bbHTML(e,pick,after){return `<div class="bb" data-el="${e}">
 ${pick?`<div class="chips">${['H','O','N','F','Cl'].map(x=>`<button class="chip ${x===e?'on':''}" data-pe="${x}">${chem(x+'2')}</button>`).join('')}</div>`:''}
-<div class="bbsvg"></div>
-<div class="bbctl"><span class="lbl">أزواج الإلكترونات المشاركة</span><span class="cnt"><button class="btn g" data-k="-1">−</button><b class="kv">0</b><button class="btn g" data-k="1">+</button></span><button class="btn g" data-lines>اعرض الأزواج كروابط</button></div>
+<div class="bbsvg"></div><div class="msg bbtip"></div>
+<div class="bbctl"><button class="btn g" data-lines>اعرض الأزواج كروابط</button><button class="btn g" data-reset>↺ ابدأ من جديد</button></div>
 <div class="bbstat"></div><div class="after hide">${after||''}</div></div>`}
-function cbHTML(c,p,after){return `<div class="cb" data-c="${c}" data-p="${p}"><div class="bbsvg"></div>
-<div class="bbctl"><span class="lbl">أضف ذرات ${p}</span><span class="cnt"><button class="btn g" data-n="-1">−</button><b class="kv">0</b><button class="btn g" data-n="1">+</button></span><button class="btn g" data-lines>اعرض الأزواج كروابط</button></div>
+function cbHTML(c,p,after){return `<div class="cb" data-c="${c}" data-p="${p}"><div class="bbsvg"></div><div class="msg bbtip"></div>
+<div class="bbctl"><button class="btn g" data-lines>اعرض الأزواج كروابط</button><button class="btn g" data-reset>↺ ابدأ من جديد</button></div>
 <div class="bbstat"></div><div class="after hide">${after||''}</div></div>`}
 function cobHTML(m,after){return `<div class="cob" data-m="${m}"><div class="cobstage"><div class="bbsvg"></div><div class="proton">H<sup>+</sup><small>بلا إلكترونات</small></div></div>
 <div class="bbstat"></div><div class="row"><button class="btn g" data-reset>إعادة</button></div><div class="after hide">${after||''}</div></div>`}
 const lazyMV=after=>$$('.mv',after).forEach(bindMV);
+const tipSet=(el,t,cls)=>{const m=$('.bbtip',el);m.className='msg bbtip '+(cls||'');m.innerHTML=t};
 function bindBB(bb){
-  let e=bb.dataset.el,k=0,lines=false;
-  const svg=$('.bbsvg',bb),stat=$('.bbstat',bb),kv=$('.kv',bb),after=$('.after',bb);
+  let e=bb.dataset.el,k=0,lines=false,burst=null;
+  const wrap=$('.bbsvg',bb),stat=$('.bbstat',bb),after=$('.after',bb);
   function render(){
-    const E=ELB[e],cnt=E.v+k,st=cnt===E.t?'ok':cnt>E.t?'over':'less';
-    svg.innerHTML=bbSVG(e,k,lines);kv.textContent=k;
-    stat.innerHTML=[1,2].map(n=>`<span class="pill ${st}">ذرة ${E.n} ${n}: <b>${cnt}</b> / ${E.t}</span>`).join('')+`<div class="msg ${st==='ok'?'ok':st==='over'?'no':''}">${st==='ok'?`اكتمل الاستقرار لكل ذرة ✓ تكوّن ${chem(e+'2')}`:st==='over'?'تجاوزت كل ذرة حاجتها! أنقص عدد الأزواج.':`كل ذرة تحتاج ${E.t-cnt} إلكترون(ات) أخرى — شارك أكثر.`}</div>`;
-    after.classList.toggle('hide',st!=='ok');
-    if(st==='ok'){$$('.mv',after).forEach(mv=>{mv.dataset.mol=e+'2';bindMV(mv)})}
+    const E=ELB[e],need=E.t-E.v,cnt=E.v+k,ok=cnt===E.t,st=ok?'ok':'less';
+    wrap.innerHTML=bbSVG(e,k,lines,{burst});burst=null;
+    stat.innerHTML=[1,2].map(n=>`<span class="pill ${st}">ذرة ${E.n} ${n}: <b>${cnt}</b> / ${E.t}</span>`).join('')+`<span class="pill pairs">أزواج مشتركة: <b>${k}</b></span>`;
+    if(ok)tipSet(bb,`🎉 لم يبقَ إلكترون منفرد — اكتمل الاستقرار وتكوّن ${chem(e+'2')} ${k===1?'بزوج واحد مشترك':k===2?'بزوجين مشتركين':'بثلاثة أزواج مشتركة'}`,'ok');
+    else if(!k)tipSet(bb,'اسحب إلكترونًا <b style="color:#d89a00">ذهبيًا منفردًا</b> إلى «منطقة المشاركة» بين الذرتين');
+    else tipSet(bb,`✨ تكوّن زوج مشترك! كل ذرة ما زالت تحتاج ${E.t-cnt} — اسحب إلكترونًا ذهبيًا آخر`,'ok');
+    after.classList.toggle('hide',!ok);
+    if(ok)$$('.mv',after).forEach(mv=>{mv.dataset.mol=e+'2';bindMV(mv)});
   }
-  $$('[data-k]',bb).forEach(b=>b.onclick=()=>{k=Math.max(0,Math.min(Math.min(3,ELB[e].v),k+ +b.dataset.k));render()});
+  dragElectron(wrap,200,({a,x,y})=>{
+    const E=ELB[e],need=E.t-E.v;if(k>=need)return false;
+    const [x1,x2]=k?[122,238]:[110,250],other=a===0?x2:x1;
+    if((Math.abs(x-180)<62&&Math.abs(y-100)<66)||Math.hypot(x-other,y-100)<50){k++;burst={x:180,y:100};sfx(k===need?'win':'pair');render();if(k===need)confetti(bb);return true}
+    sfx('no');tipSet(bb,'أفلت الإلكترون بين الذرتين حتى تتشاركا به','no');return false;
+  });
+  wrap.addEventListener('click',ev=>{if(ev.target.closest('.pair')&&k>0){k--;sfx('undo');render()}});
   $('[data-lines]',bb).onclick=ev=>{lines=!lines;ev.target.textContent=lines?'اعرض الأزواج كنقاط':'اعرض الأزواج كروابط';render()};
+  $('[data-reset]',bb).onclick=()=>{k=0;render()};
   $$('[data-pe]',bb).forEach(b=>b.onclick=()=>{e=b.dataset.pe;k=0;$$('[data-pe]',bb).forEach(x=>x.classList.toggle('on',x===b));render()});
   render();
 }
 const FORM={'Cl:H':'HCl','F:H':'HF','O:H':'H2O','N:H':'NH3','C:H':'CH4','C:Cl':'CCl4'};
 function bindCB(cb){
-  const ce=cb.dataset.c,pe=cb.dataset.p,C=ELB[ce],key=ce+':'+pe,max=Math.min(4,C.t-C.v+1);let n=0,lines=false,showD=false;
-  const svg=$('.bbsvg',cb),stat=$('.bbstat',cb),kv=$('.kv',cb),after=$('.after',cb);
+  const ce=cb.dataset.c,pe=cb.dataset.p,C=ELB[ce],Pp=ELB[pe],key=ce+':'+pe,need=C.t-C.v,cx=180,cy=115;let bonded=[],lines=false,showD=false,burst=null;
+  const wrap=$('.bbsvg',cb),stat=$('.bbstat',cb),after=$('.after',cb);
   function render(){
-    const cnt=C.v+n,st=cnt===C.t?'ok':cnt>C.t?'over':'less';
-    svg.innerHTML=cbSVG(ce,pe,n,lines,showD&&st==='ok');kv.textContent=n;
-    stat.innerHTML=`<span class="pill ${st}">ذرة ${C.n}: <b>${cnt}</b> / ${C.t}</span>${n?`<span class="pill ok">كل ذرة ${ELB[pe].n}: <b>${ELB[pe].v+1}</b> / ${ELB[pe].t}</span>`:''}<div class="msg ${st==='ok'?'ok':st==='over'?'no':''}">${st==='ok'?`اكتمل الاستقرار ✓ تكوّن ${chem(FORM[key])}`:st==='over'?`تجاوزت ذرة ${C.n} الثمانية! أزل ذرة.`:`ذرة ${C.n} تحتاج ${C.t-cnt} إلكترون(ات) أخرى — أضف ذرات ${pe}.`}</div>`;
-    after.classList.toggle('hide',st!=='ok');if(st==='ok')lazyMV(after);
+    const n=bonded.length,cnt=C.v+n,ok=cnt===C.t,st=ok?'ok':'less';
+    wrap.innerHTML=cbSVG(ce,pe,bonded,lines,showD&&ok,{burst});burst=null;
+    stat.innerHTML=`<span class="pill ${st}">ذرة ${C.n}: <b>${cnt}</b> / ${C.t}</span>${n?`<span class="pill ok">كل ذرة ${Pp.n} مرتبطة: <b>${Pp.v+1}</b> / ${Pp.t}</span>`:''}<span class="pill pairs">روابط: <b>${n}</b></span>`;
+    if(ok)tipSet(cb,`🎉 استقرت ذرة ${C.n} ولم يبقَ لديها إلكترون منفرد، فلا ترتبط بذرات أخرى — تكوّن ${chem(FORM[key])}`,'ok');
+    else if(!n)tipSet(cb,`اسحب إلكترونًا <b style="color:#d89a00">ذهبيًا</b> من ذرة ${C.n} إلى إحدى ذرات ${Pp.n} الباهتة (أو العكس)`);
+    else tipSet(cb,`✨ رابطة جديدة! ذرة ${C.n} ما زالت تحتاج ${C.t-cnt} — كوّن رابطة أخرى`,'ok');
+    after.classList.toggle('hide',!ok);if(ok)lazyMV(after);
   }
+  const bond=sd=>{bonded.push(sd);const [ox,oy]=POS[sd];burst={x:cx+ox/2,y:cy+oy/2};const fin=bonded.length===need;sfx(fin?'win':'pair');render();if(fin)confetti(cb);return true};
+  dragElectron(wrap,235,({a,gs,x,y})=>{
+    if(bonded.length>=need)return false;
+    if(gs){if(Math.hypot(x-cx,y-cy)<52&&!bonded.includes(gs))return bond(gs)}
+    else{let best=null,bd=1e9;['l','r','b','t'].filter(s=>!bonded.includes(s)).forEach(sd=>{const [ox,oy]=POS[sd],d=Math.min(Math.hypot(x-cx-ox,y-cy-oy),Math.hypot(x-cx-ox/2,y-cy-oy/2));if(d<bd){bd=d;best=sd}});if(best&&bd<52)return bond(best)}
+    sfx('no');tipSet(cb,gs?`أفلت إلكترون ${Pp.n} على ذرة ${C.n} في المنتصف`:`أفلت الإلكترون على إحدى ذرات ${Pp.n} الباهتة`,'no');return false;
+  });
+  wrap.addEventListener('click',ev=>{const p=ev.target.closest('.pair');if(p){bonded.splice(+p.dataset.bi,1);sfx('undo');render()}});
   cb._delta=v=>{showD=v;render()};
-  $$('[data-n]',cb).forEach(b=>b.onclick=()=>{n=Math.max(0,Math.min(max,n+ +b.dataset.n));render()});
   $('[data-lines]',cb).onclick=ev=>{lines=!lines;ev.target.textContent=lines?'اعرض الأزواج كنقاط':'اعرض الأزواج كروابط';render()};
+  $('[data-reset]',cb).onclick=()=>{bonded=[];showD=false;render()};
   render();
 }
 function bindCOB(el){
@@ -694,7 +776,7 @@ sp('الغلاف والدليل',0,
 <button class="btn g" data-go="10">الدرس 2-3 · الرابطة التناسقية</button></div>
 ${foot('الغلاف')}`,
 `<span class="lh">دليل الطالب</span><h2>كيف تتعلّم بنفسك؟</h2>
-<div class="box"><b>① استكشف:</b> حرّك النماذج وجرّب الأدوات.<br><b>② توقّع:</b> أجب عن سؤال «توقّع» قبل أن تبني.<br><b>③ ابنِ:</b> شارك الإلكترونات بالعدّاد حتى تستقر الذرات.<br><b>④ حلّل:</b> شغّل القطبية والشحنات وقارن.<br><b>⑤ استنتج:</b> التعريف يظهر بعد أن تكتشفه أنت.</div>
+<div class="box"><b>① استكشف:</b> حرّك النماذج وجرّب الأدوات.<br><b>② توقّع:</b> أجب عن سؤال «توقّع» قبل أن تبني.<br><b>③ ابنِ:</b> اسحب الإلكترونات الذهبية المنفردة لتكوّن أزواجًا مشتركة حتى تستقر الذرات.<br><b>④ حلّل:</b> شغّل القطبية والشحنات وقارن.<br><b>⑤ استنتج:</b> التعريف يظهر بعد أن تكتشفه أنت.</div>
 <h3>ألوان الذرات في النماذج</h3>
 <div class="row">${Object.keys(ATOM).map(e=>`<span class="chip"><i style="background:radial-gradient(circle at 35% 30%,#fff,${ATOM[e].c[0]} 40%,${ATOM[e].c[1]})"></i>${e} · ${ELB[e].n}</span>`).join('')}</div>
 <h3>رموز النموذج ثلاثي الأبعاد</h3>
@@ -736,7 +818,7 @@ sp('2-1 · المشاركة والرابطة الأحادية',1,
 ${foot()}`,
 `<span class="lh">مثال (1) · جزيء الهيدروجين</span>
 <h2>ابنِ الرابطة بين ذرتي الهيدروجين</h2>
-<p class="note">ذرة الهيدروجين تستقر بإلكترونين فقط مثل غاز الهيليوم (استثناء من قاعدة الثمانية). زِد الأزواج المشاركة وراقب العدّاد.</p>
+<p class="note">ذرة الهيدروجين تستقر بإلكترونين فقط مثل غاز الهيليوم (استثناء من قاعدة الثمانية). اسحب الإلكترون الذهبي المنفرد إلى منطقة المشاركة بين الذرتين.</p>
 ${bbHTML('H',false,`<div class="eqline"><span class="f">H· + ·H → H—H</span> ⟵ ${chem('H2')}</div>
 <p><b>ما نوع هذه الرابطة؟</b> (بكم إلكترون شاركت كل ذرة؟)</p>
 <div class="mcq" data-ans="1" data-good="✓ الرابطة التساهمية الأحادية: الرابطة التي تتكوّن عندما تشارك الذرة المكوّنة للرابطة بإلكترون واحد للوصول إلى حالة الاستقرار."><button data-v="1">أحادية</button><button data-v="2">ثنائية</button><button data-v="3">ثلاثية</button></div><div class="msg"></div>
@@ -799,7 +881,7 @@ ${foot()}`);
 sp('2-1 · الرابطة القطبية',1,
 `<span class="lh">مثال (4) · كلوريد الهيدروجين</span>
 <h2>ذرتان مختلفتان… من يجذب الزوج؟</h2>
-<p class="note">أضف ذرات الهيدروجين إلى ذرة الكلور حتى تستقر.</p>
+<p class="note">اسحب الإلكترون الذهبي المنفرد من ذرة الكلور إلى ذرة هيدروجين باهتة.</p>
 ${cbHTML('Cl','H',`<div class="tug"><div class="tg"><span>H</span><i style="--v:2.1"></i><b>2.1</b></div><div class="tg"><span>Cl</span><i style="--v:3.0"></i><b>3.0</b></div><small>السالبية الكهربائية: قدرة الذرة على جذب الإلكترونات</small></div>
 <p><b>إلى أي ذرة يقترب زوج الإلكترونات المشارك؟</b></p>
 <div class="mcq" data-ans="Cl" data-onok="delta" data-good="✓ الكلور أعلى سالبية، فيقترب منه الزوج: تظهر عليه شحنة جزيئية سالبة δ− وعلى الهيدروجين شحنة جزيئية موجبة δ+ (يسمى الرمز δ «دلتا»)."><button data-v="H">نحو H</button><button data-v="Cl">نحو Cl</button><button data-v="m">يبقى في المنتصف</button></div><div class="msg"></div>
@@ -998,7 +1080,7 @@ let cur=0,busy=false,drag=null;
 const book=$('#book'),posEl=$('#pos'),toc=$('#toc');
 toc.innerHTML=S.map((s,i)=>`<option value="${i}">${i} · ${s.title}</option>`).join('');
 toc.onchange=()=>jump(+toc.value);
-$('#next').onclick=()=>turn(1);$('#prev').onclick=()=>turn(-1);
+$('#snd').onclick=ev=>{MUTE=!MUTE;ev.target.textContent=MUTE?'🔇':'🔊'};$('#next').onclick=()=>turn(1);$('#prev').onclick=()=>turn(-1);
 document.addEventListener('keydown',e=>{if(e.target.matches('select,input'))return;if(e.key==='ArrowLeft')turn(1);if(e.key==='ArrowRight')turn(-1)});
 function initCommon(root){
   bindFill(root);bindHints(root);bindMcq(root);bindStep(root);
