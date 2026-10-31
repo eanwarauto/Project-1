@@ -90,9 +90,9 @@ table.t th{background:#eaf4fb}
 .tag{padding:1px 8px;border-radius:8px;color:#fff;font-size:13px}.tag.red{background:#e5484d}.tag.blue{background:#1c3550}
 /* molecule viewer */
 .mv{position:relative;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 50% 36%,#27507a,#0e1d30 70%,#09121e);box-shadow:inset 0 0 50px #000a,0 8px 22px #0b1a2a40;flex-shrink:0}
-.mvc{width:100%;height:250px;display:block;touch-action:none;cursor:grab}
+.mvc{width:100%;height:290px;display:block;touch-action:none;cursor:grab}
 .mvc:active{cursor:grabbing}
-.mv.big .mvc{height:300px}
+.mv.big .mvc{height:340px}
 .mvlabel{position:absolute;top:10px;right:12px;color:#eaf4ff;font-weight:700;font-size:15px;text-shadow:0 1px 4px #000c;pointer-events:none}
 .mvhelp{position:absolute;top:34px;right:12px;color:#9fc0de;font-size:11.5px;pointer-events:none}
 .mvtools{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:5px}
@@ -102,7 +102,7 @@ table.t th{background:#eaf4fb}
 .mv .chip.on{background:linear-gradient(135deg,var(--acc2),#6c4ad8);color:#fff}
 /* builders */
 .bb,.cb,.cob{border:1px solid var(--line);border-radius:18px;padding:10px;background:linear-gradient(180deg,#fbfeff,#eef7fd);display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 18px #0b1a2a12}
-.bbsvg svg{width:100%;height:auto;display:block;direction:ltr;max-height:240px}
+.bbsvg svg{width:100%;height:auto;display:block;direction:ltr;max-height:340px}
 .bbctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
 .bbstat{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center}
 .bbstat .msg{flex-basis:100%;text-align:center}
@@ -117,7 +117,7 @@ table.t th{background:#eaf4fb}
 .lsvg .lb{stroke:#1d3b5a;stroke-width:3.4;stroke-linecap:round}
 .lsvg .lco{stroke:#e0a100;stroke-width:3.8;stroke-linecap:round;stroke-dasharray:9 5;animation:dash 1s linear infinite}
 @keyframes dash{to{stroke-dashoffset:-28}}
-.lsvg .lsym{font:800 17px "Segoe UI",Tahoma,sans-serif;text-anchor:middle;fill:#fff}
+.lsvg .lsym{font:800 21px "Segoe UI",Tahoma,sans-serif;text-anchor:middle;fill:#fff}
 .lsvg .lsym.dk{fill:#1c3550}
 .lsvg .ldl{font:800 14px "Segoe UI",Tahoma,sans-serif;text-anchor:middle}
 .lsvg .ldl.neg{fill:#d6336c}.lsvg .ldl.pos{fill:#1c6fd1}
@@ -280,7 +280,7 @@ const nrm=v=>{const L=len(v);return L<1e-9?[0,0,0]:[v[0]/L,v[1]/L,v[2]/L]};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 
 /* ===================== بيانات الذرات والجزيئات ===================== */
-const ATOM={H:{c:['#ffffff','#7d8b99'],r:.26,en:2.1},C:{c:['#b3bdcb','#2b323c'],r:.36,en:2.5},N:{c:['#a8c2ff','#1d3fb3'],r:.36,en:3.0},O:{c:['#ffa3a3','#b8141b'],r:.35,en:3.5},F:{c:['#d8ffc4','#4c9a2a'],r:.32,en:4.0},Cl:{c:['#bfffc7','#168a36'],r:.44,en:3.0}};
+const ATOM={H:{c:['#ffffff','#7d8b99'],r:.32,en:2.1},C:{c:['#b3bdcb','#2b323c'],r:.43,en:2.5},N:{c:['#a8c2ff','#1d3fb3'],r:.43,en:3.0},O:{c:['#ffa3a3','#b8141b'],r:.42,en:3.5},F:{c:['#d8ffc4','#4c9a2a'],r:.39,en:4.0},Cl:{c:['#bfffc7','#168a36'],r:.52,en:3.0}};
 const ELB={H:{v:1,t:2,n:'الهيدروجين'},C:{v:4,t:8,n:'الكربون'},N:{v:5,t:8,n:'النيتروجين'},O:{v:6,t:8,n:'الأكسجين'},F:{v:7,t:8,n:'الفلور'},Cl:{v:7,t:8,n:'الكلور'}};
 const T4=.62,Q4=.95;
 const tetra=(e0,e1,d,co)=>({atoms:[[e0,0,0,0],[e1,d,d,d],[e1,d,-d,-d],[e1,-d,d,-d],[e1,-d,-d,d]],bonds:[[0,1,1],[0,2,1],[0,3,1],[0,4,1,co]]});
@@ -447,28 +447,28 @@ function bindMV(el){
 
 /* ===================== الترتيب النقطي (SVG) ===================== */
 let UID=0;
-const edot=(x,y)=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.4" class="en"/>`;
-const udot=(x,y,a,gs)=>`<g class="ueg" data-a="${a}"${gs?` data-g="${gs}"`:''}><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="17" class="ueh"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" class="ue"/></g>`;
+const edot=(x,y)=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.2" class="en"/>`;
+const udot=(x,y,a,gs)=>`<g class="ueg" data-a="${a}"${gs?` data-g="${gs}"`:''}><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="20" class="ueh"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7.2" class="ue"/></g>`;
 function lewisSVG(o){
   const W=o.w||360,H=o.h||220,id='L'+(++UID),used=[...new Set(o.atoms.map(a=>a.e))];
   let g=`<defs>${used.map(e=>`<radialGradient id="${id}${e}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="${ATOM[e].c[0]}"/><stop offset="1" stop-color="${ATOM[e].c[1]}"/></radialGradient>`).join('')}<marker id="${id}ar" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e0a100"/></marker></defs>`,top='';
   if(o.zone)g+=`<ellipse cx="${o.zone.x}" cy="${o.zone.y}" rx="${o.zone.rx}" ry="${o.zone.ry}" class="zone"/><text x="${o.zone.x}" y="${o.zone.y+o.zone.ry+16}" class="ztxt">منطقة المشاركة</text>`;
   (o.bonds||[]).forEach((b,bi)=>{
     const A=o.atoms[b.a],B=o.atoms[b.b],dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
-    if(b.mode==='lines'){for(let j=0;j<b.k;j++){const off=(j-(b.k-1)/2)*7,x1=A.x+ux*23+nx*off,y1=A.y+uy*23+ny*off,x2=B.x-ux*23+nx*off,y2=B.y-uy*23+ny*off;
+    if(b.mode==='lines'){for(let j=0;j<b.k;j++){const off=(j-(b.k-1)/2)*7,x1=A.x+ux*28+nx*off,y1=A.y+uy*28+ny*off,x2=B.x-ux*28+nx*off,y2=B.y-uy*28+ny*off;
       if(b.co!=null){const [sx,sy,ex,ey]=b.co===b.a?[x1,y1,x2,y2]:[x2,y2,x1,y1];g+=`<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" class="lco" marker-end="url(#${id}ar)"/>`}
       else g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="lb"/>`}}
-    else{const f=.5+(b.shift||0),mx=A.x+dx*f,my=A.y+dy*f;for(let j=0;j<b.k;j++){const off=(j-(b.k-1)/2)*15,cx=mx+nx*off,cy=my+ny*off,cl=b.co!=null?'ec':'es';g+=`<g class="pair" data-bi="${bi}"><circle cx="${cx}" cy="${cy}" r="13" class="ueh"/><circle cx="${cx-ux*5}" cy="${cy-uy*5}" r="4.6" class="${cl}"/><circle cx="${cx+ux*5}" cy="${cy+uy*5}" r="4.6" class="${cl}"/></g>`}}
+    else{const f=.5+(b.shift||0),mx=A.x+dx*f,my=A.y+dy*f;for(let j=0;j<b.k;j++){const off=(j-(b.k-1)/2)*17,cx=mx+nx*off,cy=my+ny*off,cl=b.co!=null?'ec':'es';g+=`<g class="pair" data-bi="${bi}"><circle cx="${cx}" cy="${cy}" r="14" class="ueh"/><circle cx="${cx-ux*6}" cy="${cy-uy*6}" r="5.4" class="${cl}"/><circle cx="${cx+ux*6}" cy="${cy+uy*6}" r="5.4" class="${cl}"/></g>`}}
   });
   o.atoms.forEach((a,idx)=>{
-    let ag=a.ring?`<circle cx="${a.x}" cy="${a.y}" r="26" class="ring ${a.ring}"/>`:'';
-    ag+=`<circle cx="${a.x}" cy="${a.y}" r="18" fill="url(#${id}${a.e})" style="filter:drop-shadow(0 2px 3px #0003)"/><text x="${a.x}" y="${a.y+6}" class="lsym ${a.e==='H'?'dk':''}">${a.e}</text>`;
-    const R=31,pos={t:[a.x,a.y-R,1,0],b:[a.x,a.y+R,1,0],l:[a.x-R,a.y,0,1],r:[a.x+R,a.y,0,1]};
-    Object.entries(a.sides||{}).forEach(([sd,n])=>{if(!n)return;const [x,y,px,py]=pos[sd];if(n===1){if(a.drag)top+=udot(x,y,idx,a.gs);else ag+=edot(x,y)}else ag+=edot(x-px*6,y-py*6)+edot(x+px*6,y+py*6)});
-    if(a.d)ag+=`<text x="${a.x+22}" y="${a.y-24}" class="ldl ${a.d==='-'?'neg':'pos'}">δ${a.d==='-'?'−':'+'}</text>`;
+    let ag=a.ring?`<circle cx="${a.x}" cy="${a.y}" r="32" class="ring ${a.ring}"/>`:'';
+    ag+=`<circle cx="${a.x}" cy="${a.y}" r="23" fill="url(#${id}${a.e})" style="filter:drop-shadow(0 2px 3px #0003)"/><text x="${a.x}" y="${a.y+7}" class="lsym ${a.e==='H'?'dk':''}">${a.e}</text>`;
+    const R=37,pos={t:[a.x,a.y-R,1,0],b:[a.x,a.y+R,1,0],l:[a.x-R,a.y,0,1],r:[a.x+R,a.y,0,1]};
+    Object.entries(a.sides||{}).forEach(([sd,n])=>{if(!n)return;const [x,y,px,py]=pos[sd];if(n===1){if(a.drag)top+=udot(x,y,idx,a.gs);else ag+=edot(x,y)}else ag+=edot(x-px*7,y-py*7)+edot(x+px*7,y+py*7)});
+    if(a.d)ag+=`<text x="${a.x+27}" y="${a.y-29}" class="ldl ${a.d==='-'?'neg':'pos'}">δ${a.d==='-'?'−':'+'}</text>`;
     g+=a.ghost?`<g class="ghost ${a.ghost}">${ag}</g>`:ag;
   });
-  if(o.br){const xs=o.atoms.map(a=>a.x),ys=o.atoms.map(a=>a.y),x0=Math.min(...xs)-44,x1=Math.max(...xs)+44,y0=Math.min(...ys)-38,y1=Math.max(...ys)+38;
+  if(o.br){const xs=o.atoms.map(a=>a.x),ys=o.atoms.map(a=>a.y),x0=Math.min(...xs)-50,x1=Math.max(...xs)+50,y0=Math.min(...ys)-44,y1=Math.max(...ys)+44;
     g+=`<path d="M${x0+10},${y0} H${x0} V${y1} H${x0+10}" class="lbr"/><path d="M${x1-10},${y0} H${x1} V${y1} H${x1-10}" class="lbr"/><text x="${x1+8}" y="${y0+14}" class="lchg">${o.br}</text>`}
   if(o.burst)g+=`<circle cx="${o.burst.x}" cy="${o.burst.y}" r="10" class="burst"/><circle cx="${o.burst.x}" cy="${o.burst.y}" r="10" class="burst b2"/>`;
   return `<svg viewBox="0 0 ${W} ${H}" class="lsvg">${g}${top}</svg>`;
@@ -489,14 +489,14 @@ function bbSVG(e,k,lines,opt={}){
   return lewisSVG({atoms:[{e,x:x1,y:100,sides:L,drag:can,ring},{e,x:x2,y:100,sides:R,drag:can,ring}],bonds:k?[{a:0,b:1,k,mode:lines?'lines':'dots'}]:[],w:360,h:200,zone:can?{x:180,y:100,rx:k?30:46,ry:50}:null,burst:opt.burst});
 }
 function cbSVG(ce,pe,bonded,lines,showD,opt={}){
-  const C=ELB[ce],Pp=ELB[pe],cx=180,cy=115,n=bonded.length,can=n<C.t-C.v;
+  const C=ELB[ce],Pp=ELB[pe],cx=180,cy=125,n=bonded.length,can=n<C.t-C.v;
   const free=['t','b','r','l'].filter(s=>!bonded.includes(s)),gOrder=['l','r','b','t'].filter(s=>!bonded.includes(s));
   const sides=arrange(C.v,C.t-C.v,n,free,gOrder);
   const enC=ATOM[ce].en,enP=ATOM[pe].en,dC=showD&&enC!==enP?(enC>enP?'-':'+'):'',dP=dC?(dC==='-'?'+':'-'):'';
   const atoms=[{e:ce,x:cx,y:cy,sides,d:dC,drag:can,ring:n?(can?'less':'ok'):''}],bonds=[];
   bonded.forEach(sd=>{const [ox,oy]=POS[sd],ps=arrange(Pp.v,Pp.t-Pp.v,1,['t','b','l','r'].filter(x=>x!==OPP[sd]),[]);atoms.push({e:pe,x:cx+ox,y:cy+oy,sides:ps,d:dP});bonds.push({a:0,b:atoms.length-1,k:1,mode:lines?'lines':'dots',shift:showD&&enC!==enP?(enP>enC?.15:-.15):0})});
   gOrder.forEach(sd=>{const [ox,oy]=POS[sd],inner=OPP[sd],ps=arrange(Pp.v,Pp.t-Pp.v,0,['t','b','l','r'].filter(x=>x!==inner),[inner]);atoms.push({e:pe,x:cx+ox,y:cy+oy,sides:ps,ghost:can?'g':'g done',drag:can,gs:sd})});
-  return lewisSVG({atoms,bonds,w:360,h:235,burst:opt.burst});
+  return lewisSVG({atoms,bonds,w:360,h:250,burst:opt.burst});
 }
 function cobSVG(m,done){
   if(m==='H2O'){const cx=180,cy=135,atoms=[{e:'O',x:cx,y:cy,sides:done?{b:2}:{t:2,b:2}},{e:'H',x:cx-100,y:cy},{e:'H',x:cx+100,y:cy}],bonds=[{a:0,b:1,k:1,mode:'lines'},{a:0,b:2,k:1,mode:'lines'}];
@@ -514,6 +514,15 @@ function sfx(kind){
   try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
     const notes=kind==='win'?[523,659,784,1047]:kind==='undo'?[392,262]:kind==='no'?[220]:[660,990];
     notes.forEach((f,i)=>{const o=AC.createOscillator(),gn=AC.createGain(),t=AC.currentTime+i*.09;o.type=kind==='no'?'triangle':'sine';o.frequency.value=f;gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(.12,t+.02);gn.gain.exponentialRampToValueAtTime(.001,t+.28);o.connect(gn).connect(AC.destination);o.start(t);o.stop(t+.32)});
+  }catch(e){}
+}
+function clap(){
+  if(MUTE)return;
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const sr=AC.sampleRate;
+    for(let i=0;i<16;i++){const t=AC.currentTime+i*.065+Math.random()*.045,n=Math.floor(sr*.05),buf=AC.createBuffer(1,n,sr),d=buf.getChannelData(0);
+      for(let j=0;j<n;j++)d[j]=(Math.random()*2-1)*Math.pow(1-j/n,3);
+      const src=AC.createBufferSource(),bp=AC.createBiquadFilter(),gn=AC.createGain();src.buffer=buf;bp.type='bandpass';bp.frequency.value=1100+Math.random()*1500;bp.Q.value=.8;gn.gain.value=.2*(1-i/18);
+      src.connect(bp).connect(gn).connect(AC.destination);src.start(t)}
   }catch(e){}
 }
 function confetti(el){
@@ -564,7 +573,7 @@ function bindBB(bb){
   dragElectron(wrap,200,({a,x,y})=>{
     const E=ELB[e],need=E.t-E.v;if(k>=need)return false;
     const [x1,x2]=k?[122,238]:[110,250],other=a===0?x2:x1;
-    if((Math.abs(x-180)<62&&Math.abs(y-100)<66)||Math.hypot(x-other,y-100)<50){k++;burst={x:180,y:100};sfx(k===need?'win':'pair');render();if(k===need)confetti(bb);return true}
+    if((Math.abs(x-180)<62&&Math.abs(y-100)<66)||Math.hypot(x-other,y-100)<50){k++;burst={x:180,y:100};sfx(k===need?'win':'pair');render();if(k===need){confetti(bb);setTimeout(clap,350)}return true}
     sfx('no');tipSet(bb,'أفلت الإلكترون بين الذرتين حتى تتشاركا به','no');return false;
   });
   wrap.addEventListener('click',ev=>{if(ev.target.closest('.pair')&&k>0){k--;sfx('undo');render()}});
@@ -575,7 +584,7 @@ function bindBB(bb){
 }
 const FORM={'Cl:H':'HCl','F:H':'HF','O:H':'H2O','N:H':'NH3','C:H':'CH4','C:Cl':'CCl4'};
 function bindCB(cb){
-  const ce=cb.dataset.c,pe=cb.dataset.p,C=ELB[ce],Pp=ELB[pe],key=ce+':'+pe,need=C.t-C.v,cx=180,cy=115;let bonded=[],lines=false,showD=false,burst=null;
+  const ce=cb.dataset.c,pe=cb.dataset.p,C=ELB[ce],Pp=ELB[pe],key=ce+':'+pe,need=C.t-C.v,cx=180,cy=125;let bonded=[],lines=false,showD=false,burst=null;
   const wrap=$('.bbsvg',cb),stat=$('.bbstat',cb),after=$('.after',cb);
   function render(){
     const n=bonded.length,cnt=C.v+n,ok=cnt===C.t,st=ok?'ok':'less';
@@ -586,8 +595,8 @@ function bindCB(cb){
     else tipSet(cb,`✨ رابطة جديدة! ذرة ${C.n} ما زالت تحتاج ${C.t-cnt} — كوّن رابطة أخرى`,'ok');
     after.classList.toggle('hide',!ok);if(ok)lazyMV(after);
   }
-  const bond=sd=>{bonded.push(sd);const [ox,oy]=POS[sd];burst={x:cx+ox/2,y:cy+oy/2};const fin=bonded.length===need;sfx(fin?'win':'pair');render();if(fin)confetti(cb);return true};
-  dragElectron(wrap,235,({a,gs,x,y})=>{
+  const bond=sd=>{bonded.push(sd);const [ox,oy]=POS[sd];burst={x:cx+ox/2,y:cy+oy/2};const fin=bonded.length===need;sfx(fin?'win':'pair');render();if(fin){confetti(cb);setTimeout(clap,350)}return true};
+  dragElectron(wrap,250,({a,gs,x,y})=>{
     if(bonded.length>=need)return false;
     if(gs){if(Math.hypot(x-cx,y-cy)<52&&!bonded.includes(gs))return bond(gs)}
     else{let best=null,bd=1e9;['l','r','b','t'].filter(s=>!bonded.includes(s)).forEach(sd=>{const [ox,oy]=POS[sd],d=Math.min(Math.hypot(x-cx-ox,y-cy-oy),Math.hypot(x-cx-ox/2,y-cy-oy/2));if(d<bd){bd=d;best=sd}});if(best&&bd<52)return bond(best)}
@@ -734,13 +743,13 @@ function bindFill(root){
     f.forEach(el=>{const v=valOf(el),good=el.dataset.ans.split('|').map(norm).includes(norm(v));el.classList.toggle('good',good);el.classList.toggle('bad',!good&&String(v).trim()!=='');if(good)ok++});
     const m=msgFor(btn,box),all=ok===f.length;m.className='msg '+(all?'ok':'no');
     m.textContent=all?'ممتاز! كل الإجابات صحيحة ✓':`صحيح ${ok} من ${f.length} — راجع الخانات الحمراء، واستعن بالنموذج أو التلميح.`;
-    if(all)reveal(root,btn.dataset.rv);
+    if(all){reveal(root,btn.dataset.rv);clap()}
   });
   $$('[data-tokcheck]',root).forEach(btn=>btn.onclick=()=>{
     const box=btn.closest('[data-box]');let ok=true;
     if(btn.dataset.mode==='slots')$$('.slot',box).forEach(sl=>{const tk=$('.tok',sl),good=!!tk&&sl.dataset.accept.split('|').includes(tk.dataset.v);sl.classList.toggle('good',good);sl.classList.toggle('bad',!!tk&&!good);if(!good)ok=false});
     else $$('.tok',box).forEach(tk=>{const z=tk.closest('.drop'),good=!!z&&!!z.dataset.accept&&z.dataset.accept.split('|').includes(tk.dataset.v);tk.classList.toggle('good',good);tk.classList.toggle('bad',!good);if(!good)ok=false});
-    const m=msgFor(btn,box);m.className='msg '+(ok?'ok':'no');m.textContent=ok?'ممتاز! كل المواضع صحيحة ✓':'بعض المواضع غير صحيحة — راجع الأحمر واستعن بالنموذج ثلاثي الأبعاد.';
+    if(ok)clap();const m=msgFor(btn,box);m.className='msg '+(ok?'ok':'no');m.textContent=ok?'ممتاز! كل المواضع صحيحة ✓':'بعض المواضع غير صحيحة — راجع الأحمر واستعن بالنموذج ثلاثي الأبعاد.';
   });
 }
 function bindHints(root){$$('[data-hint]',root).forEach(btn=>btn.onclick=()=>{const box=btn.closest('[data-box]')||root,h=$$('.hint',box).find(x=>!x.classList.contains('on'));if(h)h.classList.add('on');else btn.textContent='لا توجد تلميحات أخرى'})}
@@ -748,7 +757,7 @@ function bindMcq(root){
   $$('.mcq',root).forEach(q=>{const m=q.nextElementSibling;$$('button',q).forEach(b=>b.onclick=()=>{
     const ok=b.dataset.v===q.dataset.ans;$$('button',q).forEach(x=>x.classList.remove('ok','no'));b.classList.add(ok?'ok':'no');
     if(m&&m.classList.contains('msg')){m.className='msg '+(ok?'ok':'no');m.textContent=ok?(q.dataset.good||'إجابة صحيحة ✓'):(q.dataset.bad||'حاول مرة أخرى — استعن بالنموذج أو بالمختبر')}
-    if(ok){if(q.dataset.onok&&HOOKS[q.dataset.onok])HOOKS[q.dataset.onok](q);reveal(root,q.dataset.rv)}
+    if(ok){clap();if(q.dataset.onok&&HOOKS[q.dataset.onok])HOOKS[q.dataset.onok](q);reveal(root,q.dataset.rv)}
   })});
 }
 function bindStep(root){
