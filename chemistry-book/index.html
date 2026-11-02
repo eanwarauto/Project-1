@@ -1097,7 +1097,7 @@ function show(i,anim){
   const root=book.querySelector('.spread');
   initCommon(root);s.init&&s.init(root);
   posEl.textContent=`${i+1} / ${S.length}`;toc.value=i;
-  history.replaceState(null,'','#'+i);
+  try{history.replaceState(null,'','#'+i)}catch(e){}
 }
 /* ورقة متحركة: الوجه الأمامي = الصفحة الحية، والخلفي = صفحة الهدف، والصفحة السفلية = صفحة الهدف على جانب المصدر */
 function makeLeaf(dir){

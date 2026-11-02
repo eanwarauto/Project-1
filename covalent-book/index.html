@@ -1159,7 +1159,7 @@ function show(i,anim){
   cur=i;const s=S[i];book.className='book les'+s.les;
   book.innerHTML=`<section class="spread ${anim>0?'af':anim<0?'ab':''}"><article class="pg r">${s.r}</article><article class="pg l">${s.l}</article></section>`;
   initCommon(book.querySelector('.spread'));
-  posEl.textContent=`${i+1} / ${S.length}`;toc.value=i;history.replaceState(null,'','#'+i);
+  posEl.textContent=`${i+1} / ${S.length}`;toc.value=i;try{history.replaceState(null,'','#'+i)}catch(e){}
 }
 function makeLeaf(dir){
   const t=cur+dir,side=dir>0?'r':'l',T=S[t],sp=book.querySelector('.spread'),live=sp.querySelector('.pg.'+side);
