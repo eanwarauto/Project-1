@@ -132,7 +132,9 @@ function pageHtml(subject, name, classes) {
     const A = parse(a), B = parse(b)
     return A.grade - B.grade || A.sec - B.sec
   })
-  const cols = sorted.length === 4 ? 2 : sorted.length
+  const n = sorted.length
+  const big = { 1: '150pt', 2: '135pt', 3: '108pt', 4: '82pt' }[n]
+  const gap = n >= 4 ? '4mm' : '6mm'
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>
 @font-face{font-family:Cairo;font-weight:400;src:url(${fontUrl('cairo-arabic-400-normal.woff2')})}
 @font-face{font-family:Cairo;font-weight:600;src:url(${fontUrl('cairo-arabic-600-normal.woff2')})}
@@ -166,7 +168,7 @@ body{font-family:Cairo,sans-serif;-webkit-print-color-adjust:exact;print-color-a
 .logo img{width:100%;height:100%;border-radius:50%;display:block;object-fit:cover}
 
 /* شارة المادة */
-.badge{margin-top:9mm;display:flex;align-items:center;gap:4mm;padding:3mm 9mm 3mm 4mm;border-radius:20mm;
+.badge{margin-top:3mm;display:flex;align-items:center;gap:4mm;padding:3mm 9mm 3mm 4mm;border-radius:20mm;
   background:linear-gradient(135deg, ${t.c1}, ${t.c2});color:#fff;box-shadow:0 3mm 8mm ${t.glow}}
 .badge .ic{width:15mm;height:15mm;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;border:.5mm solid rgba(255,255,255,.45)}
 .badge .ic svg{width:10mm;height:10mm}
@@ -174,28 +176,25 @@ body{font-family:Cairo,sans-serif;-webkit-print-color-adjust:exact;print-color-a
 .badge .en{font-family:Pop;font-weight:500;font-size:8.5pt;letter-spacing:1.6mm;opacity:.9;margin-top:2.5mm;text-align:center;direction:ltr;line-height:1}
 
 /* الاسم */
-.lbl{margin-top:13mm;font-weight:700;font-size:15pt;color:${t.c2};display:flex;align-items:center;gap:4mm}
+.lbl{margin-top:5mm;font-weight:700;font-size:15pt;color:${t.c2};display:flex;align-items:center;gap:4mm}
 .lbl::before,.lbl::after{content:"";width:22mm;height:.6mm;border-radius:1mm;background:linear-gradient(90deg,transparent,${t.c1})}
 .lbl::after{background:linear-gradient(270deg,transparent,${t.c1})}
-.name{font-weight:900;font-size:50pt;line-height:1.35;color:${t.deep};text-align:center;
+.name{font-weight:900;font-size:80pt;line-height:1.3;white-space:nowrap;color:${t.deep};text-align:center;
   text-shadow:0 1.2mm 0 ${t.soft}}
-.uline{width:70mm;height:2mm;border-radius:2mm;background:linear-gradient(90deg, ${t.glow}, ${t.c1}, ${t.glow});margin-top:4mm}
+.uline{width:70mm;height:2mm;border-radius:2mm;background:linear-gradient(90deg, ${t.glow}, ${t.c1}, ${t.glow});margin-top:1mm}
 
-/* الفصول */
-.classes{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:12mm}
-.sect{font-weight:800;font-size:17pt;color:${t.deep};display:flex;align-items:center;gap:3mm}
-.sect .n{font-family:Pop;font-weight:700;font-size:12pt;background:${t.soft};color:${t.c2};border-radius:5mm;padding:.5mm 3.5mm}
-.grid{margin-top:7mm;display:grid;grid-template-columns:repeat(${cols}, ${cols >= 3 ? '54mm' : '66mm'});gap:7mm;direction:rtl;justify-content:center}
-.cls{position:relative;background:#fff;border-radius:7mm;padding:4mm 3mm 6mm;text-align:center;overflow:hidden;
-  box-shadow:0 2.5mm 7mm ${t.glow}, inset 0 0 0 .6mm ${t.soft}}
-.cls-top{font-weight:700;font-size:11.5pt;color:${t.c2};background:${t.softer};border-radius:4mm;padding:.6mm 0}
-.cls-num{display:flex;flex-direction:row;direction:rtl;justify-content:center;align-items:center;gap:${cols >= 3 ? '1.5mm' : '2.5mm'};margin-top:3mm;height:${cols >= 3 ? '36mm' : '34mm'}}
-.cls-num .g,.cls-num .s{font-family:Pop;font-weight:800;font-size:${cols >= 3 ? '44pt' : '52pt'};line-height:1;color:${t.deep}}
+/* الفصول: تحت بعض بخط كبير يملأ الورقة */
+.classes{flex:1;width:100%;display:flex;flex-direction:column;gap:${gap};margin-top:7mm;margin-bottom:11mm;min-height:0}
+.cls{position:relative;flex:1;min-height:0;background:#fff;border-radius:8mm;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2.5mm 7mm ${t.glow}, inset 0 0 0 .7mm ${t.soft}}
+.cls-top{position:absolute;top:2.5mm;right:4mm;font-weight:700;font-size:11pt;color:${t.c2};background:${t.softer};border-radius:4mm;padding:.2mm 4mm}
+.cls-num{display:flex;flex-direction:row;direction:rtl;justify-content:center;align-items:center;gap:0.12em;font-size:${big};line-height:1;margin-bottom:2mm}
+.cls-num .g,.cls-num .s{font-family:Pop;font-weight:800;color:${t.deep};line-height:1}
 .cls-num .s{color:${t.c1}}
 .cls-num .sep{font-weight:900;color:${t.c2};line-height:1}
-.cls-num .slash{font-family:Pop;font-weight:500;font-size:${cols >= 3 ? '34pt' : '40pt'};opacity:.6}
-.cls-num .ain{font-family:Cairo;font-size:${cols >= 3 ? '30pt' : '36pt'};margin-top:-3mm}
-.cls-bar{position:absolute;bottom:0;left:0;right:0;height:3mm;background:linear-gradient(90deg, ${t.c1}, ${t.c2})}
+.cls-num .slash{font-family:Pop;font-weight:500;font-size:.8em;opacity:.6}
+.cls-num .ain{font-family:Cairo;font-size:.72em;margin-top:-.1em}
+.cls-bar{position:absolute;right:0;top:0;bottom:0;width:3.5mm;background:linear-gradient(180deg, ${t.c1}, ${t.c2})}
 
 .foot{position:absolute;bottom:0;left:0;right:0;text-align:center;font-weight:700;font-size:11pt;color:${t.c2};display:flex;justify-content:center;align-items:center;gap:3mm}
 .foot .dot{width:2mm;height:2mm;border-radius:50%;background:${t.c1}}
@@ -212,12 +211,20 @@ body{font-family:Cairo,sans-serif;-webkit-print-color-adjust:exact;print-color-a
   <div class="name">${name}</div>
   <div class="uline"></div>
   <div class="classes">
-  <div class="sect">الفصول <span class="n">${sorted.length}</span></div>
-  <div class="grid">${sorted.map(c => classCard(c, t)).join('')}</div>
+  ${sorted.map(c => classCard(c, t)).join('')}
   </div>
   <div class="foot"><span class="dot"></span>${t.title} · ${SCHOOL}<span class="dot"></span></div>
 </div>
-</div></body></html>`
+</div>
+<script>
+function fit(el, box){ let f=parseFloat(getComputedStyle(el).fontSize); while(f>10 && (el.scrollWidth>box.clientWidth-20 || el.offsetHeight>box.clientHeight-10)){f-=2;el.style.fontSize=f+'px'} }
+document.fonts.ready.then(()=>{
+  const nm=document.querySelector('.name'); let f=parseFloat(getComputedStyle(nm).fontSize);
+  while(f>20 && nm.scrollWidth>document.querySelector('.content').clientWidth-10){f-=2;nm.style.fontSize=f+'px'}
+  document.querySelectorAll('.cls').forEach(c=>fit(c.querySelector('.cls-num'),c));
+  document.body.dataset.ready=1;
+});
+</script></body></html>`
 }
 
 ;(async () => {
@@ -235,7 +242,7 @@ body{font-family:Cairo,sans-serif;-webkit-print-color-adjust:exact;print-color-a
       const file = path.join(tmp, `${i}.html`)
       fs.writeFileSync(file, pageHtml(subject, name, classes))
       await pg.goto('file://' + file)
-      await pg.evaluate(() => document.fonts.ready)
+      await pg.waitForSelector('body[data-ready]')
       const base = `${String(i).padStart(2, '0')}-${THEMES[subject].title}-${name}`
       await pg.screenshot({ path: path.join(OUT, 'pages', base + '.png') })
       const pdf = path.join(tmp, `${i}.pdf`)
