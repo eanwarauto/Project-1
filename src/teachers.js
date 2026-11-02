@@ -6,7 +6,8 @@ const { chromium } = require('playwright')
 
 const ROOT = path.join(__dirname, '..')
 const FONTS = path.join(ROOT, 'assets', 'fonts')
-const OUT = path.join(ROOT, 'teachers')
+const PALETTE = process.env.PALETTE || 'pink'
+const OUT = path.join(ROOT, PALETTE === 'logo' ? 'teachers-logo-colors' : 'teachers')
 const fontUrl = f => 'file://' + path.join(FONTS, f)
 const LOGO = 'data:image/jpeg;base64,' + fs.readFileSync(path.join(ROOT, 'assets', 'dept-logo.jpg')).toString('base64')
 
@@ -42,6 +43,12 @@ const THEMES = {
     title: 'الفيزياء', en: 'PHYSICS',
     c1: '#8B63E6', c2: '#6440C4', deep: '#35207E', soft: '#ECE4FF', softer: '#F8F5FF', glow: '#CBB8FF',
   },
+}
+
+// ألوان مستوحاة من الشعار الملون: البرتقالي للفيزياء والتركوازي للكيمياء مع الكحلي الغامق (درجات هادئة مريحة للعين)
+if (PALETTE === 'logo') {
+  Object.assign(THEMES.chem, { c1: '#3FA3A0', c2: '#2B7F82', deep: '#1E3A48', soft: '#DCF1EE', softer: '#F2FAF8', glow: '#B3DFDA' })
+  Object.assign(THEMES.phys, { c1: '#E8A04A', c2: '#C97F2E', deep: '#263845', soft: '#FCEAD3', softer: '#FFF8EE', glow: '#F4D2A6' })
 }
 
 const GRADE = { 10: 'الصف العاشر', 11: 'الحادي عشر علمي', 12: 'الثاني عشر علمي' }
@@ -232,7 +239,7 @@ document.fonts.ready.then(()=>{
   const browser = await chromium.launch()
   const ctx = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 3 })
   const pg = await ctx.newPage()
-  const tmp = path.join(ROOT, 'build', 'teachers')
+  const tmp = path.join(ROOT, 'build', 'teachers', PALETTE)
   fs.mkdirSync(tmp, { recursive: true })
   const pdfs = []
   let i = 0
