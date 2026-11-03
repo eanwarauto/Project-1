@@ -272,6 +272,11 @@ table.t th{background:#eaf4fb}
 .airback{position:absolute;top:8px;left:8px;opacity:0;pointer-events:none;transition:opacity .5s 1.3s}
 .airx.zoom .airback{opacity:1;pointer-events:auto}
 .reveal .piewrap{margin-top:4px}
+
+.lsteps{margin:0;padding-right:22px;font-size:13.5px;line-height:1.9;color:var(--mute)}
+.lsteps li.done{color:var(--green);font-weight:700}
+.lsteps li.done::marker{content:"✓ "}
+.labtabs .chip{font-size:13.5px;padding:6px 12px}
 </style>
 </head>
 <body>
@@ -650,39 +655,97 @@ function bindCOB(el){
   $('[data-reset]',el).onclick=()=>{done=false;render()};
   render();
 }
-/* مختبر انحراف السائل */
+/* النشاط العملي الثاني: التجربة الأولى انحراف السائل، والتجربة الثانية التوصيل الكهربائي */
 function labFrame(s,t){
-  const c=s.ctx,W=s.w,H=s.h,L=s.L,bx=W*.3,liq=L.sample==='A'?'#3f9cff':'#e9a92e';
+  const c=s.ctx,W=s.w,H=s.h,L=s.L,smp=L.sample,liq=smp==='A'?'#3f9cff':'#e9a92e',bx=W*.3,def=L.mode==='def';
+  const bl=bx-52,br=bx+52,bt=H-96,bb=H-24,lvl=L.level[smp],surf=bb-4-lvl*(bb-bt-16);
   c.fillStyle='#cfdbe6';c.fillRect(0,H-22,W,22);
-  c.fillStyle='#7a8a99';c.fillRect(W*.08,8,6,H-28);c.fillRect(W*.04,H-30,W*.2,8);c.fillRect(W*.08,46,bx-W*.08,5);
-  c.fillStyle='rgba(255,255,255,.85)';c.strokeStyle='#5d7c97';c.lineWidth=2;c.fillRect(bx-9,12,18,106);c.strokeRect(bx-9,12,18,106);
-  c.globalAlpha=.8;c.fillStyle=liq;c.fillRect(bx-7,26,14,90);c.globalAlpha=1;
-  c.fillStyle='#334';c.fillRect(bx-14,116,28,7);c.fillStyle=L.open?'#1f9d63':'#c33';c.fillRect(bx-3,112,6,15);
-  c.strokeStyle='#5d7c97';c.beginPath();c.moveTo(bx-3,123);c.lineTo(bx,134);c.lineTo(bx+3,123);c.stroke();
-  const bl=bx-48,br=bx+48,bt=H-84,bb=H-24;
+  c.direction='rtl';c.textAlign='center';
+  if(def){
+    c.fillStyle='#7a8a99';c.fillRect(W*.08,8,6,H-28);c.fillRect(W*.04,H-30,W*.2,8);c.fillRect(W*.08,46,bx-W*.08,5);
+    c.fillStyle='rgba(255,255,255,.85)';c.strokeStyle='#5d7c97';c.lineWidth=2;c.fillRect(bx-9,12,18,106);c.strokeRect(bx-9,12,18,106);
+    c.globalAlpha=.8;c.fillStyle=liq;c.fillRect(bx-7,26,14,90);c.globalAlpha=1;
+    c.fillStyle='#334';c.fillRect(bx-14,116,28,7);c.fillStyle=L.open?'#1f9d63':'#c33';c.fillRect(bx-3,112,6,15);
+    c.strokeStyle='#5d7c97';c.beginPath();c.moveTo(bx-3,123);c.lineTo(bx,134);c.lineTo(bx+3,123);c.stroke();
+    c.fillStyle='#17324d';c.font='600 12px Tahoma';c.fillText('السحاحة',bx+36,30);
+  }
+  if(lvl>0){c.globalAlpha=.45;c.fillStyle=liq;c.fillRect(bl+6,surf,br-bl-12,bb-4-surf);c.globalAlpha=1}
   c.strokeStyle='#6d8aa3';c.lineWidth=2.5;c.beginPath();c.moveTo(bl,bt);c.lineTo(bl+5,bb);c.lineTo(br-5,bb);c.lineTo(br,bt);c.stroke();
-  c.globalAlpha=.35;c.fillStyle=liq;c.fillRect(bl+6,bb-20,br-bl-12,18);c.globalAlpha=1;
-  const rx=W*L.rod;
-  if(L.flash>0){c.save();c.globalAlpha=L.flash;c.shadowColor='#ffd166';c.shadowBlur=28;c.fillStyle='rgba(255,209,102,.45)';c.fillRect(rx-12,96,24,H-138);c.restore();L.flash=Math.max(0,L.flash-.025)}
-  const g=c.createLinearGradient(rx-7,0,rx+7,0);g.addColorStop(0,'#1f1612');g.addColorStop(.5,'#5a4334');g.addColorStop(1,'#1f1612');c.fillStyle=g;c.fillRect(rx-7,100,14,H-146);
-  c.fillStyle='#ffd166';c.font='bold 15px sans-serif';c.textAlign='center';for(let i=0;i<L.charge*3;i++)c.fillText('−',rx,118+i*13);
-  c.fillStyle='#17324d';c.font='600 12px Tahoma';c.direction='rtl';c.fillText('ساق الأبونايت',Math.min(rx,W-48),H-30);c.fillText('السحاحة',bx,8+0);
-  if(L.open&&t-(L.last||0)>.016){L.parts.push({x:bx,y:134,vx:0});L.last=t}
-  const pol=L.sample==='A'?1:0;c.fillStyle=liq;
-  L.parts.forEach(p=>{const dx=Math.max(26,rx-8-p.x);p.vx+=pol*L.charge*.35*Math.pow(60/dx,2)*.06;p.x=Math.min(rx-10,p.x+p.vx);p.y+=3.2;c.beginPath();c.arc(p.x,p.y,2.7,0,7);c.fill()});
-  L.parts=L.parts.filter(p=>p.y<bb-10);
+  c.fillStyle='#17324d';c.font='700 12px Tahoma';c.fillText('العينة '+smp,bx,bb-8);
+  const rx=W*L.rod,pol=smp==='A'?1:0;
+  if(def){
+    if(L.flash>0){c.save();c.globalAlpha=L.flash;c.shadowColor='#ffd166';c.shadowBlur=28;c.fillStyle='rgba(255,209,102,.45)';c.fillRect(rx-12,96,24,H-138);c.restore();L.flash=Math.max(0,L.flash-.025)}
+    const g=c.createLinearGradient(rx-7,0,rx+7,0);g.addColorStop(0,'#1f1612');g.addColorStop(.5,'#5a4334');g.addColorStop(1,'#1f1612');c.fillStyle=g;c.fillRect(rx-7,100,14,H-146);
+    c.fillStyle='#ffd166';c.font='bold 15px sans-serif';for(let i=0;i<L.charge*3;i++)c.fillText('−',rx,118+i*13);
+    c.fillStyle='#17324d';c.font='600 12px Tahoma';c.fillText('ساق الأبونايت',Math.min(rx,W-48),H-30);
+    if(L.open&&t-(L.last||0)>.016){L.parts.push({x:bx,y:134,vx:0});L.last=t}
+  }
+  c.fillStyle=liq;let landed=0;
+  L.parts.forEach(p=>{if(def){const dx=Math.max(26,rx-8-p.x);p.vx+=pol*L.charge*.6*Math.pow(60/dx,2)*.06;p.x=Math.min(rx-10,p.x+p.vx)}p.y+=3.2;
+    if(p.y>=surf-2){p.gone=1;if(p.x>bl+4&&p.x<br-4)landed++}else{c.beginPath();c.arc(p.x,p.y,2.7,0,7);c.fill()}});
+  L.parts=L.parts.filter(p=>!p.gone);
+  if(landed)L.level[smp]=Math.min(1,lvl+landed*.0035);
+  if(def&&L.open&&L.charge>0&&L.rod<.72&&L.parts.length>20&&!L.done[smp].near){L.done[smp].near=1;s.onChange()}
+  let lit=false;
+  if(!def){
+    const ex1=bx-20,ex2=bx+20,eTop=24+L.ey*100,eLen=110,eBot=eTop+eLen,dipped=lvl>.25&&eBot>surf+8;
+    lit=dipped&&smp==='A';
+    const blx=W*.66,bly=40,btx=W*.84,bty=110;
+    c.strokeStyle=lit?'#e0a100':'#5d6b78';c.lineWidth=2.6;c.beginPath();
+    c.moveTo(ex1,eTop);c.lineTo(ex1,12);c.lineTo(blx,12);c.lineTo(blx,bly-14);
+    c.moveTo(blx,bly+14);c.lineTo(blx,bly+30);c.lineTo(btx,bly+30);c.lineTo(btx,bty-20);
+    c.moveTo(btx,bty+20);c.lineTo(btx,bty+40);c.lineTo(ex2,bty+40);c.lineTo(ex2,eTop);c.stroke();
+    c.fillStyle='#d8a548';c.fillRect(btx-12,bty-20,24,40);c.fillStyle='#555';c.fillRect(btx-5,bty-25,10,5);
+    c.fillStyle='#17324d';c.font='bold 13px sans-serif';c.fillText('+',btx,bty-6);c.fillText('−',btx,bty+14);
+    c.save();if(lit){c.shadowColor='#ffd84d';c.shadowBlur=34}c.fillStyle=lit?'#ffe066':'#dfe6ee';c.beginPath();c.arc(blx,bly,13,0,7);c.fill();c.restore();
+    c.strokeStyle='#8a97a3';c.lineWidth=1.5;c.beginPath();c.arc(blx,bly,13,0,7);c.stroke();
+    c.fillStyle='#555';c.fillRect(ex1-12,eTop-6,ex2-ex1+24,6);
+    c.fillStyle='#262626';c.fillRect(ex1-4,eTop,8,eLen);c.fillRect(ex2-4,eTop,8,eLen);
+    c.fillStyle='#17324d';c.font='600 12px Tahoma';c.fillText('قطبا الكربون',ex1-44,eTop+14);c.fillText('المصباح',blx,bly+52);c.fillText('البطارية',btx,bty+58);
+    if(lit){for(let i=0;i<10;i++){const span=ex2-ex1-10,x=ex1+5+((t*28+i*17)%span),y=surf+10+((i*11)%Math.max(8,bb-surf-18));c.fillStyle=i%2?'#d6336c':'#1c6fd1';c.beginPath();c.arc(i%2?ex2-(x-ex1):x,y,3,0,7);c.fill()}}
+    if(dipped&&!L.done[smp].dip){L.done[smp].dip=1;s.onChange()}
+  }
+  if(lit!==L.lit){L.lit=lit;if(lit)sfx('pair');s.onChange()}
 }
 function bindLab2(root){
   const el=$('[data-lab2]',root);if(!el)return;
-  const s=makeAnim($('.labc',el),labFrame);s.L={sample:'A',charge:0,open:false,rod:.95,parts:[],flash:0};
-  const bulb=$('.bulb',el),ls=$('.lstat',el),cs=$('.chg',el);
-  const showC=()=>cs.textContent=s.L.charge?'شحنة الساق: '+'−'.repeat(s.L.charge*3):'الساق غير مشحونة';
-  $$('[data-s]',el).forEach(b=>b.onclick=()=>{s.L.sample=b.dataset.s;s.L.parts=[];$$('[data-s]',el).forEach(x=>x.classList.toggle('on',x===b));bulb.classList.remove('lit');ls.textContent=''});
-  $('[data-rub]',el).onclick=()=>{s.L.charge=Math.min(3,s.L.charge+1);s.L.flash=1;showC()};
-  $('[data-open]',el).onclick=ev=>{s.L.open=!s.L.open;ev.target.textContent=s.L.open?'② أغلق الصمام':'② افتح صمام السحاحة'};
-  $('.rod',el).oninput=ev=>{s.L.rod=.95-(+ev.target.value)/100*.42};
-  $('[data-cond]',el).onclick=()=>{const lit=s.L.sample==='A';bulb.classList.toggle('lit',lit);ls.textContent=`العينة ${s.L.sample}: ${lit?'المصباح يضيء':'المصباح لا يضيء'}`};
-  showC();
+  const cv=$('.labc',el),s=makeAnim(cv,labFrame),blank=()=>({rub:0,open:0,near:0,dip:0});
+  s.L={sample:'A',mode:'def',charge:0,open:false,rod:.95,parts:[],flash:0,level:{A:0,B:0},ey:0,lit:false,done:{A:blank(),B:blank()}};
+  const L=s.L,stat=$('.lstat',el),prog=$('.labprog',el),bulb=$('.ctl-cond .bulb',el),rod=$('.rod',el),openBtn=$('[data-open]',el);
+  const ok=x=>x?'✓':'○';
+  function upd(){
+    const d=L.done[L.sample],all=['A','B'].every(k=>L.done[k].near&&L.done[k].dip);
+    prog.innerHTML=['A','B'].map(k=>`<span class="pill ${L.done[k].near&&L.done[k].dip?'ok':'less'}">العينة ${k}: الانحراف ${ok(L.done[k].near)} · التوصيل ${ok(L.done[k].dip)}</span>`).join('');
+    $$('.lsteps li',el).forEach(li=>{const st=li.dataset.st;li.classList.toggle('done',st==='repeat'?all:!!d[st])});
+    $$('.ctl-def',el).forEach(x=>x.classList.toggle('hide',L.mode!=='def'));$$('.ctl-cond',el).forEach(x=>x.classList.toggle('hide',L.mode!=='cond'));
+    $$('[data-mode]',el).forEach(b=>b.classList.toggle('on',b.dataset.mode===L.mode));
+    bulb.classList.toggle('lit',L.lit);
+    let m;
+    if(L.mode==='def'){
+      if(!L.charge)m='① ادلك ساق الأبونايت بقطعة الصوف عدة مرات لتشحنها.';
+      else if(!L.open)m='② افتح صمام السحاحة ودع السائل ينساب في الكأس.';
+      else if(!d.near)m='③ قرّب الساق المشحونة من السائل المنساب، وراقب مساره.';
+      else m='ماذا يحدث للسائل المنساب؟ سجّل ملاحظتك، ثم انتقل إلى التجربة الثانية: التوصيل الكهربائي.';
+    }else{
+      if(L.level[L.sample]<=.25)m='اجمع كمية من السائل في الكأس أولًا: عُد إلى التجربة الأولى وافتح الصمام.';
+      else if(!d.dip)m='④ اسحب قطبي الكربون إلى الأسفل داخل الكأس، أو اضغط «اغمس قطبي الكربون».';
+      else m=`هل أضاء المصباح مع العينة ${L.sample}؟ سجّل ملاحظتك في الجدول.`+(L.sample==='A'&&!L.done.B.dip?' ثم كرّر التجربتين مع العينة B.':'');
+    }
+    if(all)m='⑤ أحسنت! طبّقت التجربتين على العينتين. قارن النتائج وسجّلها في الجدول.';
+    stat.textContent=m;
+  }
+  s.onChange=upd;
+  $$('[data-s]',el).forEach(b=>b.onclick=()=>{L.sample=b.dataset.s;L.mode='def';L.charge=0;L.open=false;L.rod=.95;L.ey=0;L.parts=[];L.flash=0;rod.value=0;openBtn.textContent='② افتح صمام السحاحة';$$('[data-s]',el).forEach(x=>x.classList.toggle('on',x===b));upd()});
+  $$('[data-mode]',el).forEach(b=>b.onclick=()=>{L.mode=b.dataset.mode;if(L.mode==='cond'){L.open=false;L.parts=[];openBtn.textContent='② افتح صمام السحاحة'}else L.ey=0;upd()});
+  $('[data-rub]',el).onclick=()=>{L.charge=Math.min(3,L.charge+1);L.flash=1;L.done[L.sample].rub=1;upd()};
+  openBtn.onclick=()=>{L.open=!L.open;if(L.open)L.done[L.sample].open=1;openBtn.textContent=L.open?'② أغلق الصمام':'② افتح صمام السحاحة';upd()};
+  rod.oninput=()=>{L.rod=.95-(+rod.value)/100*.42};
+  $('[data-dip]',el).onclick=()=>{L.ey=L.ey>.5?0:1;upd()};
+  let dy=null;
+  cv.addEventListener('pointerdown',e=>{if(L.mode!=='cond')return;dy={y:e.clientY,e:L.ey};cv.setPointerCapture(e.pointerId)});
+  cv.addEventListener('pointermove',e=>{if(dy)L.ey=Math.max(0,Math.min(1,dy.e+(e.clientY-dy.y)/100))});
+  const end=()=>{dy=null};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  upd();
 }
 /* الحالة ودرجة الحرارة */
 const TX=[['H2',-259,-253],['Cl2',-101,-34],['H2O',0,100],['SiO2',1710,2230]];
@@ -990,11 +1053,20 @@ sp('2-2 · النشاط العملي الثاني',2,
 <div class="kit"><span class="chip">عينتان A وB</span><span class="chip">سحاحة <span class="f">50 mL</span></span><span class="chip">كأس <span class="f">50 mL</span></span><span class="chip">ساق أبونايت + قطعة صوف</span><span class="chip">دائرة كهربائية بأقطاب الكربون</span></div>
 <div class="ask"><b>توقّع:</b> أي العينتين سينحرف سائلها نحو الساق المشحونة؟</div>
 <div class="box" data-lab2>
-<div class="chips"><button class="chip on" data-s="A">العينة A</button><button class="chip" data-s="B">العينة B</button></div>
+<div class="row"><b>العينة:</b><div class="chips"><button class="chip on" data-s="A">العينة A</button><button class="chip" data-s="B">العينة B</button></div></div>
+<div class="row labprog"></div>
+<div class="chips labtabs"><button class="chip on" data-mode="def">التجربة الأولى: انحراف السائل</button><button class="chip" data-mode="cond">التجربة الثانية: التوصيل الكهربائي</button></div>
 <canvas class="labc"></canvas>
-<div class="row"><button class="btn g" data-rub>① ادلك الساق بالصوف</button><button class="btn g" data-open>② افتح صمام السحاحة</button><span class="note chg"></span></div>
-<label class="rng">③ قرّب الساق: <input type="range" class="rod" min="0" max="100" value="0"></label>
-<div class="row"><button class="btn p" data-cond>④ اختبر التوصيل الكهربائي</button><div class="bulb"></div><span class="lstat lbl"></span></div>
+<div class="row ctl-def"><button class="btn g" data-rub>① ادلك الساق بالصوف</button><button class="btn g" data-open>② افتح صمام السحاحة</button></div>
+<label class="rng ctl-def">③ قرّب الساق: <input type="range" class="rod" min="0" max="100" value="0"></label>
+<div class="row ctl-cond hide"><button class="btn p" data-dip>④ اغمس قطبي الكربون</button><span class="note">أو اسحب القطبين بإصبعك إلى داخل الكأس</span><div class="bulb"></div></div>
+<div class="msg lstat"></div>
+<ol class="lsteps">
+<li data-st="rub">ادلك ساق الأبونايت بقطعة الصوف عدة مرات.</li>
+<li data-st="open">افتح صمام السحاحة ودع السائل ينساب في الكأس.</li>
+<li data-st="near">قرّب الساق المدلوكة من السائل المنساب: ماذا يحدث؟</li>
+<li data-st="dip">ضع قطبي الكربون في الكأس: هل يوصل المحلول التيار؟</li>
+<li data-st="repeat">كرّر الخطوات (1–4) للعينة الأخرى.</li></ol>
 </div>
 ${foot()}`,
 `<span class="lh">سجّل مشاهدتك واستنتج</span>
