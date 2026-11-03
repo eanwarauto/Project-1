@@ -672,7 +672,7 @@ function labFrame(s,t){
   if(lvl>0){c.globalAlpha=.45;c.fillStyle=liq;c.fillRect(bl+6,surf,br-bl-12,bb-4-surf);c.globalAlpha=1}
   c.strokeStyle='#6d8aa3';c.lineWidth=2.5;c.beginPath();c.moveTo(bl,bt);c.lineTo(bl+5,bb);c.lineTo(br-5,bb);c.lineTo(br,bt);c.stroke();
   c.fillStyle='#17324d';c.font='700 12px Tahoma';c.fillText('العينة '+smp,bx,bb-8);
-  const rx=W*L.rod,pol=smp==='A'?1:0;
+  const rx=W*L.rod,pol=smp==='B'?1:0;
   if(def){
     if(L.flash>0){c.save();c.globalAlpha=L.flash;c.shadowColor='#ffd166';c.shadowBlur=28;c.fillStyle='rgba(255,209,102,.45)';c.fillRect(rx-12,96,24,H-138);c.restore();L.flash=Math.max(0,L.flash-.025)}
     const g=c.createLinearGradient(rx-7,0,rx+7,0);g.addColorStop(0,'#1f1612');g.addColorStop(.5,'#5a4334');g.addColorStop(1,'#1f1612');c.fillStyle=g;c.fillRect(rx-7,100,14,H-146);
@@ -689,7 +689,7 @@ function labFrame(s,t){
   let lit=false;
   if(!def){
     const ex1=bx-20,ex2=bx+20,eTop=24+L.ey*100,eLen=110,eBot=eTop+eLen,dipped=lvl>.25&&eBot>surf+8;
-    lit=dipped&&smp==='A';
+    lit=dipped&&smp==='B';
     const blx=W*.66,bly=40,btx=W*.84,bty=110;
     c.strokeStyle=lit?'#e0a100':'#5d6b78';c.lineWidth=2.6;c.beginPath();
     c.moveTo(ex1,eTop);c.lineTo(ex1,12);c.lineTo(blx,12);c.lineTo(blx,bly-14);
@@ -1071,16 +1071,21 @@ sp('2-2 · النشاط العملي الثاني',2,
 ${foot()}`,
 `<span class="lh">سجّل مشاهدتك واستنتج</span>
 <h2>جدول النتائج</h2>
+<div class="box" data-box><b>مشاهداتي في المختبر:</b>
+<table class="t"><tr><th>العينة</th><th>التجربة الأولى: مسار السائل</th><th>التجربة الثانية: المصباح</th></tr>
+<tr><th>A</th><td>${sel('لم ينحرف',['انحرف','لم ينحرف'])}</td><td>${sel('لم يضئ',['أضاء','لم يضئ'])}</td></tr>
+<tr><th>B</th><td>${sel('انحرف',['انحرف','لم ينحرف'])}</td><td>${sel('أضاء',['أضاء','لم يضئ'])}</td></tr></table>
+<div class="row"><button class="btn p" data-check>تحقق</button></div><div class="msg"></div></div>
 <div class="box" data-box>
 <table class="t"><tr><th>العينة</th><th>الحالة الفيزيائية</th><th>قطبية المركب</th><th>التوصيل الكهربائي</th></tr>
-<tr><th>A</th><td>${sel('سائلة',['صلبة','سائلة','غازية'])}</td><td>${sel('قطبي',['قطبي','غير قطبي'])}</td><td>${sel('يوصل',['يوصل','لا يوصل'])}</td></tr>
-<tr><th>B</th><td>${sel('سائلة',['صلبة','سائلة','غازية'])}</td><td>${sel('غير قطبي',['قطبي','غير قطبي'])}</td><td>${sel('لا يوصل',['يوصل','لا يوصل'])}</td></tr></table>
+<tr><th>A</th><td>${sel('سائلة',['صلبة','سائلة','غازية'])}</td><td>${sel('غير قطبي',['قطبي','غير قطبي'])}</td><td>${sel('لا يوصل',['يوصل','لا يوصل'])}</td></tr>
+<tr><th>B</th><td>${sel('سائلة',['صلبة','سائلة','غازية'])}</td><td>${sel('قطبي',['قطبي','غير قطبي'])}</td><td>${sel('يوصل',['يوصل','لا يوصل'])}</td></tr></table>
 <div class="row"><button class="btn p" data-check>تحقق</button><button class="btn g" data-hint>تلميح</button></div>
 <div class="hint">السائل القطبي ينحرف نحو الساق المشحونة لأن لجزيئاته طرفين مختلفي الشحنة.</div><div class="msg"></div></div>
 <div class="box" data-box><b>الاستنتاج:</b>
 <p>توجد المركبات التساهمية في الحالة ${sel('الصلبة والسائلة والغازية',['الصلبة فقط','السائلة والغازية فقط','الصلبة والسائلة والغازية'])}.</p>
 <p>المركبات التساهمية في الحالة السائلة تكوّن محاليل ${sel('قطبية',['قطبية','غير قطبية'])} توصل التيار الكهربائي، ومحاليل ${sel('غير قطبية',['قطبية','غير قطبية'])} لا توصله.</p>
-<p>المركب التساهمي القطبي هو الذي له الرمز ${sel('A',['A','B'])}، وغير القطبي هو ${sel('B',['A','B'])}.</p>
+<p>المركب التساهمي القطبي هو الذي له الرمز ${sel('B',['A','B'])}، وغير القطبي هو ${sel('A',['A','B'])}.</p>
 <div class="row"><button class="btn p" data-check>تحقق</button></div><div class="msg"></div></div>
 ${foot()}`);
 
