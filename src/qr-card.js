@@ -28,6 +28,16 @@ const THEMES = {
     orbit: 'rgba(19,41,79,.35)', nucleus: '#f2a93b', electron: '#1f9e8f', shared: '#e0629a',
     qrInk: '#13294f', qrFrame: '#e0629a', deco: 'rgba(19,41,79,.05)', border: '0.4mm solid #c9d8ef',
   },
+  // نسخة للنساء: باستيل وردي وليلكي، والأمر بصيغة المؤنث
+  women: {
+    file: 'بطاقات-باركود-الرابطة-التساهمية-A4-للنساء',
+    cta: 'امسحي الكود واكتشفي السرّ',
+    bg: 'radial-gradient(120% 80% at 50% 0%, #fde6f0 0%, #f6efff 50%, #eef8f6 100%)',
+    ink: '#4a2a5e', soft: '#7a5c8c', accent: '#d9578f', accent2: '#8a63c9',
+    tagBg: 'rgba(138,99,201,.10)', tagBorder: 'rgba(138,99,201,.45)',
+    orbit: 'rgba(74,42,94,.32)', nucleus: '#f4b860', electron: '#8a63c9', shared: '#e86fa3',
+    qrInk: '#4a2a5e', qrFrame: '#d9578f', deco: 'rgba(217,87,143,.08)', border: '0.4mm solid #ecd3e6',
+  },
 };
 
 // جزيء: ذرتان تتشاركان زوج إلكترونات في منطقة التداخل
@@ -62,7 +72,7 @@ function card(t) {
     <div class="mol">${molecule(t)}</div>
     <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${bookIcon(t.accent2)}الكتاب الحي</span><span class="chip">${slidesIcon(t.accent2)}عرض بوربوينت</span></div>
     <div class="qrwrap"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="qr">${qr}</div></div>
-    <div class="cta">${phone(t.ink === '#ffffff' ? '#0b1730' : '#ffffff')}<span>امسح الكود واكتشف السرّ</span></div>
+    <div class="cta">${phone(t.ink === '#ffffff' ? '#0b1730' : '#ffffff')}<span>${t.cta || 'امسح الكود واكتشف السرّ'}</span></div>
   </div>`;
 }
 
