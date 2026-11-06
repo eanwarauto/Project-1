@@ -62,7 +62,7 @@ function card(t) {
     <div class="mol">${molecule(t)}</div>
     <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${bookIcon(t.accent2)}الكتاب الحي</span><span class="chip">${slidesIcon(t.accent2)}عرض بوربوينت</span></div>
     <div class="qrwrap"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="qr">${qr}</div></div>
-    <div class="cta">${phone(t.ink === '#ffffff' ? '#0b1730' : '#ffffff')}<span>امسحي الكود واكتشفي السرّ</span></div>
+    <div class="cta">${phone(t.ink === '#ffffff' ? '#0b1730' : '#ffffff')}<span>امسح الكود واكتشف السرّ</span></div>
   </div>`;
 }
 
