@@ -58,13 +58,11 @@ function card(t) {
   return `<div class="card">
     <div class="deco d1"></div><div class="deco d2"></div>
     <div class="tag">الرابطة التساهمية</div>
-    <h1>ليش الذرّات<br>ما تقدر تعيش <span>بروحها</span>؟</h1>
+    <h1>المعرفة مثل الإلكترونات…<br>أحلى لما <span>نتشاركها</span></h1>
     <div class="mol">${molecule(t)}</div>
-    <p class="sub">عندها سرّ تتشاركه عشان تكمّل نفسها…<br><b>تبين تعرفينه؟</b></p>
-    <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${bookIcon(t.accent2)}الكتاب الحي</span><span class="chip">${slidesIcon(t.accent2)}عرضين بوربوينت</span></div>
+    <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${bookIcon(t.accent2)}الكتاب الحي</span><span class="chip">${slidesIcon(t.accent2)}عرض بوربوينت</span></div>
     <div class="qrwrap"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="qr">${qr}</div></div>
     <div class="cta">${phone(t.ink === '#ffffff' ? '#0b1730' : '#ffffff')}<span>امسحي الكود واكتشفي السرّ</span></div>
-    <p class="foot">المعرفة مثل الإلكترونات… أحلى لما نتشاركها</p>
   </div>`;
 }
 
@@ -88,23 +86,23 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .deco{position:absolute;border-radius:50%;border:0.5mm solid ${t.deco}}
 .d1{width:70mm;height:70mm;top:-28mm;left:-30mm}.d2{width:55mm;height:55mm;bottom:-22mm;right:-24mm}
 .tag{font-weight:800;font-size:3.4mm;color:${t.accent2};background:${t.tagBg};border:0.35mm solid ${t.tagBorder};border-radius:10mm;padding:0.6mm 4mm}
-h1{font-family:Lalezar,Cairo;font-weight:400;font-size:9.4mm;line-height:1.12;margin-top:2.2mm}
+h1{font-family:Lalezar,Cairo;font-weight:400;font-size:8.6mm;line-height:1.2;margin-top:3.4mm}
 h1 span{color:${t.accent}}
-.mol{width:40mm;height:16mm;margin-top:1mm}
+.mol{width:48mm;height:21mm;margin-top:2.6mm}
 .sub{font-weight:600;font-size:3.6mm;line-height:1.45;color:${t.soft};margin-top:0.8mm}
 .sub b{font-weight:900;color:${t.ink}}
-.inside{display:flex;align-items:center;gap:1.4mm;margin-top:2.2mm;font-size:3.1mm;font-weight:800}
+.inside{display:flex;align-items:center;gap:1.4mm;margin-top:3.4mm;font-size:3.1mm;font-weight:800}
 .inside .lbl{color:${t.soft};font-weight:600}
 .chip{display:flex;align-items:center;gap:1mm;background:${t.tagBg};border:0.3mm solid ${t.tagBorder};color:${t.ink};border-radius:10mm;padding:0.4mm 2.4mm}
-.qrwrap{position:relative;margin-top:2.2mm;padding:2.4mm}
-.qr{width:38mm;height:38mm;background:#fff;border-radius:2.5mm;padding:0.5mm}
+.qrwrap{position:relative;margin-top:3mm;padding:2.4mm}
+.qr{width:44mm;height:44mm;background:#fff;border-radius:2.5mm;padding:0.5mm}
 .qr svg{display:block}
 .c{position:absolute;width:6mm;height:6mm;border:0 solid ${t.qrFrame}}
 .tl{top:0;left:0;border-top-width:1mm;border-left-width:1mm;border-top-left-radius:2.5mm}
 .tr{top:0;right:0;border-top-width:1mm;border-right-width:1mm;border-top-right-radius:2.5mm}
 .bl{bottom:0;left:0;border-bottom-width:1mm;border-left-width:1mm;border-bottom-left-radius:2.5mm}
 .br{bottom:0;right:0;border-bottom-width:1mm;border-right-width:1mm;border-bottom-right-radius:2.5mm}
-.cta{display:flex;align-items:center;gap:1.6mm;margin-top:2.6mm;background:${t.accent};color:${t.ink === '#ffffff' ? '#0b1730' : '#ffffff'};
+.cta{display:flex;align-items:center;gap:1.6mm;margin-top:3.4mm;background:${t.accent};color:${t.ink === '#ffffff' ? '#0b1730' : '#ffffff'};
   font-weight:900;font-size:4mm;border-radius:10mm;padding:1.2mm 4.5mm}
 .foot{margin-top:auto;font-weight:600;font-size:2.9mm;color:${t.soft}}
 </style></head><body><div class="sheet">
