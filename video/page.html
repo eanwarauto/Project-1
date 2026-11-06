@@ -10,7 +10,9 @@ html,body{margin:0;background:#000}
 canvas{display:block}
 </style></head>
 <body><canvas id="c" width="1920" height="1080"></canvas>
+<canvas id="v" width="1080" height="1920"></canvas>
 <script src="engine.js"></script>
+<script src="vertical.js"></script>
 <script>
 const film = new URLSearchParams(location.search).get('film');
 const s = document.createElement('script');
@@ -19,10 +21,11 @@ s.onload = async () => {
   await Promise.all([
     document.fonts.load('700 40px Amiri'), document.fonts.load('400 40px Amiri'),
     document.fonts.load('700 40px "Reem Kufi"'), document.fonts.load('700 40px Cairo'),
-    document.fonts.load('700 40px "Aref Ruqaa"'),
+    document.fonts.load('700 40px "Aref Ruqaa"'), document.fonts.load('600 40px Inter'),
   ]);
   const ctx = document.getElementById('c').getContext('2d');
   window.renderFrame = (t) => { ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha = 1; ctx.filter = 'none'; FILM.render(ctx, t); };
+  window.renderFrameV = (t) => { E.NO_TITLE = true; renderFrame(t); const v = document.getElementById('v').getContext('2d'); v.setTransform(1,0,0,1,0,0); v.globalAlpha = 1; renderVertical(film, t, document.getElementById('c')); };
   window.READY = true;
 };
 document.body.appendChild(s);

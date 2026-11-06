@@ -369,6 +369,7 @@
 
   // شارة العنوان في بداية كل فيلم
   E.titleCard = (ctx, t, num, title, t0 = 0.8, t1 = 5.2, col = '#ffe2a6', y0 = 800) => {
+    if (E.NO_TITLE) return; // النسخة العمودية تعرض العنوان خارج الفيلم
     const a = E.win(t, t0, t0 + 1.2, t1, t1 + 1.0);
     if (a <= 0) return;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
