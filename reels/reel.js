@@ -11,6 +11,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const CSS = `
 html,body{background:#0b1626!important;overflow:hidden!important}
 .bar{visibility:hidden!important}
+.foot span:first-child{visibility:hidden!important}
 #rv-end h2{color:#fff!important;-webkit-text-fill-color:#fff}
 .app{position:fixed!important;left:0;top:0;width:1200px!important;height:880px!important;transform-origin:0 0;transition:transform .8s cubic-bezier(.3,.7,.2,1)}
 #rv-top{position:fixed;top:0;left:0;right:0;height:300px;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:46px;gap:6px;background:linear-gradient(#0b1626 0,#0b1626 72%,#0b162600);color:#fff;font-family:"Noto Naskh Arabic",Tahoma,sans-serif;text-align:center;direction:rtl;pointer-events:none}
