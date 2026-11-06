@@ -397,8 +397,9 @@ function P(s,x,y,z){
   return{X:s.w/2+x1*s.sc*k,Y:s.h/2-y1*s.sc*k,z:z2,k};
 }
 function resize(s){
-  const r=s.cv.getBoundingClientRect(),w=Math.max(10,Math.floor(r.width)),h=Math.max(10,Math.floor(r.height));
-  if(s.cv.width!==Math.floor(w*s.dpr)||s.cv.height!==Math.floor(h*s.dpr)){s.cv.width=Math.floor(w*s.dpr);s.cv.height=Math.floor(h*s.dpr)}
+  const r=s.cv.getBoundingClientRect(),w=Math.max(10,s.cv.clientWidth||Math.floor(r.width)),h=Math.max(10,s.cv.clientHeight||Math.floor(r.height));
+  s.dprE=s.dpr*Math.max(1,r.width/w);
+  if(s.cv.width!==Math.floor(w*s.dprE)||s.cv.height!==Math.floor(h*s.dprE)){s.cv.width=Math.floor(w*s.dprE);s.cv.height=Math.floor(h*s.dprE)}
   s.w=w;s.h=h;s.sc=Math.min(w,h)/s.span*s.zoom;
 }
 function loop(t){
@@ -406,7 +407,7 @@ function loop(t){
     const s=scenes[i];
     if(!s.cv.isConnected){scenes.splice(i,1);continue}
     if(!s.dragging)s.ry+=s.auto;
-    resize(s);s.ctx.setTransform(s.dpr,0,0,s.dpr,0,0);s.ctx.clearRect(0,0,s.w,s.h);
+    resize(s);s.ctx.setTransform(s.dprE,0,0,s.dprE,0,0);s.ctx.clearRect(0,0,s.w,s.h);
     s.frame(s,t/1000);
   }
   requestAnimationFrame(loop);
@@ -703,17 +704,17 @@ function labFrame(s,t){
     const g=c.createLinearGradient(rx-7,0,rx+7,0);g.addColorStop(0,'#1f1612');g.addColorStop(.5,'#5a4334');g.addColorStop(1,'#1f1612');c.fillStyle=g;c.fillRect(rx-7,100,14,H-146);
     c.fillStyle='#ffd166';c.font='bold 15px sans-serif';for(let i=0;i<L.charge*3;i++)c.fillText('−',rx,118+i*13);
     c.fillStyle='#17324d';c.font='600 12px Tahoma';c.fillText('ساق الأبونايت',Math.min(rx,W-48),H-30);
-    if(L.open&&t-(L.last||0)>.016){L.parts.push({x:bx,y:134,vx:0});L.last=t}
+    if(L.open){if(L.last==null||t-L.last>1)L.last=t-.016;while(t-L.last>=.016){L.parts.push({x:bx,y:134,vx:0});L.last+=.016}}else L.last=null;
   }
-  c.fillStyle=liq;let landed=0;
-  L.parts.forEach(p=>{if(def){const dx=Math.max(26,rx-8-p.x);p.vx+=pol*L.charge*.6*Math.pow(60/dx,2)*.06;p.x=Math.min(rx-10,p.x+p.vx)}p.y+=3.2;
+  c.fillStyle=liq;let landed=0;const fr=Math.min(10,(t-(L.pt??t))*60);L.pt=t;
+  L.parts.forEach(p=>{if(def){const dx=Math.max(26,rx-8-p.x);p.vx+=pol*L.charge*.6*Math.pow(60/dx,2)*.06*fr;p.x=Math.min(rx-10,bx+40,p.x+p.vx*fr)}p.y+=3.2*fr;
     if(p.y>=surf-2){p.gone=1;if(p.x>bl+4&&p.x<br-4)landed++}else{c.beginPath();c.arc(p.x,p.y,2.7,0,7);c.fill()}});
   L.parts=L.parts.filter(p=>!p.gone);
-  if(landed)L.level[smp]=Math.min(1,lvl+landed*.0035);
+  if(landed)L.level[smp]=Math.min(1,lvl+landed*.006);
   if(def&&L.open&&L.charge>0&&L.rod<.72&&L.parts.length>20&&!L.done[smp].near){L.done[smp].near=1;s.onChange()}
   let lit=false;
   if(!def){
-    const ex1=bx-20,ex2=bx+20,eTop=24+L.ey*100,eLen=110,eBot=eTop+eLen,dipped=lvl>.25&&eBot>surf+8;
+    const ex1=bx-20,ex2=bx+20,eTop=24+L.ey*(H*.37),eLen=Math.max(110,H*.41),eBot=eTop+eLen,dipped=lvl>.25&&eBot>surf+8;
     lit=dipped&&smp==='B';
     const blx=W*.66,bly=40,btx=W*.84,bty=110;
     c.strokeStyle=lit?'#e0a100':'#5d6b78';c.lineWidth=2.6;c.beginPath();
