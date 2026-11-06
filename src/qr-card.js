@@ -47,6 +47,8 @@ function molecule(t) {
 }
 
 const phone = c => `<svg viewBox="0 0 24 24" width="5.2mm" height="5.2mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg>`;
+const bookIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6C9.5 4 6 4 3 5v14c3-1 6.5-1 9 1 2.5-2 6-2 9-1V5c-3-1-6.5-1-9 1z"/><path d="M12 6v14"/></svg>`;
+const slidesIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8M7 12l3-3 2 2 4-4"/></svg>`;
 const scissors = `<svg viewBox="0 0 24 24" width="4.5mm" height="4.5mm" fill="none" stroke="#8a94a6" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>`;
 
 function card(t) {
@@ -59,6 +61,7 @@ function card(t) {
     <h1>ليش الذرّات<br>ما تقدر تعيش <span>بروحها</span>؟</h1>
     <div class="mol">${molecule(t)}</div>
     <p class="sub">عندها سرّ تتشاركه عشان تكمّل نفسها…<br><b>تبين تعرفينه؟</b></p>
+    <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${bookIcon(t.accent2)}الكتاب الحي</span><span class="chip">${slidesIcon(t.accent2)}عرضين بوربوينت</span></div>
     <div class="qrwrap"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="qr">${qr}</div></div>
     <div class="cta">${phone(t.ink === '#ffffff' ? '#0b1730' : '#ffffff')}<span>امسحي الكود واكتشفي السرّ</span></div>
     <p class="foot">المعرفة مثل الإلكترونات… أحلى لما نتشاركها</p>
@@ -85,20 +88,23 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .deco{position:absolute;border-radius:50%;border:0.5mm solid ${t.deco}}
 .d1{width:70mm;height:70mm;top:-28mm;left:-30mm}.d2{width:55mm;height:55mm;bottom:-22mm;right:-24mm}
 .tag{font-weight:800;font-size:3.4mm;color:${t.accent2};background:${t.tagBg};border:0.35mm solid ${t.tagBorder};border-radius:10mm;padding:0.6mm 4mm}
-h1{font-family:Lalezar,Cairo;font-weight:400;font-size:9.6mm;line-height:1.12;margin-top:2.6mm}
+h1{font-family:Lalezar,Cairo;font-weight:400;font-size:9.4mm;line-height:1.12;margin-top:2.2mm}
 h1 span{color:${t.accent}}
-.mol{width:44mm;height:20mm;margin-top:1.4mm}
+.mol{width:40mm;height:16mm;margin-top:1mm}
 .sub{font-weight:600;font-size:3.6mm;line-height:1.45;color:${t.soft};margin-top:0.8mm}
 .sub b{font-weight:900;color:${t.ink}}
-.qrwrap{position:relative;margin-top:3.2mm;padding:2.6mm}
-.qr{width:40mm;height:40mm;background:#fff;border-radius:2.5mm;padding:0.5mm}
+.inside{display:flex;align-items:center;gap:1.4mm;margin-top:2.2mm;font-size:3.1mm;font-weight:800}
+.inside .lbl{color:${t.soft};font-weight:600}
+.chip{display:flex;align-items:center;gap:1mm;background:${t.tagBg};border:0.3mm solid ${t.tagBorder};color:${t.ink};border-radius:10mm;padding:0.4mm 2.4mm}
+.qrwrap{position:relative;margin-top:2.2mm;padding:2.4mm}
+.qr{width:38mm;height:38mm;background:#fff;border-radius:2.5mm;padding:0.5mm}
 .qr svg{display:block}
 .c{position:absolute;width:6mm;height:6mm;border:0 solid ${t.qrFrame}}
 .tl{top:0;left:0;border-top-width:1mm;border-left-width:1mm;border-top-left-radius:2.5mm}
 .tr{top:0;right:0;border-top-width:1mm;border-right-width:1mm;border-top-right-radius:2.5mm}
 .bl{bottom:0;left:0;border-bottom-width:1mm;border-left-width:1mm;border-bottom-left-radius:2.5mm}
 .br{bottom:0;right:0;border-bottom-width:1mm;border-right-width:1mm;border-bottom-right-radius:2.5mm}
-.cta{display:flex;align-items:center;gap:1.6mm;margin-top:3mm;background:${t.accent};color:${t.ink === '#ffffff' ? '#0b1730' : '#ffffff'};
+.cta{display:flex;align-items:center;gap:1.6mm;margin-top:2.6mm;background:${t.accent};color:${t.ink === '#ffffff' ? '#0b1730' : '#ffffff'};
   font-weight:900;font-size:4mm;border-radius:10mm;padding:1.2mm 4.5mm}
 .foot{margin-top:auto;font-weight:600;font-size:2.9mm;color:${t.soft}}
 </style></head><body><div class="sheet">
