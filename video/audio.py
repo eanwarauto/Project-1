@@ -1,4 +1,4 @@
-"""تصميم صوتي لأفلام «الصحبة الصالحة»: مؤثرات وأجواء فقط (بدون آلات موسيقية).
+"""تصميم صوتي لأفلام «الصحبة الصالحة»: مؤثرات وأجواء + موسيقى تصويرية (video/music.py) مع صمت مقصود.
 الاستخدام: python3 video/audio.py <film>  ->  build/video/<film>.wav
 """
 import sys, os, wave
@@ -8,6 +8,8 @@ from scipy.signal import butter, sosfilt, fftconvolve
 SR = 44100
 rng = np.random.default_rng(7)
 OUT = os.path.join(os.path.dirname(__file__), '..', 'build', 'video')
+CURRENT = None  # اسم الفيلم الحالي لإضافة موسيقاه
+MUSIC_LEVEL = 1.25
 
 
 # ---------- أدوات ----------
@@ -66,6 +68,13 @@ class Track:
         return g
 
     def render(self, master_curve, rev=2.6):
+        if CURRENT:
+            import music
+            m = Track(self.n / SR)
+            music.SCORES[CURRENT](m)
+            rms = lambda a: np.sqrt(np.mean(a[np.abs(a) > 1e-4] ** 2)) if np.any(np.abs(a) > 1e-4) else 1.0
+            g = MUSIC_LEVEL * rms(self.L + self.R) / rms(m.L + m.R)
+            self.L += m.L * g; self.R += m.R * g; self.wetL += m.wetL * g; self.wetR += m.wetR * g
         ir_n = int(rev * SR)
         tt = np.arange(ir_n) / SR
         irL = rng.standard_normal(ir_n) * np.exp(-tt * 6.9 / rev); irR = rng.standard_normal(ir_n) * np.exp(-tt * 6.9 / rev)
@@ -409,6 +418,8 @@ def save(name, st):
 
 
 if __name__ == '__main__':
+    sys.modules['audio'] = sys.modules['__main__']
     for name in sys.argv[1:]:
+        CURRENT = name
         save(name, globals()[name]())
         print('audio ->', name)

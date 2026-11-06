@@ -36,7 +36,7 @@ fs.mkdirSync(OUT, { recursive: true });
   const from = +opt('from', 0), to = Math.min(+opt('to', dur), dur);
   const out = path.join(OUT, `${film}.silent.mp4`);
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '19', '-preset', 'medium', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '25', '-preset', 'slow', '-tune', 'animation', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
   const n = Math.round((to - from) * FPS);
   const t0 = Date.now();
   for (let i = 0; i < n; i++) {
