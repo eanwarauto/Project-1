@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>الترتيب الإلكتروني والرابطة الأيونية · الكتاب ثلاثي الأبعاد</title>
+<title>الترتيب الإلكتروني والرابطة الأيونية · الكتاب ثلاثي الأبعاد (الكيمياء بلغة الأصابع)</title>
 <style>
 :root{--ink:#17324d;--sea:#1a6fa8;--sky:#cfeefc;--paper:#fffdf7;--gold:#f2b134;--red:#e5484d;--green:#2ea56b;--mute:#6c7f95;--line:#c9dceb}
 *{box-sizing:border-box}
@@ -261,12 +261,13 @@ h3{color:#c2410c}
 .swipehint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:900;background:rgba(17,24,39,.88);color:#fff;font-weight:800;font-size:16px;padding:10px 20px;border-radius:999px;box-shadow:0 8px 24px #0006;pointer-events:none;transition:opacity .5s;direction:rtl;white-space:nowrap}
 .swipehint i{display:inline-block;font-style:normal;animation:swp 1.2s infinite}
 @keyframes swp{0%{transform:translateX(14px)}60%{transform:translateX(-14px)}100%{transform:translateX(14px)}}
+.bar h1 .tagl{font-size:.82em;font-weight:700;color:#ffe08a}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="bar">
-    <h1>الكتاب ثلاثي الأبعاد · الترتيب الإلكتروني والرابطة الأيونية</h1>
+    <h1>الكتاب ثلاثي الأبعاد <small class="tagl">(الكيمياء بلغة الأصابع)</small> · الترتيب الإلكتروني والرابطة الأيونية</h1>
     <select id="toc" aria-label="الانتقال إلى"></select>
     <button class="btn" id="prev">→ السابق</button>
     <span class="pos" id="pos"></span>
@@ -779,7 +780,7 @@ const S=[];
 const sp=(title,r,l,init)=>S.push({title,r,l,init});
 
 sp('الغلاف والدليل',
-`<div class="cover"><span class="lh">الكتاب ثلاثي الأبعاد · الكيمياء · الصف العاشر</span>
+`<div class="cover"><span class="lh">الكتاب ثلاثي الأبعاد (الكيمياء بلغة الأصابع) · الكيمياء · الصف العاشر</span>
 <h2 class="huge">الترتيب الإلكتروني<br>والرابطة الأيونية</h2>
 <p>ثلاثة دروس في كتاب واحد: جرّب، توقّع، طبّق، حلّل، ثم استنتج بنفسك.</p>
 <canvas class="c3" data-scene="atom" data-z="11"></canvas>
