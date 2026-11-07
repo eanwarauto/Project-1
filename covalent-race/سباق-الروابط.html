@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>سباق الروابط</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Noto+Kufi+Arabic:wght@400;700;800&display=swap">
+<style>
+/* Layout: four lanes run right→left from the start gate to the «stability» finish line; each question opens as a lab card over the dimmed race. */
+:root{
+  --night:#0b0a1f;--deck:#17143d;--deck2:#221d55;--line:#332e74;--ink:#f6f4ff;--muted:#aaa6da;--spark:#ffd23f;--ok:#2be38f;--bad:#ff5d73;
+  --display:"Lalezar","Noto Kufi Arabic",Tahoma,sans-serif;--body:"Noto Kufi Arabic","Segoe UI",Tahoma,sans-serif;--latin:"Segoe UI",Tahoma,Arial,sans-serif;
+  --tagw:clamp(118px,19vw,250px);--rs:clamp(30px,min(7vh,9vw),72px);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{height:100%;box-sizing:border-box}
+body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden;direction:rtl}
+button{font:inherit;color:inherit}
+button:focus-visible,[contenteditable]:focus-visible{outline:3px solid var(--spark);outline-offset:2px}
+.f{direction:ltr;unicode-bidi:isolate;display:inline-block;font-family:var(--latin);font-weight:800}
+.f sub,.f sup{font-size:.62em;line-height:0}
+.app{height:100%;display:flex;flex-direction:column;gap:clamp(6px,1.3vh,12px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;
+  background:radial-gradient(1100px 520px at 85% -12%,#2c1f73 0,transparent 62%),radial-gradient(900px 480px at -5% 115%,#0f3d5c 0,transparent 60%),
+  repeating-linear-gradient(0deg,#ffffff06 0 1px,transparent 1px 46px),repeating-linear-gradient(90deg,#ffffff06 0 1px,transparent 1px 46px),var(--night)}
+.top{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.brand b{font-family:var(--display);font-weight:400;font-size:clamp(28px,3.6vw,48px);line-height:1.1;color:var(--spark);text-shadow:0 0 24px #ffd23f66}
+.brand span{color:var(--muted);font-size:clamp(12px,1.3vw,16px)}
+.qc{font-family:var(--display);font-size:clamp(20px,2.4vw,32px);background:#ffffff0f;border:1px solid var(--line);border-radius:999px;padding:2px 18px;font-variant-numeric:tabular-nums}
+.qc small{font-family:var(--body);font-size:.5em;color:var(--muted)}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.tb{background:#ffffff10;border:1px solid #ffffff22;border-radius:12px;padding:7px 12px;cursor:pointer;font-size:14px;font-weight:700}
+.tb:hover{background:#ffffff1c}
+.tb:disabled{opacity:.35;cursor:default}
+.arena{flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(6px,1.2vh,12px)}
+.ends{display:grid;grid-template-columns:var(--tagw) 1fr;gap:12px;font-size:clamp(12px,1.3vw,16px);color:var(--muted)}
+.ends div{display:flex;justify-content:space-between;padding-inline:4px}
+.ends .fl{color:var(--spark);font-weight:800}
+.lane{--c:#fff;--c2:#fff;flex:1;min-height:58px;display:grid;grid-template-columns:var(--tagw) 1fr;align-items:center;gap:12px;border-radius:20px;padding-inline-end:6px;
+  background:linear-gradient(270deg,color-mix(in srgb,var(--c) 14%,transparent),color-mix(in srgb,var(--c) 3%,transparent) 70%);border:1px solid color-mix(in srgb,var(--c) 28%,transparent)}
+.tag{display:flex;align-items:center;gap:8px;padding:6px 10px;min-width:0}
+.rk{flex:none;width:1.9em;height:1.9em;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:clamp(14px,1.6vw,20px);background:#ffffff14;color:var(--muted);transition:all .4s}
+.rk.r1{background:var(--spark);color:#2a2000;box-shadow:0 0 16px #ffd23f88}
+.nmw{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.nm{font-weight:800;font-size:clamp(13px,1.5vw,19px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:6px;cursor:text}
+.sc{font-size:clamp(11px,1.1vw,14px);color:var(--muted);font-variant-numeric:tabular-nums}
+.sc b{color:var(--c2);font-family:var(--display);font-weight:400;font-size:1.5em}
+.track{position:relative;height:100%}
+.run{position:absolute;top:0;bottom:0;left:calc(var(--rs)*.75);right:calc(var(--rs)*.6)}
+.rail{position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;border-radius:4px;background:#ffffff14}
+.fill{position:absolute;right:0;top:50%;height:6px;margin-top:-3px;border-radius:6px;width:calc(var(--p)*100%);background:linear-gradient(270deg,transparent,var(--c));box-shadow:0 0 16px var(--c);transition:width 1s cubic-bezier(.3,1.2,.5,1)}
+.nd{position:absolute;top:50%;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;background:#ffffff26;transform:translateX(50%);transition:background .3s,box-shadow .3s}
+.nd.on{background:var(--c2);box-shadow:0 0 10px var(--c)}
+.fin{position:absolute;left:0;top:8%;bottom:8%;width:14px;transform:translateX(-50%);border-radius:4px;background:repeating-conic-gradient(#f6f4ff 0 25%,#16133a 0 50%) 0 0/7px 7px;box-shadow:0 0 18px #ffd23f55}
+.racer{position:absolute;top:50%;right:calc(var(--p)*100%);width:var(--rs);height:var(--rs);transform:translate(50%,-50%);transition:right 1s cubic-bezier(.3,1.35,.5,1);z-index:2}
+.racer.far{transition-duration:1.5s}
+.bd{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 32% 26%,#fff 0 5%,var(--c2) 17%,var(--c) 55%,color-mix(in srgb,var(--c) 50%,#000) 100%);
+  box-shadow:0 0 22px color-mix(in srgb,var(--c) 70%,transparent),inset -5px -7px 12px #0006}
+.bd b{position:absolute;inset-inline:0;bottom:12%;text-align:center;font-family:var(--latin);font-weight:900;font-size:calc(var(--rs)*.3);color:#fff;text-shadow:0 1px 3px #0009;direction:ltr}
+.ey{position:absolute;top:22%;width:24%;height:27%;background:#fff;border-radius:50%;animation:blink 4.6s infinite;animation-delay:var(--bd,0s)}
+.ey.a{left:20%}.ey.b{left:52%}
+.ey::after{content:"";position:absolute;width:56%;height:56%;left:6%;top:26%;border-radius:50%;background:#140f33}
+.racer.go .bd{animation:hop .32s ease-in-out infinite}
+.racer.go .ey::after{left:0;top:18%}
+.orb{position:absolute;inset:-26%;border-radius:50%;border:1px dashed #ffffff2c;animation:spin 7s linear infinite;pointer-events:none}
+.e{position:absolute;left:50%;top:50%;width:9px;height:9px;margin:-4.5px;border-radius:50%;background:var(--spark);box-shadow:0 0 9px var(--spark);
+  transform:rotate(calc(var(--k)*45deg)) translate(calc(var(--rs)*.76));opacity:0;transition:opacity .4s}
+.e.on{opacity:1}
+.racer.oct .orb{border:2px solid var(--spark);box-shadow:0 0 18px #ffd23f88,inset 0 0 12px #ffd23f55}
+.crown{position:absolute;left:50%;top:-62%;font-size:calc(var(--rs)*.46);transform:translateX(-50%) scale(0);transition:transform .45s cubic-bezier(.2,1.6,.4,1);filter:drop-shadow(0 0 8px #ffd23faa)}
+.racer.lead .crown{transform:translateX(-50%) scale(1)}
+.ctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.btn{border:0;border-radius:16px;padding:12px 24px;font-weight:800;font-size:clamp(16px,1.8vw,22px);cursor:pointer;transition:transform .15s,box-shadow .2s}
+.btn:active{transform:scale(.97)}
+.gold{background:var(--spark);color:#251b00;box-shadow:0 6px 0 #b8901a,0 10px 30px #ffd23f44}
+.gold:active{box-shadow:0 2px 0 #b8901a}
+.ghost{background:#ffffff12;border:1px solid #ffffff26;color:var(--ink)}
+.ticker{flex:1;min-width:0;color:var(--muted);font-size:clamp(13px,1.4vw,17px)}
+.ticker b{color:var(--ink)}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:#05041299;backdrop-filter:blur(3px);padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px))}
+.qcard{width:min(1000px,100%);max-height:100%;overflow:auto;background:linear-gradient(165deg,var(--deck2),var(--deck));border:1px solid var(--line);border-radius:26px;padding:clamp(16px,2.8vw,32px);
+  box-shadow:0 30px 90px #000b;display:flex;flex-direction:column;gap:clamp(10px,1.8vh,18px);animation:pop .5s cubic-bezier(.2,1.35,.4,1)}
+.qcard.power{border:2px solid var(--spark);box-shadow:0 0 70px #ffd23f40,0 30px 90px #000b}
+.qhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.qno{font-family:var(--display);font-size:clamp(20px,2.4vw,30px);color:var(--muted)}
+.pw{background:var(--spark);color:#251b00;font-weight:800;border-radius:999px;padding:4px 14px;font-size:clamp(13px,1.4vw,17px);animation:glow 1.2s infinite alternate}
+.timer{margin-inline-start:auto;position:relative;width:min(240px,40vw);height:38px;border-radius:999px;background:#ffffff12;border:1px solid #ffffff26;overflow:hidden;cursor:pointer;padding:0}
+.timer i{position:absolute;inset:0 0 0 auto;width:100%;background:linear-gradient(270deg,var(--ok),#7af0bf);transition:width 1s linear,background .3s}
+.timer.low i{background:linear-gradient(270deg,var(--bad),#ff9aa8)}
+.timer b{position:relative;font-family:var(--display);font-weight:400;font-size:22px;color:#fff;text-shadow:0 1px 3px #000a;font-variant-numeric:tabular-nums}
+.timer.paused b::after{content:" ⏸"}
+.qt{margin:0;font-weight:800;font-size:clamp(20px,3vw,38px);line-height:1.65;text-wrap:balance}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:18px;background:#ffffff0c;border:2px solid #ffffff1c;font-size:clamp(16px,2.1vw,26px);font-weight:700;text-align:right;line-height:1.5;transition:all .35s}
+.opt .L{flex:none;width:1.9em;height:1.9em;border-radius:12px;display:grid;place-items:center;background:var(--lc);color:#140f2e;font-family:var(--display);font-weight:400}
+.opt.right{border-color:var(--ok);background:#2be38f1f;box-shadow:0 0 28px #2be38f55;transform:scale(1.02)}
+.opt.right::after{content:"✓";margin-inline-start:auto;color:var(--ok);font-size:1.3em;font-weight:900}
+.opt.dim{opacity:.32}
+.qx{background:#2be38f14;border:1px solid #2be38f55;border-radius:14px;padding:10px 14px;font-size:clamp(14px,1.6vw,19px);line-height:1.7}
+.who p{margin:0 0 8px;font-weight:800;font-size:clamp(15px,1.7vw,20px)}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{--c:#fff;border:2px solid var(--c);background:transparent;border-radius:999px;padding:8px 18px;font-weight:800;font-size:clamp(14px,1.6vw,19px);cursor:pointer;transition:all .2s}
+.chip.on{background:var(--c);color:#100c2a;box-shadow:0 0 18px var(--c)}
+.chip.on::before{content:"✓ "}
+.qact{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.over{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(12px,2.4vh,26px);text-align:center;
+  background:radial-gradient(circle at 50% 30%,#2b2178,#0b0a1f 72%);padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.over h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(46px,9vw,120px);line-height:1;color:var(--spark);text-shadow:0 0 40px #ffd23f66}
+.over .sub{font-size:clamp(17px,2.2vw,28px);font-weight:800}
+.lineup{display:flex;gap:clamp(12px,3vw,40px);flex-wrap:wrap;justify-content:center}
+.lineup .racer{position:relative;top:auto;right:auto;transform:none;transition:none;--rs:clamp(54px,9vw,96px)}
+.lu{display:flex;flex-direction:column;align-items:center;gap:calc(var(--rs,60px)*.4);--rs:clamp(54px,9vw,96px)}
+.lu span{font-weight:800;font-size:clamp(13px,1.5vw,18px);margin-top:12px}
+.rules{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:900px}
+.rules span{background:#ffffff10;border:1px solid #ffffff22;border-radius:999px;padding:6px 14px;font-size:clamp(13px,1.4vw,17px)}
+.cd{position:fixed;inset:0;z-index:55;display:grid;place-items:center;pointer-events:none;font-family:var(--display);font-size:clamp(120px,26vw,320px);color:var(--spark);text-shadow:0 0 60px #ffd23f99}
+.cd span{animation:cdz .9s ease-out both}
+.banner{position:fixed;top:14%;left:50%;z-index:45;transform:translate(-50%,-30px);opacity:0;pointer-events:none;background:var(--spark);color:#251b00;font-family:var(--display);font-size:clamp(24px,3.6vw,50px);padding:8px 34px;border-radius:999px;box-shadow:0 20px 50px #000a;white-space:nowrap;transition:all .45s cubic-bezier(.2,1.4,.4,1)}
+.banner.on{opacity:1;transform:translate(-50%,0)}
+.pod{display:flex;align-items:flex-end;gap:clamp(8px,2vw,24px)}
+.pc{display:flex;flex-direction:column;align-items:center;gap:10px;--rs:clamp(50px,8vw,92px)}
+.pc .racer{position:relative;top:auto;right:auto;transform:none;transition:none}
+.pc .blk{width:clamp(84px,14vw,170px);border-radius:16px 16px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;gap:2px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 70%,#fff 10%),color-mix(in srgb,var(--c) 35%,#0b0a1f));font-weight:800;font-size:clamp(12px,1.4vw,17px);animation:rise .8s cubic-bezier(.2,1.2,.4,1) both}
+.pc .blk em{font-style:normal;font-family:var(--display);font-size:clamp(30px,4.4vw,58px);line-height:1;color:#fff}
+.fourth{color:var(--muted);font-size:clamp(14px,1.5vw,18px)}
+@keyframes hop{50%{transform:translateY(-12%) scale(1.06,.94)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes pop{from{transform:scale(.85) translateY(20px);opacity:0}}
+@keyframes glow{to{box-shadow:0 0 18px #ffd23f}}
+@keyframes cdz{from{transform:scale(1.8);opacity:0}30%{opacity:1}to{transform:scale(.7);opacity:0}}
+@keyframes rise{from{transform:scaleY(0);transform-origin:bottom}}
+@media (max-width:700px){.opts{grid-template-columns:1fr}.brand span{display:none}.nm{font-size:12px}.tag{gap:5px;padding:4px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+
+</head>
+<body>
+<div class="app" id="app" dir="rtl" lang="ar">
+  <header class="top">
+    <div class="brand"><b>سباق الروابط</b><span>الرابطة التساهمية · تحدٍّ بين 4 مجموعات</span></div>
+    <div class="qc"><span id="qnum">0</span> / <span id="qtot">15</span> <small>سؤال</small></div>
+    <div class="tools">
+      <button class="tb" id="undo" disabled>↶ تراجع</button>
+      <button class="tb" id="snd" aria-label="الصوت">🔊</button>
+      <button class="tb" id="fs">⛶ ملء الشاشة</button>
+      <button class="tb" id="restart">↻ سباق جديد</button>
+    </div>
+  </header>
+  <main class="arena" id="arena">
+    <div class="ends"><span></span><div><span>خط البداية ⟵</span><span class="fl">🏁 خط الاستقرار</span></div></div>
+  </main>
+  <footer class="ctrl">
+    <button class="btn gold" id="next">السؤال التالي ▶</button>
+    <div class="ticker" id="ticker">اضغط «السؤال التالي» لعرض أول سؤال. اضغط على اسم أي مجموعة لتغييره.</div>
+  </footer>
+</div>
+<canvas id="fx"></canvas>
+<div class="banner" id="banner"></div>
+
+<div class="modal" id="qm" hidden>
+  <div class="qcard" id="qcard" role="dialog" aria-modal="true" aria-labelledby="qt">
+    <div class="qhead"><span class="qno" id="qno"></span><span class="pw" id="pw" hidden>⚡ سؤال الطاقة: الإجابة الصحيحة = خطوتان</span>
+      <button class="timer" id="timer" title="اضغط للإيقاف المؤقت"><i id="tbar"></i><b id="tnum">30</b></button></div>
+    <h2 class="qt" id="qt"></h2>
+    <div class="opts" id="opts"></div>
+    <div class="qx" id="qx" hidden></div>
+    <div class="who" id="who" hidden><p>أي المجموعات أجابت إجابة صحيحة؟ اضغط عليها:</p><div class="chips" id="chips"></div></div>
+    <div class="qact"><button class="btn ghost" id="closeQ">إغلاق</button><button class="btn gold" id="act">اكشف الإجابة</button></div>
+  </div>
+</div>
+
+<div class="over" id="intro">
+  <h1>سباق الروابط</h1>
+  <div class="sub">أي ذرّة تصل إلى الاستقرار أولًا؟</div>
+  <div class="lineup" id="lineup"></div>
+  <div class="rules"><span>✅ كل إجابة صحيحة = خطوة</span><span>⚡ أسئلة الطاقة = خطوتان</span><span>⚛️ كل خطوة = إلكترون جديد يدور حول ذرتك</span><span>🏁 الأبعد على المسار يفوز</span></div>
+  <button class="btn gold" id="start">ابدأ السباق 🚀</button>
+</div>
+
+<div class="over" id="podium" hidden>
+  <h1 id="winT">🏆</h1>
+  <div class="sub" id="winS"></div>
+  <div class="pod" id="pod"></div>
+  <div class="fourth" id="fourth"></div>
+  <div class="qact"><button class="btn ghost" id="closeP">العودة إلى المسار</button><button class="btn gold" id="again">↻ سباق جديد</button></div>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const TEAMS=[
+  {sym:'O',name:'فريق الأكسجين',c:'#ff4d6d',c2:'#ffb3c1'},
+  {sym:'N',name:'فريق النيتروجين',c:'#3d8bff',c2:'#b8d4ff'},
+  {sym:'C',name:'فريق الكربون',c:'#ffb020',c2:'#ffe2a3'},
+  {sym:'Cl',name:'فريق الكلور',c:'#22d39a',c2:'#b5f5df'}];
+/* الخيار الأول في كل سؤال هو الصحيح؛ تُخلط الخيارات في بداية كل سباق */
+const QS=[
+ {q:'تتكوّن الرابطة التساهمية نتيجة:',o:['تشارك زوج أو أكثر من الإلكترونات بين الذرات','انتقال إلكترون من ذرة إلى أخرى','تجاذب أيونات مختلفة الشحنة','فقد الذرة جميع إلكترونات التكافؤ'],x:'في الرابطة التساهمية تتشارك الذرات الإلكترونات، أما الانتقال فيحدث في الرابطة الأيونية.'},
+ {q:'تتكوّن الرابطة التساهمية غالبًا بين:',o:['لافلز ولافلز','فلز ولافلز','فلز وفلز','غاز نبيل وفلز'],x:'اللافلزات تميل إلى اكتساب الإلكترونات، فتتشاركها بدل أن تنتقل.'},
+ {q:'تستقر ذرة الهيدروجين عندما يصبح في مستواها الخارجي:',o:['إلكترونان','إلكترون واحد','أربعة إلكترونات','ثمانية إلكترونات'],x:'الهيدروجين يستقر بإلكترونين مثل الهيليوم، وهو استثناء من قاعدة الثمانية.'},
+ {q:'نوع الرابطة في جزيء الهيدروجين {H2}:',o:['أحادية','ثنائية','ثلاثية','أيونية'],x:'تشارك كل ذرة هيدروجين بإلكترون واحد فيتكوّن زوج مشترك واحد: H—H'},
+ {q:'عدد أزواج الإلكترونات المشتركة في جزيء الأكسجين {O2}:',o:['2','1','3','4'],x:'تشارك كل ذرة أكسجين بإلكترونين فتتكوّن رابطة ثنائية: O=O',p:1},
+ {q:'الرابطة بين ذرتي النيتروجين في {N2}:',o:['ثلاثية','أحادية','ثنائية','تناسقية'],x:'تشارك كل ذرة نيتروجين بثلاثة إلكترونات: N≡N'},
+ {q:'عدد أزواج الإلكترونات غير المشاركة على ذرة الأكسجين في {H2O}:',o:['2','1','0','3'],x:'للأكسجين 6 إلكترونات تكافؤ: 2 منها في الروابط و4 في زوجين غير مشاركين.'},
+ {q:'عدد الروابط التساهمية التي تكوّنها ذرة الكربون في {CH4}:',o:['4','2','3','6'],x:'للكربون 4 إلكترونات تكافؤ، فيكوّن 4 روابط أحادية مع 4 ذرات هيدروجين.'},
+ {q:'الرابطة في جزيء كلوريد الهيدروجين {HCl}:',o:['تساهمية قطبية','تساهمية غير قطبية','أيونية','تناسقية'],x:'الكلور أعلى سالبية كهربائية من الهيدروجين، فيجذب الزوج المشترك نحوه.'},
+ {q:'أي الجزيئات التالية قطبي؟',o:['{H2O}','{CO2}','{CCl4}','{CH4}'],x:'شكل جزيء الماء منحنٍ، فلا تُلغي قطبية الروابط بعضها بعضًا.',p:1},
+ {q:'في الرابطة القطبية تحمل الشحنة الجزئية السالبة δ⁻ الذرة:',o:['الأعلى سالبية كهربائية','الأقل سالبية كهربائية','الأصغر عددًا ذريًا','الأكبر حجمًا دائمًا'],x:'الذرة الأعلى سالبية تجذب الزوج المشترك أكثر، فتصبح جزئيًا سالبة.'},
+ {q:'سائل ينحرف مساره عند تقريب ساق مشحونة منه. هذا السائل:',o:['قطبي','غير قطبي','غاز نبيل','فلز منصهر'],x:'جزيئات السائل القطبي لها طرفان مشحونان جزئيًا، فتنجذب نحو الساق المشحونة.'},
+ {q:'المركبات التساهمية بشكل عام:',o:['درجات انصهارها منخفضة','توصل الكهرباء وهي صلبة','درجات غليانها مرتفعة جدًا','صلبة وقاسية دائمًا'],x:'القوى بين جزيئاتها ضعيفة، فتنصهر وتغلي عند درجات منخفضة.'},
+ {q:'الرابطة التناسقية رابطة تساهمية يكون فيها زوج الإلكترونات المشترك:',o:['من ذرة واحدة فقط','من الذرتين معًا','منتقلًا من ذرة إلى أخرى','غير موجود'],x:'في الرابطة التناسقية تمنح ذرة واحدة الزوج كاملًا، وتستقبله الذرة الأخرى.'},
+ {q:'الرابطة التي تتكوّن بين {NH3} و {H+} لتكوين أيون الأمونيوم {NH4+}:',o:['تناسقية','أيونية','تساهمية ثنائية','فلزية'],x:'ذرة النيتروجين تمنح زوجها غير المشارك لأيون الهيدروجين الذي لا يملك إلكترونات.',p:1}];
+const N=QS.reduce((s,q)=>s+(q.p?2:1),0),TIME=30,LET=['أ','ب','ج','د'],LC=['#ff7ab6','#7ad3ff','#ffd23f','#9dff7a'];
+const chem=s=>'<span class="f">'+s.replace(/(\d+)/g,'<sub>$1</sub>').replace(/([+−-])$/,'<sup>$1</sup>')+'</span>';
+const fmt=s=>s.replace(/\{([^}]+)\}/g,(_,m)=>chem(m));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+let S=null,hist=[];
+function fresh(names){return{pos:[0,0,0,0],qi:0,names:names||TEAMS.map(t=>t.name),perm:QS.map(()=>shuffle([0,1,2,3])),started:false,done:false}}
+
+/* ---------- الصوت ---------- */
+let AC=null,mute=false;
+const ac=()=>{if(mute)return null;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}};
+function tone(f,d=.2,type='sine',vol=.12,at=0,f2){const a=ac();if(!a)return;const t=a.currentTime+at,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.05)}
+function noise(d=.5,f0=300,f1=2500,vol=.15,at=0,q=1.2){const a=ac();if(!a)return;const n=Math.floor(a.sampleRate*d),b=a.createBuffer(1,n,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<n;i++)x[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/n);
+  const s=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain(),t=a.currentTime+at;s.buffer=b;bp.type='bandpass';bp.Q.value=q;bp.frequency.setValueAtTime(f0,t);bp.frequency.exponentialRampToValueAtTime(f1,t+d);g.gain.value=vol;s.connect(bp).connect(g).connect(a.destination);s.start(t)}
+const SND={
+  click:()=>tone(660,.08,'triangle',.06),
+  beep:()=>tone(520,.22,'square',.07),
+  go:()=>{[523,659,784,1047].forEach((f,i)=>tone(f,.5,'triangle',.11,i*.05));noise(.6,400,3000,.12)},
+  open:()=>{tone(392,.25,'sine',.08);tone(587,.35,'sine',.08,.1)},
+  power:()=>{for(let i=0;i<6;i++)tone(300+i*140,.18,'sawtooth',.05,i*.06)},
+  tick:()=>tone(1400,.05,'square',.04),
+  beat:()=>{tone(70,.18,'sine',.35,0,45);tone(62,.16,'sine',.25,.17,40)},
+  buzz:()=>tone(140,.6,'sawtooth',.09,0,110),
+  reveal:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.45,'sine',.1,i*.09)),
+  whoosh:(at=0)=>noise(.7,250,2800,.17,at),
+  pling:(i,at=0)=>tone(880*Math.pow(2,i/12),.25,'sine',.09,at),
+  lead:()=>{[659,784,988,1319].forEach((f,i)=>tone(f,.3,'triangle',.1,i*.08))},
+  fan:()=>{[392,523,659,784,659,784,1047].forEach((f,i)=>tone(f,i===6?1:.3,'triangle',.12,i*.16));clap(1.1)},
+  none:()=>{tone(330,.3,'sine',.07);tone(262,.4,'sine',.07,.15)}};
+function clap(at=0){const a=ac();if(!a)return;const sr=a.sampleRate;for(let i=0;i<26;i++){const t=a.currentTime+at+i*.07+Math.random()*.05,n=Math.floor(sr*.05),b=a.createBuffer(1,n,sr),d=b.getChannelData(0);
+  for(let j=0;j<n;j++)d[j]=(Math.random()*2-1)*Math.pow(1-j/n,3);const s=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();s.buffer=b;bp.type='bandpass';bp.frequency.value=1100+Math.random()*1500;g.gain.value=.22*(1-i/30);s.connect(bp).connect(g).connect(a.destination);s.start(t)}}
+
+/* ---------- المؤثرات ---------- */
+const cv=$('#fx'),cx=cv.getContext('2d');let P=[],W=0,H=0;
+function size(){const d=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',size);size();
+function burst(x,y,col,n=24,sp=6){for(let i=0;i<n;i++){const a=Math.random()*7,v=Math.random()*sp+1;P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:1,d:.02+Math.random()*.02,s:2+Math.random()*3,c:col})}}
+function confetti(n=180){const cs=['#ffd23f','#ff4d6d','#3d8bff','#22d39a','#ffb020','#ffffff'];for(let i=0;i<n;i++)P.push({x:Math.random()*W,y:-20-Math.random()*H*.5,vx:(Math.random()-.5)*2,vy:2+Math.random()*3,l:1,d:.003,s:5+Math.random()*6,c:cs[i%6],r:Math.random()*6,cf:1})}
+(function loop(){cx.clearRect(0,0,W,H);P=P.filter(p=>p.l>0&&p.y<H+40);
+  for(const p of P){p.x+=p.vx;p.y+=p.vy;p.l-=p.d;cx.globalAlpha=Math.max(0,Math.min(1,p.l));cx.fillStyle=p.c;
+    if(p.cf){p.r+=.1;p.vx+=Math.sin(p.r)*.05;cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);cx.restore()}
+    else{p.vx*=.95;p.vy*=.95;cx.beginPath();cx.arc(p.x,p.y,p.s,0,7);cx.fill()}}
+  cx.globalAlpha=1;requestAnimationFrame(loop)})();
+function trail(el,col,ms){const t0=performance.now();(function f(now){const r=el.getBoundingClientRect();
+  for(let i=0;i<2;i++)P.push({x:r.left+r.width*(.55+Math.random()*.3),y:r.top+r.height*(.25+Math.random()*.5),vx:1+Math.random()*1.5,vy:(Math.random()-.5),l:.9,d:.03,s:2+Math.random()*3,c:col});
+  if(now-t0<ms)requestAnimationFrame(f)})(t0)}
+
+/* ---------- بناء المسارات ---------- */
+const arena=$('#arena'),lanes=[];
+function racerHTML(t,i){return `<div class="racer" style="--c:${t.c};--c2:${t.c2}"><div class="orb">${[0,1,2,3,4,5,6,7].map(k=>`<i class="e" style="--k:${k}"></i>`).join('')}</div>
+  <div class="bd"><i class="ey a" style="--bd:${i*.7}s"></i><i class="ey b" style="--bd:${i*.7}s"></i><b>${t.sym}</b></div><div class="crown">👑</div></div>`}
+TEAMS.forEach((t,i)=>{const L=document.createElement('section');L.className='lane';L.style.cssText=`--c:${t.c};--c2:${t.c2};--p:0`;
+  L.innerHTML=`<div class="tag"><span class="rk">1</span><div class="nmw"><span class="nm" contenteditable="true" spellcheck="false" id="nm${i}"></span><span class="sc"><b>0</b> / ${N} خطوة</span></div></div>
+  <div class="track"><div class="run"><div class="rail"></div><div class="fill"></div>${Array.from({length:N},(_,k)=>`<i class="nd" style="right:${(k+1)/N*100}%"></i>`).join('')}<i class="fin"></i>${racerHTML(t,i)}</div></div>`;
+  arena.appendChild(L);
+  const nm=L.querySelector('.nm');nm.addEventListener('input',()=>{S.names[i]=nm.textContent.trim()||TEAMS[i].name;save()});
+  nm.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nm.blur()}});
+  lanes.push({L,racer:L.querySelector('.racer'),nds:[...L.querySelectorAll('.nd')],sc:L.querySelector('.sc b'),rk:L.querySelector('.rk'),nm})});
+$('#lineup').innerHTML=TEAMS.map((t,i)=>`<div class="lu">${racerHTML(t,i)}<span style="color:${t.c2}">${t.name}</span></div>`).join('');
+
+function ranks(){return S.pos.map(p=>1+S.pos.filter(q=>q>p).length)}
+function leaders(){const m=Math.max(...S.pos);return m>0?S.pos.map((p,i)=>p===m?i:-1).filter(i=>i>=0):[]}
+function render(anim){
+  const rk=ranks(),ld=leaders();
+  lanes.forEach((o,i)=>{const p=S.pos[i];
+    if(!anim)o.racer.style.transition='none';
+    o.L.style.setProperty('--p',p/N);o.nds.forEach((n,k)=>n.classList.toggle('on',k<p));
+    o.racer.querySelectorAll('.e').forEach((e,k)=>e.classList.toggle('on',k<Math.min(8,p)));
+    o.racer.classList.toggle('oct',p>=8);o.racer.classList.toggle('lead',ld.includes(i));
+    o.sc.textContent=p;o.rk.textContent=rk[i];o.rk.classList.toggle('r1',rk[i]===1&&p>0);
+    if(document.activeElement!==o.nm)o.nm.textContent=S.names[i];
+    if(!anim){o.racer.offsetWidth;o.racer.style.transition=''}});
+  $('#qnum').textContent=S.qi;$('#qtot').textContent=QS.length;
+  $('#undo').disabled=!hist.length;
+  const nx=$('#next');if(S.qi>=QS.length){nx.textContent='🏆 النتائج';}else nx.textContent=`السؤال ${S.qi+1} ▶`;
+}
+
+/* ---------- السؤال ---------- */
+let timer=null,tleft=TIME,paused=false,revealed=false,sel=new Set();
+const qm=$('#qm');
+function openQ(){
+  if(S.qi>=QS.length){showPodium();return}
+  const Q=QS[S.qi],perm=S.perm[S.qi];revealed=false;sel.clear();
+  $('#qno').textContent=`السؤال ${S.qi+1} من ${QS.length}`;$('#pw').hidden=!Q.p;$('#qcard').classList.toggle('power',!!Q.p);
+  $('#qt').innerHTML=fmt(Q.q);
+  $('#opts').innerHTML=perm.map((k,j)=>`<div class="opt" data-k="${k}" style="--lc:${LC[j]}"><span class="L">${LET[j]}</span><span>${fmt(Q.o[k])}</span></div>`).join('');
+  $('#qx').hidden=true;$('#who').hidden=true;$('#act').textContent='اكشف الإجابة';
+  $('#chips').innerHTML=TEAMS.map((t,i)=>`<button class="chip" data-i="${i}" style="--c:${t.c}">${esc(S.names[i])}</button>`).join('');
+  qm.hidden=false;const qc=$('#qcard');qc.style.animation='none';qc.offsetWidth;qc.style.animation='';
+  Q.p?SND.power():SND.open();
+  tleft=TIME;paused=false;$('#timer').classList.remove('paused','low');tick(true);clearInterval(timer);timer=setInterval(tick,1000);
+  $('#act').focus();
+}
+function tick(init){
+  if(!init&&!paused&&!revealed&&tleft>0){tleft--;if(tleft<=10&&tleft>0)SND.beat();if(tleft<=5&&tleft>0)SND.tick();if(tleft===0)SND.buzz()}
+  $('#tnum').textContent=tleft>0?tleft:'انتهى الوقت';$('#tbar').style.width=(tleft/TIME*100)+'%';$('#timer').classList.toggle('low',tleft<=10);
+}
+function reveal(){
+  revealed=true;clearInterval(timer);SND.reveal();
+  document.querySelectorAll('.opt').forEach(o=>{const ok=o.dataset.k==='0';o.classList.toggle('right',ok);o.classList.toggle('dim',!ok)});
+  const r=document.querySelector('.opt.right').getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'#2be38f',30,7);
+  $('#qx').innerHTML='💡 '+fmt(QS[S.qi].x);$('#qx').hidden=false;$('#who').hidden=false;$('#act').textContent='🚀 انطلقوا!';
+}
+function close(){qm.hidden=true;clearInterval(timer)}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function launch(){
+  const Q=QS[S.qi],step=Q.p?2:1,before=leaders(),wasSole=before.length===1?before[0]:-1;
+  hist.push(JSON.stringify(S));
+  const moved=[...sel].sort();
+  moved.forEach(i=>S.pos[i]=Math.min(N,S.pos[i]+step));
+  S.qi++;close();save();
+  if(!moved.length){SND.none();ticker(`السؤال ${S.qi}: لم تُجب أي مجموعة إجابة صحيحة.`);render(true);afterMove(wasSole,0);return}
+  moved.forEach((i,j)=>{const o=lanes[i],at=j*.28;o.racer.classList.toggle('far',step>1);
+    setTimeout(()=>{o.racer.classList.add('go');trail(o.racer,TEAMS[i].c,step>1?1400:950);SND.whoosh();
+      for(let s=0;s<step;s++)SND.pling(4*s+j*2,.35+s*.35)},at*1000)});
+  // حرّك الجميع في اللحظة نفسها مع تأخير بسيط لكل مجموعة
+  moved.forEach((i,j)=>setTimeout(()=>{const p=S.pos[i],o=lanes[i];o.L.style.setProperty('--p',p/N);o.nds.forEach((n,k)=>n.classList.toggle('on',k<p))},j*280));
+  const total=moved.length*280+(step>1?1500:1050);
+  setTimeout(()=>{lanes.forEach(o=>o.racer.classList.remove('go'));render(true);
+    moved.forEach(i=>{const r=lanes[i].racer.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,TEAMS[i].c2,18,5);
+      if(S.pos[i]>=N){burst(r.left+r.width/2,r.top+r.height/2,'#ffd23f',50,9)}});
+    afterMove(wasSole,moved.length)},total);
+  ticker(`السؤال ${S.qi}: `+moved.map(i=>`<b style="color:${TEAMS[i].c2}">${esc(S.names[i])}</b> +${step}`).join(' · '));
+}
+function afterMove(wasSole,n){
+  const ld=leaders(),fin=S.pos.map((p,i)=>p>=N?i:-1).filter(i=>i>=0);
+  if(ld.length===1&&ld[0]!==wasSole){banner(`🔥 ${S.names[ld[0]]} في الصدارة!`);SND.lead()}
+  if(S.qi>=QS.length)setTimeout(showPodium,1600);
+}
+let bt=null;function banner(t){const b=$('#banner');b.textContent=t;b.classList.add('on');clearTimeout(bt);bt=setTimeout(()=>b.classList.remove('on'),2200)}
+function ticker(h){$('#ticker').innerHTML=h}
+
+/* ---------- المنصة ---------- */
+function showPodium(){
+  S.done=true;save();const ord=[0,1,2,3].sort((a,b)=>S.pos[b]-S.pos[a]),rk=ranks(),top=S.pos[ord[0]],win=ord.filter(i=>S.pos[i]===top);
+  $('#winT').textContent=win.length>1?'🏆 تعادل في القمة!':'🏆 '+S.names[win[0]];
+  $('#winS').textContent=win.length>1?win.map(i=>S.names[i]).join(' و '):`وصلت إلى ${top} من ${N} خطوة`;
+  const slots=[ord[1],ord[0],ord[2]],h=['17vh','25vh','12vh'];
+  $('#pod').innerHTML=slots.map((i,j)=>{const t=TEAMS[i];return `<div class="pc" style="--c:${t.c}">${racerHTML(t,i).replace('class="racer"','class="racer'+(j===1?' lead oct':'')+'"')}
+    <div class="blk" style="height:${h[j]};animation-delay:${[.3,.6,0][j]}s"><em>${rk[i]}</em>${esc(S.names[i])}<span>${S.pos[i]} خطوة</span></div></div>`}).join('');
+  $('#pod').querySelectorAll('.e').forEach((e,k)=>e.classList.add('on'));
+  $('#fourth').textContent=`المركز ${rk[ord[3]]}: ${S.names[ord[3]]} · ${S.pos[ord[3]]} خطوة`;
+  $('#podium').hidden=false;SND.fan();confetti(220);setTimeout(()=>confetti(160),1200);
+}
+
+/* ---------- الحفظ وإعادة التشغيل ---------- */
+function save(){try{localStorage.setItem('bond-race',JSON.stringify(S))}catch(e){}}
+function restart(keepNames){const names=keepNames?S.names.slice():null;S=fresh(names);hist=[];save();render(false);ticker('سباق جديد! اضغط «السؤال 1» للبدء.');$('#podium').hidden=true}
+window.claude?.hot?.snapshot?.(()=>({S,hist}));
+function boot(data){
+  if(data&&data.S){S=data.S;hist=data.hist||[]}else{try{const v=JSON.parse(localStorage.getItem('bond-race'));if(v&&v.pos&&v.perm&&v.perm.length===QS.length)S=v}catch(e){}}
+  if(!S)S=fresh();
+  render(false);if(S.started)$('#intro').hidden=true;
+}
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
+
+/* ---------- الأحداث ---------- */
+$('#start').onclick=()=>{ac();S.started=true;save();$('#intro').hidden=true;const cd=document.createElement('div');cd.className='cd';document.body.appendChild(cd);
+  ['3','2','1','انطلق!'].forEach((t,i)=>setTimeout(()=>{cd.innerHTML=`<span${i===3?' style="font-size:.5em"':''}>${t}</span>`;i<3?SND.beep():(SND.go(),confetti(90))},i*850));
+  setTimeout(()=>cd.remove(),3600)};
+$('#next').onclick=()=>{SND.click();openQ()};
+$('#act').onclick=()=>revealed?launch():reveal();
+$('#closeQ').onclick=()=>{SND.click();close()};
+$('#timer').onclick=()=>{if(revealed)return;paused=!paused;$('#timer').classList.toggle('paused',paused)};
+$('#chips').onclick=e=>{const c=e.target.closest('.chip');if(!c)return;const i=+c.dataset.i;sel.has(i)?sel.delete(i):sel.add(i);c.classList.toggle('on',sel.has(i));SND.pling(sel.size*3)};
+$('#undo').onclick=()=>{if(!hist.length)return;S=JSON.parse(hist.pop());save();render(false);$('#podium').hidden=true;ticker(`تم التراجع. السؤال الحالي: ${S.qi+1}`);SND.click()};
+$('#snd').onclick=e=>{mute=!mute;e.currentTarget.textContent=mute?'🔇':'🔊'};
+$('#fs').onclick=()=>{const d=document.documentElement;try{(document.fullscreenElement?document.exitFullscreen():d.requestFullscreen()).catch(()=>{})}catch(e){}};
+let rq=0;$('#restart').onclick=e=>{const b=e.currentTarget;if(!rq){rq=1;b.textContent='اضغط مرة ثانية للتأكيد';setTimeout(()=>{rq=0;b.textContent='↻ سباق جديد'},2500);return}rq=0;b.textContent='↻ سباق جديد';restart(true)};
+$('#again').onclick=()=>restart(true);
+$('#closeP').onclick=()=>$('#podium').hidden=true;
+addEventListener('keydown',e=>{if(e.target.isContentEditable)return;
+  if(!qm.hidden){if(e.key==='Escape')close();else if(e.key==='Enter'){e.preventDefault();$('#act').click()}else if(/^[1-4]$/.test(e.key)&&revealed)document.querySelector(`.chip[data-i="${+e.key-1}"]`).click()}
+  else if(e.key==='Enter'&&$('#intro').hidden&&$('#podium').hidden&&document.activeElement.tagName!=='BUTTON')openQ()});
+})();
+</script>
+
+</body>
+</html>
