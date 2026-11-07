@@ -1,0 +1,374 @@
+<title>مختبر الحرارة الافتراضي</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@500;700&family=JetBrains+Mono:wght@600&display=swap">
+<style>
+/* Layout: a lab notebook with six benches (stations) — a stepper on top, the bench scene on one side, the worksheet on the other. Single bright-lab look on purpose (projector in a sunny class). */
+:root{
+  --bg:#EEF3F5; --panel:#FFFFFF; --ink:#13232B; --muted:#5B6E77; --line:#C9D7DD; --soft:#F6FAFB;
+  --hot:#E8691E; --cold:#1C7FC4; --teal:#0E8F9E; --ok:#1E9E57; --bad:#C62828; --zero:#7A3FC4;
+  --display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic","Readex Pro",Tahoma,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:1400px;margin:0 auto;padding-block:14px;display:flex;flex-direction:column;gap:14px;min-height:100%;box-sizing:border-box}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:clamp(24px,3vw,38px);margin:0;text-wrap:balance}
+h1 span{color:var(--hot)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-inline-start:auto}
+.steps button{display:flex;align-items:center;gap:6px;font-size:15px;padding:6px 12px;border-radius:999px;border:2px solid var(--line);background:var(--panel)}
+.steps button b{font-family:var(--mono);font-size:13px;background:var(--bg);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+.steps button[aria-current="step"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.steps button[aria-current="step"] b{background:#fff;color:var(--ink)}
+.steps button.done b{background:var(--ok);color:#fff}
+button{font-family:var(--display);font-size:18px;font-weight:700;cursor:pointer;border-radius:12px;border:2px solid var(--ink);background:var(--panel);color:var(--ink);padding:9px 16px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+button.primary{background:var(--ink);color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+.bench{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;flex:1}
+.scene,.sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;min-width:0}
+.scene{display:flex;flex-direction:column;gap:12px}
+.scene svg{width:100%;height:auto;max-width:100%}
+.sheet{display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-family:var(--display);color:var(--teal);font-size:15px;letter-spacing:.02em}
+h2{font-family:var(--display);font-size:clamp(22px,2.3vw,32px);margin:0;text-wrap:balance}
+p{margin:0}
+.q{font-weight:700;font-size:20px}
+.choices{display:grid;gap:8px}
+.choice{text-align:start;font-family:var(--body);font-weight:700;border-color:var(--line);font-size:18px;line-height:1.5}
+.choice.right{border-color:var(--ok);background:#E7F6EE}
+.choice.wrong{border-color:var(--bad);background:#FDECEC}
+.feedback{border-radius:12px;padding:10px 14px;font-weight:700}
+.feedback.ok{background:#E7F6EE;color:#14663A}
+.feedback.no{background:#FDECEC;color:#8E1C1C}
+.result{border:2px dashed var(--teal);border-radius:14px;padding:12px 16px;background:#F0F9FA}
+.result b{color:var(--teal)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.nav{display:flex;gap:10px;justify-content:space-between;margin-top:auto;flex-wrap:wrap}
+.f{font-family:var(--body);direction:ltr;unicode-bidi:isolate;display:inline-block}
+sub,sup{font-size:.65em;line-height:0}
+.temps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.temp{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:8px 10px;text-align:center}
+.temp small{display:block;color:var(--muted);font-size:14px}
+.temp b{font-family:var(--mono);font-size:24px;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--hot)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{border:2px solid var(--line);border-radius:14px;padding:10px;background:var(--soft);text-align:center;font-family:var(--body);font-size:16px}
+.card[aria-pressed="true"]{border-color:var(--ink);background:#fff}
+.card strong{display:block;font-family:var(--display);font-size:17px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-inline-end:6px}
+table{border-collapse:collapse;width:100%;font-size:17px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:center}
+th{background:var(--teal);color:#fff;font-family:var(--display)}
+.tw{overflow-x:auto}
+.hot{color:var(--hot)} .cold{color:var(--cold)} .zero{color:var(--zero)}
+.arrowflow{animation:flow 1.2s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (max-width:900px){.bench{grid-template-columns:1fr}}
+@media (max-width:520px){.cards,.temps{grid-template-columns:1fr}.steps button span{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" dir="rtl">
+  <header>
+    <h1>مختبر <span>الحرارة</span> الافتراضي</h1>
+    <nav class="steps" id="steps" aria-label="محطات المختبر"></nav>
+  </header>
+  <main class="bench" id="bench"></main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const STATIONS=[
+ {key:'energy',name:'مصادر الطاقة'},
+ {key:'cup',name:'الكوب الساخن'},
+ {key:'flow',name:'اتجاه الحرارة'},
+ {key:'system',name:'النظام والمحيط'},
+ {key:'react',name:'تفاعلات الكأس'},
+ {key:'summary',name:'الاستنتاج'}];
+let cur=0;const done=new Set();
+let anim=null;
+function go(i){cur=i;cancelAnimationFrame(anim);renderSteps();BUILD[STATIONS[i].key]();window.scrollTo({top:0})}
+function renderSteps(){
+  $('steps').innerHTML=STATIONS.map((s,i)=>`<button type="button" ${i===cur?'aria-current="step"':''} class="${done.has(i)?'done':''}" data-i="${i}"><b>${done.has(i)?'✓':i+1}</b><span>${s.name}</span></button>`).join('');
+  $('steps').querySelectorAll('button').forEach(b=>b.onclick=()=>go(+b.dataset.i));
+}
+function nav(){return `<div class="nav">${cur>0?'<button type="button" id="prev">→ المحطة السابقة</button>':'<span></span>'}${cur<STATIONS.length-1?'<button type="button" class="primary" id="next">المحطة التالية ←</button>':''}</div>`}
+function bindNav(){if($('prev'))$('prev').onclick=()=>go(cur-1);if($('next'))$('next').onclick=()=>{done.add(cur);go(cur+1)}}
+
+/* multiple-choice helper: on right answer shows the result box */
+function mcq(id,opts,right,okMsg,resultId){
+  const box=$(id);
+  box.innerHTML=opts.map((o,k)=>`<button type="button" class="choice" data-k="${k}">${o}</button>`).join('')+`<div id="${id}-fb" hidden></div>`;
+  box.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{
+    const k=+b.dataset.k,fb=$(id+'-fb');fb.hidden=false;
+    if(k===right){b.classList.add('right');fb.className='feedback ok';fb.innerHTML=okMsg;if(resultId)$(resultId).hidden=false;box.querySelectorAll('.choice').forEach(x=>x.disabled=x!==b)}
+    else{b.classList.add('wrong');fb.className='feedback no';fb.textContent='فكّري مرة ثانية، وانظري إلى المشهد.'}
+  });
+}
+
+/* thermometer svg */
+function thermo(x,y,t,id,h=120){const frac=Math.max(0,Math.min(1,(t+10)/110));return `<g transform="translate(${x},${y})">
+ <rect x="-7" y="0" width="14" height="${h}" rx="7" fill="#fff" stroke="#13232B" stroke-width="2.5"/>
+ <circle cx="0" cy="${h+10}" r="13" fill="#E53935" stroke="#13232B" stroke-width="2.5"/>
+ <rect id="${id}" x="-3.5" y="${h-h*frac+4}" width="7" height="${h*frac+6}" fill="#E53935"/>
+ ${[0,25,50,75,100].map(v=>`<line x1="7" x2="13" y1="${h-h*((v+10)/110)+4}" y2="${h-h*((v+10)/110)+4}" stroke="#13232B" stroke-width="1.5"/>`).join('')}</g>`}
+function setThermo(id,t,h=120){const r=$(id);if(!r)return;const frac=Math.max(0,Math.min(1,(t+10)/110));r.setAttribute('y',h-h*frac+4);r.setAttribute('height',h*frac+6)}
+function tempColor(t){const k=Math.max(0,Math.min(1,(t-0)/90));const a=[28,127,196],b=[232,105,30];return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*k)).join(',')})`}
+
+const BUILD={
+/* ---------- 1. energy ---------- */
+energy(){
+  $('bench').innerHTML=`<section class="scene">
+   <svg viewBox="0 0 620 330" role="img" aria-label="مسار الطاقة من الشمس إلى النبات إلى الوقود الأحفوري">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#E8691E"/></marker></defs>
+    <g id="nSun" style="cursor:pointer"><circle cx="530" cy="90" r="52" fill="#FFC93C"/><circle cx="530" cy="90" r="66" fill="none" stroke="#FFC93C" stroke-width="6" stroke-dasharray="6 10" class="pulse"/><text x="530" y="98" text-anchor="middle" font-family="Readex Pro" font-weight="700" font-size="22">الشمس</text></g>
+    <path d="M470 120 Q410 160 360 190" stroke="#E8691E" stroke-width="5" fill="none" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#ah)"/>
+    <g id="nPlant" style="cursor:pointer"><rect x="250" y="180" width="110" height="110" rx="18" fill="#E7F6EE" stroke="#2E9D47" stroke-width="3"/><path d="M305 270 V215 M305 235 q-30 -20 -35 -40 q30 5 35 40 M305 228 q28 -20 40 -38 q-32 2 -40 38" stroke="#2E9D47" stroke-width="5" fill="#9BD3A8"/><text x="305" y="310" text-anchor="middle" font-family="Readex Pro" font-weight="700" font-size="19">النبات</text></g>
+    <path d="M245 235 Q190 235 160 235" stroke="#E8691E" stroke-width="5" fill="none" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#ah)"/>
+    <g id="nFuel" style="cursor:pointer"><rect x="40" y="180" width="115" height="110" rx="18" fill="#F3ECE6" stroke="#6D4C41" stroke-width="3"/><path d="M60 270h75l-8-35h-59z" fill="#3E2723"/><path d="M78 235l10-25 10 25" fill="#5D4037"/><text x="97" y="310" text-anchor="middle" font-family="Readex Pro" font-weight="700" font-size="19">وقود أحفوري</text></g>
+    <text x="400" y="60" font-family="IBM Plex Sans Arabic" font-size="16" fill="#5B6E77">اضغطي على كل جزء</text>
+   </svg>
+   <p id="eInfo" class="result">اضغطي على <b>الشمس</b> ثم <b>النبات</b> ثم <b>الوقود الأحفوري</b> لتتبّعي رحلة الطاقة.</p>
+  </section>
+  <section class="sheet">
+   <div class="eyebrow">المحطة 1 · مقدّمة</div>
+   <h2>من أين تأتي الطاقة التي نستخدمها؟</h2>
+   <p>الشمس هي المصدر المطلق للطاقة. تخزّن النباتات الخضراء طاقة الشمس بعملية البناء الضوئي، وبعد ملايين السنين تتحوّل بقايا الكائنات إلى وقود أحفوري مثل الفحم والغاز الطبيعي ومشتقّات البترول.</p>
+   <p class="q">الوقود الأحفوري مصدر طاقة:</p>
+   <div class="choices" id="e1"></div>
+   <div class="result" id="eRes" hidden><b>الحلّ:</b> دراسة الطاقة وفهم كيف تنطلق أو تُمتصّ في التفاعلات الكيميائية، وهذا هو علم <b>الكيمياء الحرارية</b>.</div>
+   ${nav()}
+  </section>`;
+  const info={nSun:'<b>الشمس:</b> المصدر المطلق للطاقة على الأرض، وطاقتها متجدّدة.',nPlant:'<b>النبات:</b> يخزّن طاقة الشمس على شكل طاقة كيميائية في الروابط بعملية البناء الضوئي.',nFuel:'<b>الوقود الأحفوري:</b> فحم وغاز ونفط تكوّنت عبر ملايين السنين. عند احتراقه تنطلق الطاقة المخزّنة، لكنّه محدود وسوف ينفد.'};
+  Object.keys(info).forEach(k=>$(k).onclick=()=>{$('eInfo').innerHTML=info[k]});
+  mcq('e1',['متجدّد لا ينفد','محدود وسوف ينفد','لا يحتوي على طاقة'],1,'صحيح! لذلك نحتاج أن نفهم الطاقة ونستخدمها بذكاء.','eRes');
+  bindNav();
+},
+
+/* ---------- 2. hot cup ---------- */
+cup(){
+  $('bench').innerHTML=`<section class="scene">
+   <svg viewBox="0 0 620 300" role="img" aria-label="كوب ساخن على طاولة في غرفة">
+    <rect x="0" y="0" width="620" height="300" fill="#F6FAFB"/>
+    <rect x="40" y="230" width="540" height="18" rx="6" fill="#B8C7CE"/>
+    <g id="steam">${[0,1,2].map(k=>`<path d="M${250+k*25} 120 q-12 -20 0 -40 q12 -20 0 -40" stroke="#9FB3BC" stroke-width="5" fill="none" stroke-linecap="round" class="pulse" style="animation-delay:${k*.4}s"/>`).join('')}</g>
+    <path d="M220 130h110l-12 100h-86z" fill="#fff" stroke="#13232B" stroke-width="3"/>
+    <path id="tea" d="M224 140h102l-10 86h-82z" fill="#E8691E"/>
+    <path d="M330 150q30 0 30 25t-30 25" fill="none" stroke="#13232B" stroke-width="3"/>
+    ${thermo(150,90,80,'tCup')}${thermo(470,90,25,'tRoom')}
+    <text x="150" y="250" text-anchor="middle" font-family="Readex Pro" font-size="15">الكوب</text>
+    <text x="470" y="250" text-anchor="middle" font-family="Readex Pro" font-size="15">هواء الغرفة</text>
+    <g id="cupArrows">${[-1,1].map(s=>`<path d="M${275+s*70} 175 h${s*55}" stroke="#E8691E" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#ah2)"/>`).join('')}</g>
+    <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#E8691E"/></marker></defs>
+   </svg>
+   <canvas id="graph" width="620" height="200" style="width:100%;height:auto;background:#F6FAFB;border-radius:12px" aria-label="منحنى درجة الحرارة مع الزمن"></canvas>
+   <div class="legend"><span><i style="background:var(--hot)"></i>درجة حرارة الكوب</span><span><i style="background:var(--muted)"></i>درجة حرارة الغرفة</span></div>
+  </section>
+  <section class="sheet">
+   <div class="eyebrow">المحطة 2 · تجربة</div>
+   <h2>لماذا يبرد كوب الشاي على الطاولة؟</h2>
+   <div class="temps"><div class="temp"><small>الكوب</small><b id="vCup">80 °C</b></div><div class="temp"><small>الغرفة</small><b>25 °C</b></div><div class="temp"><small>الزمن</small><b id="vTime">0 min</b></div></div>
+   <div class="row"><button type="button" class="primary" id="run">شغّلي الزمن</button><button type="button" id="reset">إعادة</button></div>
+   <p class="q">بعد تشغيل التجربة: لماذا توقّف الكوب عن البرودة عند 25 °C؟</p>
+   <div class="choices" id="c1"></div>
+   <div class="result" id="cRes" hidden><b>الاستنتاج:</b> تنتقل الحرارة من الجسم الأسخن (الكوب) إلى الجسم الأبرد (الهواء) بسبب <b>فرق درجة الحرارة</b>، وتتوقّف عندما تتساوى درجتا الحرارة.</div>
+   ${nav()}
+  </section>`;
+  const T0=80,Tr=25,k=.22,DUR=9000;let t0=null,pts=[];
+  const g=$('graph').getContext('2d');
+  function drawGraph(){g.clearRect(0,0,620,200);g.font='14px IBM Plex Sans Arabic';g.fillStyle='#5B6E77';
+    g.strokeStyle='#C9D7DD';g.lineWidth=1;for(let v=0;v<=100;v+=25){const y=180-v*1.6;g.beginPath();g.moveTo(40,y);g.lineTo(610,y);g.stroke();g.fillText(v+'°',8,y+5)}
+    g.strokeStyle='#5B6E77';g.setLineDash([6,6]);g.lineWidth=2;g.beginPath();g.moveTo(40,180-Tr*1.6);g.lineTo(610,180-Tr*1.6);g.stroke();g.setLineDash([]);
+    g.strokeStyle='#E8691E';g.lineWidth=3.5;g.beginPath();pts.forEach(([m,T],i)=>{const x=40+m*28.5,y=180-T*1.6;i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke();
+    g.fillStyle='#5B6E77';g.fillText('الزمن (min) →',520,198)}
+  function setT(T,m){$('vCup').textContent=T.toFixed(1)+' °C';$('vTime').textContent=m.toFixed(0)+' min';setThermo('tCup',T);$('tea').setAttribute('fill',tempColor(T));
+    const d=(T-Tr)/(T0-Tr);$('steam').style.opacity=Math.max(0,d);$('cupArrows').style.opacity=Math.max(.05,d)}
+  function step(ts){if(!t0)t0=ts;const m=Math.min(20,(ts-t0)/DUR*20);const T=Tr+(T0-Tr)*Math.exp(-k*m);pts.push([m,T]);setT(T,m);drawGraph();if(m<20)anim=requestAnimationFrame(step);else $('run').disabled=false}
+  $('run').onclick=()=>{cancelAnimationFrame(anim);t0=null;pts=[];$('run').disabled=true;anim=requestAnimationFrame(step)};
+  $('reset').onclick=()=>{cancelAnimationFrame(anim);pts=[];setT(T0,0);drawGraph();$('run').disabled=false};
+  setT(T0,0);drawGraph();
+  mcq('c1',['لأنّ الكوب فقد كلّ طاقته','لأنّ درجة حرارة الكوب أصبحت مساوية لدرجة حرارة الغرفة فلم يبقَ فرق','لأنّ الهواء أصبح أسخن من الكوب'],1,'أحسنتِ! لا تنتقل الحرارة إلّا عند وجود فرق في درجة الحرارة.','cRes');
+  bindNav();
+},
+
+/* ---------- 3. direction of heat flow ---------- */
+flow(){
+  $('bench').innerHTML=`<section class="scene">
+   <svg viewBox="0 0 620 300" role="img" aria-label="كأس داخل غرفة مع أسهم انتقال الحرارة">
+    <defs><marker id="ahH" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#E8691E"/></marker>
+          <marker id="ahC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1C7FC4"/></marker></defs>
+    <rect x="0" y="0" width="620" height="300" fill="#F6FAFB"/>
+    <rect x="40" y="240" width="540" height="16" rx="6" fill="#B8C7CE"/>
+    <path d="M250 110h120v120a10 10 0 0 1-10 10h-100a10 10 0 0 1-10-10z" fill="#fff" stroke="#13232B" stroke-width="3"/>
+    <path id="liq" d="M254 140h112v88a8 8 0 0 1-8 8h-96a8 8 0 0 1-8-8z" fill="#E8691E"/>
+    <g id="fArrows"></g>
+    ${thermo(140,95,60,'tF')}${thermo(490,95,25,'tR2')}
+    <text x="140" y="262" text-anchor="middle" font-family="Readex Pro" font-size="15">الكأس</text>
+    <text x="490" y="262" text-anchor="middle" font-family="Readex Pro" font-size="15">المحيط 25 °C</text>
+    <text id="fLabel" x="310" y="40" text-anchor="middle" font-family="Readex Pro" font-weight="700" font-size="22"></text>
+   </svg>
+   <label for="slider" class="q">درجة حرارة الكأس: <span class="f" id="sv">60 °C</span></label>
+   <input type="range" id="slider" min="0" max="90" value="60" step="5">
+  </section>
+  <section class="sheet">
+   <div class="eyebrow">المحطة 3 · توقّعي ثم جرّبي</div>
+   <h2>في أيّ اتجاه تنتقل الحرارة؟</h2>
+   <p>حرّكي المؤشّر لتغيير درجة حرارة الكأس، ولاحظي اتجاه الأسهم ولونها.</p>
+   <p class="q">إذا كانت درجة حرارة الكأس 5 °C والغرفة 25 °C، فإنّ الحرارة تنتقل:</p>
+   <div class="choices" id="f1"></div>
+   <p class="q">وإذا كانت درجة حرارة الكأس 25 °C تمامًا؟</p>
+   <div class="choices" id="f2"></div>
+   <div class="result" id="fRes" hidden><b>القاعدة:</b> تنتقل الحرارة دائمًا <b>من الأسخن إلى الأبرد</b>. وعندما تتساوى درجتا الحرارة لا يحدث انتقال للحرارة.</div>
+   ${nav()}
+  </section>`;
+  function upd(){const T=+$('slider').value,d=T-25;$('sv').textContent=T+' °C';setThermo('tF',T);$('liq').setAttribute('fill',tempColor(T));
+    const out=d>0,n=Math.min(3,Math.ceil(Math.abs(d)/22));let html='';
+    if(d!==0)for(let k=0;k<n;k++){const y=150+k*30;const c=out?'#E8691E':'#1C7FC4',m=out?'ahH':'ahC';
+      html+=out?`<path d="M375 ${y}h70" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${m})"/><path d="M245 ${y}h-70" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${m})"/>`
+               :`<path d="M445 ${y}h-65" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${m})"/><path d="M175 ${y}h65" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${m})"/>`}
+    $('fArrows').innerHTML=html;
+    $('fLabel').textContent=d>0?'الحرارة تخرج من الكأس إلى المحيط':d<0?'الحرارة تدخل الكأس من المحيط':'لا تنتقل حرارة: لا يوجد فرق';
+    $('fLabel').setAttribute('fill',d>0?'#E8691E':d<0?'#1C7FC4':'#7A3FC4')}
+  $('slider').oninput=upd;upd();
+  mcq('f1',['من الكأس إلى الغرفة','من الغرفة إلى الكأس','لا تنتقل'],1,'صحيح: الغرفة أسخن، فتدخل الحرارة إلى الكأس.',null);
+  mcq('f2',['من الكأس إلى الغرفة','من الغرفة إلى الكأس','لا تنتقل حرارة'],2,'صحيح: لا يوجد فرق في درجة الحرارة.','fRes');
+  bindNav();
+},
+
+/* ---------- 4. system & surroundings ---------- */
+system(){
+  $('bench').innerHTML=`<section class="scene">
+   <svg viewBox="0 0 620 320" role="img" aria-label="دورق على طاولة: اضغطي على الأجزاء">
+    <rect id="pAir" x="0" y="0" width="620" height="320" fill="#F6FAFB" style="cursor:pointer"/>
+    <rect id="pTable" x="40" y="250" width="540" height="22" rx="6" fill="#B8C7CE" style="cursor:pointer"/>
+    <path id="pFlask" d="M285 60h50v70l60 100a14 14 0 0 1-12 20H237a14 14 0 0 1-12-20l60-100z" fill="#fff" stroke="#13232B" stroke-width="3" style="cursor:pointer"/>
+    <path id="pSol" d="M252 180h116l30 48a10 10 0 0 1-9 16H231a10 10 0 0 1-9-16z" fill="#0E8F9E" style="cursor:pointer"/>
+    <text x="310" y="300" text-anchor="middle" font-family="IBM Plex Sans Arabic" font-size="16" fill="#5B6E77">اضغطي على: المحلول · الدورق · الطاولة · الهواء</text>
+    <g id="sysRing" opacity="0"><ellipse cx="310" cy="212" rx="120" ry="60" fill="none" stroke="#E8691E" stroke-width="4" stroke-dasharray="10 8" class="arrowflow"/><text x="310" y="140" text-anchor="middle" font-family="Readex Pro" font-weight="700" font-size="22" fill="#E8691E">النظام</text></g>
+    <text id="surTxt" x="80" y="50" font-family="Readex Pro" font-weight="700" font-size="22" fill="#0E8F9E" opacity="0">المحيط</text>
+   </svg>
+   <div class="result" id="sInfo">اختاري التصنيف من الأزرار ثم اضغطي على أيّ جزء في الصورة.</div>
+   <div class="row" role="group" aria-label="تصنيف"><button type="button" id="asSys" class="primary">صنّفي كـ: نظام</button><button type="button" id="asSur">صنّفي كـ: محيط</button></div>
+  </section>
+  <section class="sheet">
+   <div class="eyebrow">المحطة 4 · مصطلحات</div>
+   <h2>النظام والمحيط</h2>
+   <p>نريد دراسة التغيّرات الحرارية للمحلول الموجود في الدورق. صنّفي كلّ جزء في الصورة.</p>
+   <div class="tw"><table><thead><tr><th>الجزء</th><th>تصنيفك</th></tr></thead><tbody id="sTab"></tbody></table></div>
+   <div class="result" id="sRes" hidden><b>النظام:</b> الجزء المعيّن الذي ندرسه (المحلول: المواد المتفاعلة والنواتج).<br><b>المحيط:</b> كل ما يحيط بالنظام (الدورق، الطاولة، الهواء).<br><b>الفضاء = النظام + المحيط</b></div>
+   ${nav()}
+  </section>`;
+  const parts={pSol:['المحلول','نظام'],pFlask:['الدورق','محيط'],pTable:['الطاولة','محيط'],pAir:['الهواء','محيط']};
+  let mode='نظام';const ans={};
+  $('asSys').onclick=()=>{mode='نظام';$('asSys').className='primary';$('asSur').className=''};
+  $('asSur').onclick=()=>{mode='محيط';$('asSur').className='primary';$('asSys').className=''};
+  function table(){$('sTab').innerHTML=Object.entries(parts).map(([k,[n,r]])=>{const a=ans[k];return `<tr><td>${n}</td><td style="font-weight:700;color:${!a?'var(--muted)':a===r?'var(--ok)':'var(--bad)'}">${a?(a===r?'✓ ':'✗ ')+a:'—'}</td></tr>`}).join('');
+    const all=Object.keys(parts).every(k=>ans[k]===parts[k][1]);$('sRes').hidden=!all;$('sysRing').setAttribute('opacity',ans.pSol==='نظام'?1:0);$('surTxt').setAttribute('opacity',ans.pAir==='محيط'?1:0)}
+  Object.keys(parts).forEach(k=>$(k).addEventListener('click',e=>{e.stopPropagation();ans[k]=mode;const ok=mode===parts[k][1];$('sInfo').innerHTML=`<b>${parts[k][0]}</b>: ${ok?'تصنيف صحيح ✓':'راجعي التصنيف: هل هو ما ندرسه أم ما يحيط به؟'}`;table()}));
+  table();bindNav();
+},
+
+/* ---------- 5. reactions ---------- */
+react(){
+  const R=[
+   {id:'naoh',name:'هيدروكسيد الصوديوم',f:'NaOH<sub>(s)</sub>',to:41,type:0,eq:'NaOH<sub>(s)</sub> + H<sub>2</sub>O<sub>(l)</sub> → محلول + حرارة'},
+   {id:'nh4',name:'نترات الأمونيوم',f:'NH<sub>4</sub>NO<sub>3(s)</sub>',to:12,type:1,eq:'NH<sub>4</sub>NO<sub>3(s)</sub> + H<sub>2</sub>O<sub>(l)</sub> + حرارة → محلول'},
+   {id:'est',name:'حمض الأستيك + الإيثانول',f:'CH<sub>3</sub>COOH + C<sub>2</sub>H<sub>5</sub>OH',to:25,type:2,eq:'CH<sub>3</sub>COOH<sub>(l)</sub> + C<sub>2</sub>H<sub>5</sub>OH<sub>(l)</sub> ⇌ CH<sub>3</sub>COOC<sub>2</sub>H<sub>5(l)</sub> + H<sub>2</sub>O<sub>(l)</sub>'}];
+  const TYPES=[['طارد للحرارة','hot','ΔH < 0','سالبة','يطرد النظام الحرارة إلى المحيط'],['ماصّ للحرارة','cold','ΔH > 0','موجبة','يمتصّ النظام الحرارة من المحيط'],['لاحراري','zero','ΔH = 0','صفر','لا يطرد ولا يمتصّ الحرارة']];
+  $('bench').innerHTML=`<section class="scene">
+   <div class="cards" id="rCards">${R.map(r=>`<button type="button" class="card" data-id="${r.id}" aria-pressed="false"><strong>${r.name}</strong><span class="f">${r.f}</span></button>`).join('')}</div>
+   <svg viewBox="0 0 620 260" role="img" aria-label="كأس فيه ماء وميزان حرارة">
+    <defs><marker id="ahRh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#E8691E"/></marker><marker id="ahRc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1C7FC4"/></marker></defs>
+    <rect x="0" y="0" width="620" height="260" fill="#F6FAFB"/>
+    <rect x="40" y="230" width="540" height="14" rx="6" fill="#B8C7CE"/>
+    <path d="M240 70h140v150a10 10 0 0 1-10 10H250a10 10 0 0 1-10-10z" fill="#fff" stroke="#13232B" stroke-width="3"/>
+    <path id="rLiq" d="M244 110h132v108a8 8 0 0 1-8 8H252a8 8 0 0 1-8-8z" fill="#9FD3F0"/>
+    <g id="rArrows"></g>
+    ${thermo(470,60,25,'tR',130)}
+    <text x="470" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="18" id="rT">25.0 °C</text>
+    <g id="powder"></g>
+   </svg>
+  </section>
+  <section class="sheet">
+   <div class="eyebrow">المحطة 5 · تجربة الكأس</div>
+   <h2>هل التفاعل طارد أم ماصّ للحرارة؟</h2>
+   <p>اختاري مادّة لإضافتها إلى الماء (25 °C)، وراقبي ميزان الحرارة. <b>الكأس ومحتواه هو النظام.</b></p>
+   <p class="q" id="rQ">اختاري مادّة أولًا.</p>
+   <div class="choices" id="rChoices"></div>
+   <div id="rOut"></div>
+   <div class="result" id="rDone" hidden><b>جرّبتِ المواد الثلاث!</b> انتقلي إلى الاستنتاج.</div>
+   ${nav()}
+  </section>`;
+  const tried=new Set();let T=25;
+  function arrows(type){const c=type===0?'#E8691E':'#1C7FC4',mk=type===0?'ahRh':'ahRc';let h='';if(type===2){$('rArrows').innerHTML='';return}
+    for(let k=0;k<3;k++){const y=120+k*35;h+=type===0?`<path d="M385 ${y}h55" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${mk})"/><path d="M235 ${y}h-55" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${mk})"/>`
+      :`<path d="M440 ${y}h-50" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${mk})"/><path d="M180 ${y}h50" stroke="${c}" stroke-width="5" stroke-dasharray="10 8" class="arrowflow" marker-end="url(#${mk})"/>`}
+    $('rArrows').innerHTML=h}
+  function diagram(type){const [name,cls,dh,sign,dir]=TYPES[type];const up=type===1,flat=type===2;
+    const yR=flat?110:up?150:70,yP=flat?110:up?70:150,c=type===0?'#E8691E':type===1?'#1C7FC4':'#7A3FC4';
+    return `<svg viewBox="0 0 520 210" role="img" aria-label="مخطط الطاقة" style="background:#F6FAFB;border-radius:12px">
+      <line x1="470" y1="190" x2="470" y2="20" stroke="#13232B" stroke-width="2"/><text x="480" y="30" font-family="JetBrains Mono" font-size="16">H</text>
+      <line x1="300" x2="440" y1="${yR}" y2="${yR}" stroke="#13232B" stroke-width="5"/><text x="370" y="${yR-10}" text-anchor="middle" font-family="Readex Pro" font-size="16">المتفاعلات</text>
+      <line x1="60" x2="200" y1="${yP}" y2="${yP}" stroke="${c}" stroke-width="5"/><text x="130" y="${yP+(flat?-10:up?-10:26)}" text-anchor="middle" font-family="Readex Pro" font-size="16">النواتج</text>
+      ${flat?`<text x="250" y="160" text-anchor="middle" font-family="JetBrains Mono" font-size="20" fill="${c}">ΔH = 0</text>`
+        :`<line x1="250" x2="250" y1="${yR}" y2="${yP+(up?8:-8)}" stroke="${c}" stroke-width="5" marker-end="url(#ahD)"/><text x="265" y="${(yR+yP)/2+6}" font-family="JetBrains Mono" font-size="20" fill="${c}">${dh}</text>`}
+      <defs><marker id="ahD" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${c}"/></marker></defs></svg>`}
+  document.querySelectorAll('#rCards .card').forEach(b=>b.onclick=()=>{
+    const r=R.find(x=>x.id===b.dataset.id);document.querySelectorAll('#rCards .card').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    $('rOut').innerHTML='';$('rArrows').innerHTML='';$('rChoices').innerHTML='';$('rQ').textContent='راقبي ميزان الحرارة…';
+    cancelAnimationFrame(anim);const start=performance.now(),from=25;T=25;
+    $('powder').innerHTML=`<g class="pulse">${[0,1,2,3,4].map(k=>`<circle cx="${290+k*10}" cy="${80+k*6}" r="4" fill="#fff" stroke="#5B6E77"/>`).join('')}</g>`;
+    (function tick(now){const p=Math.min(1,(now-start)/3500);T=from+(r.to-from)*(1-Math.pow(1-p,3));setThermo('tR',T,130);$('rT').textContent=T.toFixed(1)+' °C';
+      $('rLiq').setAttribute('fill',r.type===0?tempColor(25+(T-25)*3):r.type===1?tempColor(25-(25-T)*3):'#9FD3F0');
+      if(p<1)anim=requestAnimationFrame(tick);else{$('powder').innerHTML='';ask(r)}})(start);
+  });
+  function ask(r){
+    $('rQ').innerHTML=`${r.to>25?'ارتفعت':r.to<25?'انخفضت':'لم تتغيّر'} درجة الحرارة: من <span class="f">25.0 °C</span> إلى <span class="f">${r.to.toFixed(1)} °C</span>. ما نوع هذا التغيّر؟`;
+    $('rChoices').innerHTML=TYPES.map((t,k)=>`<button type="button" class="choice" data-k="${k}">${t[0]}</button>`).join('');
+    $('rChoices').querySelectorAll('.choice').forEach(b=>b.onclick=()=>{
+      const k=+b.dataset.k;if(k!==r.type){b.classList.add('wrong');return}
+      b.classList.add('right');$('rChoices').querySelectorAll('.choice').forEach(x=>x.disabled=x!==b);
+      const [name,cls,dh,sign,dir]=TYPES[r.type];arrows(r.type);tried.add(r.id);
+      $('rOut').innerHTML=`<div class="result"><b class="${cls}">${name}</b>: ${dir}، وإشارة ΔH <b class="${cls}">${sign}</b> <span class="f">(${dh})</span>.<br><span class="f" style="margin-top:6px">${r.eq}</span></div>${diagram(r.type)}`;
+      $('rDone').hidden=tried.size<3;
+    });
+  }
+  bindNav();
+},
+
+/* ---------- 6. summary ---------- */
+summary(){
+  $('bench').innerHTML=`<section class="scene">
+   <h2>ماذا استنتجنا؟</h2>
+   <div class="tw"><table><thead><tr><th>نوع التفاعل</th><th>قيمة التغيّر الحراري</th><th>اتجاه تدفّق الحرارة</th><th>اتجاه السهم</th></tr></thead><tbody>
+    <tr><td class="hot"><b>طارد للحرارة</b></td><td><b>سالبة</b> <span class="f">ΔH < 0</span></td><td>يطرد النظام الحرارة إلى محيطه</td><td class="hot"><b>من النظام إلى المحيط</b></td></tr>
+    <tr><td class="cold"><b>ماصّ للحرارة</b></td><td><b>موجبة</b> <span class="f">ΔH > 0</span></td><td>يمتصّ النظام الحرارة من محيطه</td><td class="cold"><b>من المحيط إلى النظام</b></td></tr>
+    <tr><td class="zero"><b>لاحراري</b></td><td><b>لا تغيّر</b> <span class="f">ΔH = 0</span></td><td>لا يطرد ولا يمتصّ الحرارة</td><td class="zero"><b>لا انتقال</b></td></tr></tbody></table></div>
+   <div class="result"><span class="f">ΔH = H(النواتج) − H(المتفاعلات)</span></div>
+  </section>
+  <section class="sheet">
+   <div class="eyebrow">المحطة 6 · تحدٍّ سريع</div>
+   <h2>صنّفي كل معادلة</h2>
+   <div id="quiz" style="display:grid;gap:14px"></div>
+   <div class="result" id="qRes" hidden><b>ممتاز!</b> أنهيتِ المختبر الافتراضي للحصة الأولى.</div>
+   ${nav()}
+  </section>`;
+  const Q=[['CH<sub>4(g)</sub> + 2O<sub>2(g)</sub> → CO<sub>2(g)</sub> + 2H<sub>2</sub>O<sub>(l)</sub> + 890 kJ',0],
+           ['2C<sub>(s)</sub> + H<sub>2(g)</sub> + 227 kJ → C<sub>2</sub>H<sub>2(g)</sub>',1],
+           ['CH<sub>3</sub>COOH + C<sub>2</sub>H<sub>5</sub>OH ⇌ CH<sub>3</sub>COOC<sub>2</sub>H<sub>5</sub> + H<sub>2</sub>O',2]];
+  const names=['طارد','ماصّ','لاحراري'];let ok=0;
+  $('quiz').innerHTML=Q.map((q,i)=>`<div><p class="f" style="font-weight:700">${q[0]}</p><div class="row" id="qq${i}">${names.map((n,k)=>`<button type="button" class="choice" data-k="${k}">${n}</button>`).join('')}</div></div>`).join('');
+  Q.forEach((q,i)=>$('qq'+i).querySelectorAll('button').forEach(b=>b.onclick=()=>{if(+b.dataset.k===q[1]){b.classList.add('right');$('qq'+i).querySelectorAll('button').forEach(x=>x.disabled=true);if(++ok===3){$('qRes').hidden=false;done.add(cur);renderSteps()}}else b.classList.add('wrong')}));
+  bindNav();
+}};
+go(0);
+</script>
