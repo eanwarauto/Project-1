@@ -332,6 +332,12 @@ h3{color:#c2410c}
 .cbar{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:10px}
 .cbar button{font:inherit;font-weight:700;font-size:15px;border-radius:12px;padding:6px 16px;background:#ffffff1f;color:#fff;cursor:pointer;border:1px solid #ffffff44}
 .cbar button.hi{background:#ffd166;color:#3a2600;border-color:#ffd166}
+
+/* تقليب بالإصبع على الجوال */
+:where(.book) :where(*){touch-action:pan-y pinch-zoom}
+.swipehint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:900;background:rgba(17,24,39,.88);color:#fff;font-weight:800;font-size:16px;padding:10px 20px;border-radius:999px;box-shadow:0 8px 24px #0006;pointer-events:none;transition:opacity .5s;direction:rtl;white-space:nowrap}
+.swipehint i{display:inline-block;font-style:normal;animation:swp 1.2s infinite}
+@keyframes swp{0%{transform:translateX(14px)}60%{transform:translateX(-14px)}100%{transform:translateX(14px)}}
 </style>
 </head>
 <body>
@@ -1313,15 +1319,18 @@ function revert(tn){settle(tn,0,()=>{tn.under.replaceWith(tn.live);tn.leaf.remov
 function turn(dir){if(busy)return;const t=cur+dir;if(t<0||t>=S.length)return;const tn=makeLeaf(dir);requestAnimationFrame(()=>commit(tn))}
 function jump(i){if(busy||i<0||i>=S.length||i===cur)return;show(i,i>cur?1:-1)}
 const skip=e=>e.target.closest&&e.target.closest('input,select,textarea,button,canvas,a,svg,.tok,.stp,.cnt,.proton,.plug,.mv,.drop');
-book.addEventListener('pointerdown',e=>{if(busy||e.button>0||skip(e))return;const r=book.getBoundingClientRect();drag={x:e.clientX,side:e.clientX>r.left+r.width/2?'r':'l',turn:null,p:0,W:r.width/2}});
+book.addEventListener('pointerdown',e=>{if(busy||e.button>0||skip(e))return;const r=book.getBoundingClientRect();drag={x:e.clientX,side:e.clientX>r.left+r.width/2?'r':'l',turn:null,p:0,t0:Date.now(),W:Math.min(r.width/2,420)}});
 window.addEventListener('pointermove',e=>{
   if(!drag)return;const dx=e.clientX-drag.x;
-  if(!drag.turn){if(Math.abs(dx)<12)return;const dir=drag.side==='r'&&dx<0?1:drag.side==='l'&&dx>0?-1:0,t=cur+dir;if(!dir||t<0||t>=S.length){drag=null;return}drag.turn=makeLeaf(dir);busy=true;drag.turn.leaf.style.transition='none'}
+  if(!drag.turn){if(Math.abs(dx)<12)return;const dir=dx<0?1:-1,t=cur+dir;if(!dir||t<0||t>=S.length){drag=null;return}drag.turn=makeLeaf(dir);busy=true;drag.turn.leaf.style.transition='none'}
   drag.p=Math.min(1,Math.abs(dx)/drag.W);setAngle(drag.turn,drag.p*180);
 });
-const release=()=>{if(!drag)return;const d=drag;drag=null;if(!d.turn)return;if(d.p>.4)commit(d.turn);else revert(d.turn)};
+const release=()=>{if(!drag)return;const d=drag;drag=null;if(!d.turn)return;if(d.p>.25||(Date.now()-d.t0<400&&d.p>.06))commit(d.turn);else revert(d.turn)};
 window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
 (()=>{const h=parseInt(location.hash.slice(1),10);show(Number.isInteger(h)&&h>=0&&h<S.length?h:0,0)})();
+
+(()=>{const h=document.createElement('div');h.className='swipehint';h.innerHTML='<i>👆</i> اسحب الصفحة بإصبعك لليسار أو لليمين لتقلّبها';document.body.appendChild(h);
+const off=()=>{h.style.opacity=0;setTimeout(()=>h.remove(),600)};setTimeout(off,5000);addEventListener('pointerdown',off,{once:true})})();
 /* ===================== مشاهد سينمائية: اضغط وشاهد ===================== */
 const CINE=(function(){
   let AX=null;
