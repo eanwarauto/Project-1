@@ -30,11 +30,11 @@ button.ghost{border-color:var(--line)}
 
 /* ---------- track ---------- */
 .track{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:grid;gap:8px;position:relative}
-.lane{display:grid;grid-template-columns:minmax(90px,150px) 1fr;align-items:center;gap:12px}
-.lname{font-family:var(--display);font-weight:700;font-size:clamp(16px,1.6vw,22px);display:flex;align-items:center;gap:8px;min-width:0}
+.lane{display:grid;grid-template-columns:minmax(110px,200px) 1fr;align-items:center;gap:12px}
+.lname{font-family:var(--display);font-weight:700;font-size:clamp(17px,2vw,28px);display:flex;align-items:center;gap:8px;min-width:0}
 .lname i{width:14px;height:14px;border-radius:50%;flex:none}
 .lname b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.road{position:relative;height:clamp(62px,9vh,92px);border-radius:12px;
+.road{position:relative;height:clamp(64px,14vh,130px);border-radius:12px;
   background:repeating-linear-gradient(90deg,transparent 0 calc(var(--cell) - 2px),var(--line) calc(var(--cell) - 2px) var(--cell)) ,#F6FAFB;
   border:1px solid var(--line);overflow:hidden}
 .road::before{content:"";position:absolute;inset:0 0 0 auto;width:4px;background:var(--lc);opacity:.6}
@@ -42,7 +42,7 @@ button.ghost{border-color:var(--line)}
   background:conic-gradient(#13232B 25%,#fff 0 50%,#13232B 0 75%,#fff 0) 0 0/11px 11px;opacity:.85}
 .trail{position:absolute;top:50%;right:0;height:10px;transform:translateY(-50%);border-radius:10px;
   background:linear-gradient(270deg,transparent,var(--lc));opacity:.35;width:0;transition:width .9s cubic-bezier(.3,1.4,.5,1)}
-.racer{position:absolute;top:50%;right:6px;width:clamp(48px,6vh,70px);aspect-ratio:1;max-width:100%;
+.racer{position:absolute;top:50%;right:6px;width:clamp(52px,11vh,104px);aspect-ratio:1;max-width:100%;
   transform:translate(calc(var(--x) * -1),-50%);transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
 .racer svg{width:100%;height:100%;overflow:visible}
 .racer.boost svg{animation:hop .9s ease}
@@ -98,6 +98,18 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;heigh
 @media (max-width:900px){.console{grid-template-columns:1fr}.opts{grid-template-columns:1fr}.f{white-space:normal}}
 @media (max-width:520px){.lane{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.lname{font-size:15px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.track{flex:1;align-content:space-evenly}
+.board-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.big{font-size:clamp(22px,2.4vw,32px);padding:14px 34px;border-radius:16px}
+.qsheet{width:min(1200px,100%);gap:18px}
+.qsheet .q{font-size:clamp(24px,2.8vw,40px)}
+.qsheet .opt{font-size:clamp(20px,2.2vw,32px);padding:14px 18px}
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pick[hidden]{display:none!important}
+@media (max-width:700px){.pick{grid-template-columns:1fr 1fr}}
+.lead{animation:glow 1.8s ease-in-out infinite}
+@keyframes glow{50%{filter:drop-shadow(0 0 10px #FFC93C)}}
+
 </style>
 
 <div class="app" dir="rtl">
@@ -111,31 +123,27 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;heigh
       <button class="ghost" id="setupBtn" type="button">الإعدادات</button>
     </div>
   </header>
-
-  <section class="track" id="track" aria-label="مضمار السباق"></section>
-
-  <section class="console">
-    <div class="qcard">
-      <div class="qtop"><span class="tag" id="qtag">الحصة 1</span><span id="qhint">اقرأ السؤال، ثم أظهر الإجابة</span><span class="timer" id="timer"></span></div>
-      <p class="q" id="qtext"></p>
-      <div class="opts" id="opts"></div>
-      <div class="actions">
-        <button class="primary" id="revealBtn" type="button">إظهار الإجابة <span class="kbd">Space</span></button>
-        <button id="nextBtn" type="button">السؤال التالي <span class="kbd">Enter</span></button>
-      </div>
-    </div>
-    <aside class="side">
-      <h2>من أجاب صحيحًا؟</h2>
-      <p>بعد إظهار الإجابة، اضغط على كل مجموعة أجابت صحيحًا فتتقدّم خطوة. اضغط مرة ثانية للإلغاء.</p>
-      <div id="teamBtns" style="display:grid;gap:8px"></div>
-    </aside>
-  </section>
+  <section class="track" id="track" aria-label="لوحة السباق"></section>
+  <div class="board-actions"><button class="primary big" id="askBtn" type="button">سؤال جديد <span class="kbd">Enter</span></button></div>
 </div>
 
-<div class="overlay" id="setup">
-  <form class="sheet" id="setupForm">
-    <h2>تجهيز السباق</h2>
-    <div class="grid2" id="nameFields"></div>
+<div class="overlay" id="qview" hidden>
+  <div class="sheet qsheet" dir="rtl">
+    <div class="qtop"><span class="tag" id="qtag"></span><span id="qhint"></span><span class="timer" id="timer"></span></div>
+    <p class="q" id="qtext"></p>
+    <div class="opts" id="opts"></div>
+    <div class="actions" id="revealRow"><button class="primary big" id="revealBtn" type="button">إظهار الإجابة <span class="kbd">Space</span></button></div>
+    <div id="pickBox" hidden>
+      <p class="q" style="font-size:22px;margin-bottom:10px">اختاري المجموعات التي أجابت صحيحًا:</p>
+      <div class="pick" id="teamBtns"></div>
+      <div class="actions" style="margin-top:14px"><button class="primary big" id="backBtn" type="button">العودة إلى السباق <span class="kbd">Enter</span></button></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="setup" hidden>
+  <form class="sheet" id="setupForm" dir="rtl">
+    <h2>إعدادات السباق</h2>
     <fieldset id="lessons"><legend>الحصص المشمولة بالأسئلة</legend></fieldset>
     <fieldset><legend>عدد الخطوات للفوز</legend>
       <label><input type="radio" name="goal" value="6" id="g6"> 6</label>
@@ -149,15 +157,15 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;heigh
       <label><input type="radio" name="time" value="45" id="t45"> 45 ثانية</label>
       <label><input type="radio" name="time" value="60" id="t60"> 60 ثانية</label>
     </fieldset>
-    <div class="actions"><button class="primary" type="submit" id="startBtn">ابدأ السباق</button></div>
+    <div class="actions"><button class="primary" type="submit" id="startBtn">سباق جديد بهذه الإعدادات</button><button type="button" id="cancelSetup">إغلاق</button></div>
   </form>
 </div>
 
 <div class="overlay" id="winner" hidden>
-  <div class="sheet win">
+  <div class="sheet win" dir="rtl">
     <h2 id="winTitle"></h2>
     <div class="podium" id="podium"></div>
-    <div class="actions" style="justify-content:center"><button class="primary" id="againBtn" type="button">سباق جديد</button><button id="closeWin" type="button">متابعة الأسئلة</button></div>
+    <div class="actions" style="justify-content:center"><button class="primary" id="againBtn" type="button">سباق جديد</button><button id="closeWin" type="button">متابعة (تمديد خط النهاية)</button></div>
   </div>
 </div>
 <canvas id="fx"></canvas>
@@ -226,12 +234,13 @@ function render(s){
   return s.split(/(\[\[.*?\]\])/).map(p=>p.startsWith('[[')?`<bdi class="f" dir="ltr">${chem(p.slice(2,-2))}</bdi>`:esc(p)).join('');
 }
 
+
 /* ---------- state ---------- */
+const NAMES=['فريق اللهب','فريق الجليد','فريق البرق','فريق النبات'];
 const COLORS=['var(--t1)','var(--t2)','var(--t3)','var(--t4)'];
 const HEX=['#E8691E','#0E8F9E','#7A3FC4','#2E9D47'];
-let S={names:['المجموعة 1','المجموعة 2','المجموعة 3','المجموعة 4'],pos:[0,0,0,0],goal:10,time:30,lessons:[1,2],deck:[],qi:-1,revealed:false,scoredThis:[false,false,false,false],history:[],finished:false};
 const $=id=>document.getElementById(id);
-
+let S={pos:[0,0,0,0],goal:10,time:30,lessons:[1,2,3,4],deck:[],qi:-1,revealed:false,picked:[false,false,false,false],history:[],finished:false};
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
 /* ---------- racers ---------- */
@@ -242,50 +251,44 @@ function flask(c,i){return `<svg viewBox="0 0 64 64" aria-hidden="true">
  <circle class="bubble" cx="26" cy="47" r="2.4" fill="#fff" style="animation-delay:${i*.4}s"/><circle class="bubble" cx="36" cy="50" r="1.8" fill="#fff" style="animation-delay:${i*.4+1}s"/>
  <text x="32" y="36" text-anchor="middle" font-family="Readex Pro,sans-serif" font-weight="700" font-size="13" fill="#13232B">${i+1}</text></svg>`}
 
+
 function buildTrack(){
-  const t=$('track');t.innerHTML='';
-  S.names.forEach((n,i)=>{
-    t.insertAdjacentHTML('beforeend',`<div class="lane" style="--lc:${COLORS[i]}">
-      <div class="lname"><i style="background:${COLORS[i]}"></i><b id="ln${i}">${esc(n)}</b></div>
+  $('track').innerHTML=NAMES.map((n,i)=>`<div class="lane" style="--lc:${COLORS[i]}">
+      <div class="lname"><i style="background:${COLORS[i]}"></i><b>${n}</b></div>
       <div class="road" id="road${i}" style="--cell:calc(100% / ${S.goal})"><div class="finish"></div><div class="trail" id="trail${i}"></div>
-        <div class="racer" id="racer${i}" style="--x:0px">${flask(HEX[i],i)}<span class="rank" id="rank${i}"></span></div></div></div>`);
-  });
-  const tb=$('teamBtns');tb.innerHTML='';
-  S.names.forEach((n,i)=>tb.insertAdjacentHTML('beforeend',`<button type="button" class="tbtn" id="tb${i}" style="--tc:${COLORS[i]}" aria-pressed="false"><span>${esc(n)}</span><span class="kbd">${i+1}</span></button>`));
-  S.names.forEach((n,i)=>$('tb'+i).onclick=()=>toggleTeam(i));
+        <div class="racer" id="racer${i}" style="--x:0px">${flask(HEX[i],i)}<span class="rank" id="rank${i}"></span></div></div></div>`).join('');
+  $('teamBtns').innerHTML=NAMES.map((n,i)=>`<button type="button" class="tbtn" id="tb${i}" style="--tc:${COLORS[i]}" aria-pressed="false"><span>${n}</span><span class="kbd">${i+1}</span></button>`).join('');
+  NAMES.forEach((n,i)=>$('tb'+i).onclick=()=>pick(i));
   $('goalchip').textContent=`الهدف: ${S.goal} خطوات`;
-  place(false);
+  place([]);
 }
-function place(boostIdx){
+function place(boost){
   S.pos.forEach((p,i)=>{
     const road=$('road'+i),r=$('racer'+i);
-    const usable=road.clientWidth-r.clientWidth-30;
-    const x=Math.max(0,usable*Math.min(p,S.goal)/S.goal);
-    r.style.setProperty('--x',x+'px');
-    $('trail'+i).style.width=(x+r.clientWidth/2)+'px';
-    if(boostIdx!==false&&boostIdx.includes(i)){r.classList.remove('boost');void r.offsetWidth;r.classList.add('boost');setTimeout(()=>r.classList.remove('boost'),950)}
+    const x=Math.max(0,(road.clientWidth-r.clientWidth-30)*Math.min(p,S.goal)/S.goal);
+    r.style.setProperty('--x',x+'px');$('trail'+i).style.width=(x+r.clientWidth/2)+'px';
+    if(boost.includes(i)){r.classList.remove('boost');void r.offsetWidth;r.classList.add('boost');setTimeout(()=>r.classList.remove('boost'),950)}
   });
-  const order=[...S.pos.keys()].sort((a,b)=>S.pos[b]-S.pos[a]);
-  let rank=0,prev=null;
-  order.forEach((i,k)=>{if(S.pos[i]!==prev){rank=k+1;prev=S.pos[i]}$('rank'+i).textContent=S.pos.every(p=>p===0)?'':rank});
+  const max=Math.max(...S.pos);
+  const order=[...S.pos.keys()].sort((a,b)=>S.pos[b]-S.pos[a]);let rank=0,prev=null;
+  order.forEach((i,k)=>{if(S.pos[i]!==prev){rank=k+1;prev=S.pos[i]}$('rank'+i).textContent=max===0?'':rank;$('racer'+i).classList.toggle('lead',max>0&&S.pos[i]===max)});
 }
-addEventListener('resize',()=>place(false));
+addEventListener('resize',()=>place([]));
 
-/* ---------- questions ---------- */
-function newDeck(){S.deck=shuffle(BANK.filter(q=>S.lessons.includes(q[0])).map(q=>{
-  const opts=q[2].map((o,k)=>({t:o,ok:k===q[3]}));return {l:q[0],q:q[1],opts:shuffle(opts)}}));S.qi=-1}
+/* ---------- question flow: board → question → reveal → pick teams → back to board (racers move) ---------- */
+function newDeck(){S.deck=shuffle(BANK.filter(q=>S.lessons.includes(q[0])).map(q=>({l:q[0],q:q[1],opts:shuffle(q[2].map((o,k)=>({t:o,ok:k===q[3]})))})));S.qi=-1}
 let tick=null,left=0;
-function nextQ(){
+function openQuestion(){
   if(S.finished) return;
   if(S.qi>=S.deck.length-1) newDeck();
-  S.qi++;S.revealed=false;S.scoredThis=[false,false,false,false];
+  S.qi++;S.revealed=false;S.picked=[false,false,false,false];
   const Q=S.deck[S.qi];
   $('qcount').textContent=`سؤال ${S.qi+1}`;
-  $('qtag').textContent=LESSONS[Q.l];
-  $('qhint').textContent='فكّروا في الإجابة…';
+  $('qtag').textContent=LESSONS[Q.l];$('qhint').textContent='فكّروا في الإجابة…';
   $('qtext').innerHTML=render(Q.q);
   $('opts').innerHTML=Q.opts.map((o,k)=>`<div class="opt" id="o${k}"><em>${'أبجد'[k]}</em><span>${render(o.t)}</span></div>`).join('');
-  S.names.forEach((n,i)=>{const b=$('tb'+i);b.setAttribute('aria-pressed','false');b.disabled=true});
+  NAMES.forEach((n,i)=>$('tb'+i).setAttribute('aria-pressed','false'));
+  $('revealRow').hidden=false;$('pickBox').hidden=true;$('qview').hidden=false;
   startTimer();
 }
 function startTimer(){
@@ -295,57 +298,55 @@ function startTimer(){
   tick=setInterval(()=>{left--;el.textContent=Math.max(left,0);el.classList.toggle('low',left<=5);if(left<=5&&left>0)beep(660,.06);if(left<=0){clearInterval(tick);beep(220,.35);reveal()}},1000);
 }
 function reveal(){
-  if(S.revealed) return;S.revealed=true;clearInterval(tick);
-  const Q=S.deck[S.qi];
-  Q.opts.forEach((o,k)=>$('o'+k).classList.add(o.ok?'right':'dim'));
-  $('qhint').textContent='اختر المجموعات التي أجابت صحيحًا';
-  S.names.forEach((n,i)=>$('tb'+i).disabled=false);
+  if(S.revealed||$('qview').hidden) return;S.revealed=true;clearInterval(tick);
+  S.deck[S.qi].opts.forEach((o,k)=>$('o'+k).classList.add(o.ok?'right':'dim'));
+  $('qhint').textContent='الإجابة الصحيحة باللون الأخضر';
+  $('revealRow').hidden=true;$('pickBox').hidden=false;
 }
-function toggleTeam(i){
-  if(!S.revealed||S.finished) return;
-  const on=!S.scoredThis[i];S.scoredThis[i]=on;
-  S.history.push({i,d:on?1:-1});
-  S.pos[i]+=on?1:-1;
-  $('tb'+i).setAttribute('aria-pressed',on);
-  place(on?[i]:[]);
-  if(on) whoosh(i);
-  if(S.pos[i]>=S.goal) setTimeout(()=>win(i),950);
+function pick(i){if(!S.revealed)return;S.picked[i]=!S.picked[i];$('tb'+i).setAttribute('aria-pressed',S.picked[i]);beep(S.picked[i]?520:300,.08)}
+function backToBoard(){
+  if($('qview').hidden||!S.revealed) return;
+  $('qview').hidden=true;
+  const movers=[0,1,2,3].filter(i=>S.picked[i]);
+  movers.forEach(i=>{S.pos[i]++;S.history.push(i)});
+  setTimeout(()=>{place(movers);movers.forEach(whoosh);
+    const w=movers.filter(i=>S.pos[i]>=S.goal);
+    if(w.length)setTimeout(()=>win(w.sort((a,b)=>S.pos[b]-S.pos[a])),1000)},250);
 }
-$('undoBtn').onclick=()=>{const h=S.history.pop();if(!h)return;S.pos[h.i]-=h.d;S.scoredThis[h.i]=h.d<0;$('tb'+h.i).setAttribute('aria-pressed',S.scoredThis[h.i]);S.finished=false;place([])};
-$('revealBtn').onclick=reveal;$('nextBtn').onclick=nextQ;
+$('askBtn').onclick=openQuestion;$('revealBtn').onclick=reveal;$('backBtn').onclick=backToBoard;
+$('undoBtn').onclick=()=>{const i=S.history.pop();if(i===undefined)return;S.pos[i]--;S.finished=false;place([])};
 
 /* ---------- win ---------- */
-function win(i){
-  if(S.finished) return;S.finished=true;clearInterval(tick);
-  $('winTitle').innerHTML=`فازت <span style="color:${COLORS[i]}">${esc(S.names[i])}</span>!`;
+function win(ws){
+  if(S.finished) return;S.finished=true;
+  $('winTitle').innerHTML=ws.length>1?'تعادل في الوصول! '+ws.map(i=>`<span style="color:${COLORS[i]}">${NAMES[i]}</span>`).join(' و '):`فاز <span style="color:${COLORS[ws[0]]}">${NAMES[ws[0]]}</span>!`;
   const order=[...S.pos.keys()].sort((a,b)=>S.pos[b]-S.pos[a]);
-  $('podium').innerHTML=order.map((k,n)=>`<div><span style="font-family:var(--mono)">${n+1}</span><i style="width:14px;height:14px;border-radius:50%;background:${COLORS[k]}"></i>${esc(S.names[k])}<span style="margin-inline-start:auto;font-family:var(--mono)">${S.pos[k]} / ${S.goal}</span></div>`).join('');
+  $('podium').innerHTML=order.map((k,n)=>`<div><span style="font-family:var(--mono)">${n+1}</span><i style="width:14px;height:14px;border-radius:50%;background:${COLORS[k]}"></i>${NAMES[k]}<span style="margin-inline-start:auto;font-family:var(--mono)">${S.pos[k]} / ${S.goal}</span></div>`).join('');
   $('winner').hidden=false;fanfare();confetti();
 }
-$('againBtn').onclick=()=>{$('winner').hidden=true;$('setup').hidden=false};
+function restart(){S.pos=[0,0,0,0];S.history=[];S.finished=false;buildTrack();newDeck();$('qcount').textContent='سؤال 0'}
+$('againBtn').onclick=()=>{$('winner').hidden=true;restart()};
 $('closeWin').onclick=()=>{$('winner').hidden=true;S.finished=false;S.goal+=4;buildTrack()};
 
-/* ---------- setup ---------- */
-(function initSetup(){
-  $('nameFields').innerHTML=S.names.map((n,i)=>`<label class="team" style="--tc:${COLORS[i]}"><i style="width:14px;height:14px;border-radius:50%;background:${COLORS[i]};flex:none"></i><input id="name${i}" value="${esc(n)}" maxlength="22" aria-label="اسم المجموعة ${i+1}"></label>`).join('');
-  $('lessons').insertAdjacentHTML('beforeend',Object.entries(LESSONS).map(([k,v])=>`<label><input type="checkbox" id="les${k}" value="${k}" ${S.lessons.includes(+k)?'checked':''}> ${v}</label>`).join(''));
-})();
+/* ---------- settings ---------- */
+$('lessons').insertAdjacentHTML('beforeend',Object.entries(LESSONS).map(([k,v])=>`<label><input type="checkbox" id="les${k}" value="${k}" checked> ${v}</label>`).join(''));
+$('setupBtn').onclick=()=>{$('setup').hidden=false};
+$('cancelSetup').onclick=()=>{$('setup').hidden=true};
 $('setupForm').addEventListener('submit',e=>{
   e.preventDefault();
-  S.names=S.names.map((n,i)=>$('name'+i).value.trim()||`المجموعة ${i+1}`);
   S.lessons=[1,2,3,4].filter(k=>$('les'+k).checked);if(!S.lessons.length)S.lessons=[1];
   S.goal=+document.querySelector('input[name=goal]:checked').value;
   S.time=+document.querySelector('input[name=time]:checked').value;
-  S.pos=[0,0,0,0];S.history=[];S.finished=false;
-  $('setup').hidden=true;buildTrack();newDeck();nextQ();ensureAudio();
+  $('setup').hidden=true;restart();
 });
-$('setupBtn').onclick=()=>{$('setup').hidden=false};
 $('fsBtn').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
+addEventListener('click',ensureAudio,{once:true});
 addEventListener('keydown',e=>{
-  if(!$('setup').hidden||e.target.tagName==='INPUT')return;
-  if(e.key===' '){e.preventDefault();reveal()}
-  else if(e.key==='Enter'){e.preventDefault();nextQ()}
-  else if(/^[1-4]$/.test(e.key)){toggleTeam(+e.key-1)}
+  if(!$('setup').hidden||!$('winner').hidden)return;
+  const inQ=!$('qview').hidden;
+  if(e.key===' '&&inQ){e.preventDefault();reveal()}
+  else if(e.key==='Enter'){e.preventDefault();inQ?backToBoard():openQuestion()}
+  else if(inQ&&/^[1-4]$/.test(e.key))pick(+e.key-1);
 });
 
 /* ---------- sound (starts after first click) ---------- */
@@ -362,7 +363,6 @@ function confetti(){
   let f=0;(function draw(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.y+=p.v;p.a+=.1;x.fillStyle=p.c;x.save();x.translate(p.x+Math.sin(p.a)*8,p.y);x.rotate(p.a);x.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);x.restore()});if(++f<260)requestAnimationFrame(draw);else x.clearRect(0,0,c.width,c.height)})();
 }
 
-/* initial state behind the setup sheet: track with racers spread, sample question */
-buildTrack();newDeck();nextQ();clearInterval(tick);$('timer').textContent='';
-S.pos=[3,5,2,4];place(false);S.pos=[0,0,0,0];
+
+buildTrack();newDeck();
 </script>
