@@ -1,0 +1,368 @@
+<title>سباق الطاقة</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@500;700&family=JetBrains+Mono:wght@600&display=swap">
+<style>
+/* Layout: a lab "heat track" — four lanes race right-to-left toward a checkered finish; question console below. Single bright-lab look on purpose (projector in a sunny class). */
+:root{
+  --bg:#EEF3F5; --panel:#FFFFFF; --ink:#13232B; --muted:#5B6E77; --line:#C9D7DD;
+  --teal:#0E8F9E; --hot:#E8691E; --ok:#1E9E57; --bad:#C62828;
+  --t1:#E8691E; --t2:#0E8F9E; --t3:#7A3FC4; --t4:#2E9D47;
+  --display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic","Readex Pro",Tahoma,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
+.app{display:flex;flex-direction:column;gap:14px;padding-block:14px;max-width:1500px;margin:0 auto;min-height:100%;box-sizing:border-box}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:clamp(26px,3.2vw,40px);margin:0;letter-spacing:0;text-wrap:balance}
+h1 span{color:var(--hot)}
+.meta{display:flex;gap:10px;margin-inline-start:auto;align-items:center;flex-wrap:wrap}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:700;font-variant-numeric:tabular-nums}
+button{font-family:var(--display);font-size:18px;cursor:pointer;border-radius:12px;border:2px solid var(--ink);background:var(--panel);color:var(--ink);padding:10px 18px;font-weight:700}
+button:focus-visible,input:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+button.primary{background:var(--ink);color:#fff}
+button.ghost{border-color:var(--line)}
+
+/* ---------- track ---------- */
+.track{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:grid;gap:8px;position:relative}
+.lane{display:grid;grid-template-columns:minmax(90px,150px) 1fr;align-items:center;gap:12px}
+.lname{font-family:var(--display);font-weight:700;font-size:clamp(16px,1.6vw,22px);display:flex;align-items:center;gap:8px;min-width:0}
+.lname i{width:14px;height:14px;border-radius:50%;flex:none}
+.lname b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.road{position:relative;height:clamp(62px,9vh,92px);border-radius:12px;
+  background:repeating-linear-gradient(90deg,transparent 0 calc(var(--cell) - 2px),var(--line) calc(var(--cell) - 2px) var(--cell)) ,#F6FAFB;
+  border:1px solid var(--line);overflow:hidden}
+.road::before{content:"";position:absolute;inset:0 0 0 auto;width:4px;background:var(--lc);opacity:.6}
+.finish{position:absolute;inset:0 auto 0 0;width:22px;
+  background:conic-gradient(#13232B 25%,#fff 0 50%,#13232B 0 75%,#fff 0) 0 0/11px 11px;opacity:.85}
+.trail{position:absolute;top:50%;right:0;height:10px;transform:translateY(-50%);border-radius:10px;
+  background:linear-gradient(270deg,transparent,var(--lc));opacity:.35;width:0;transition:width .9s cubic-bezier(.3,1.4,.5,1)}
+.racer{position:absolute;top:50%;right:6px;width:clamp(48px,6vh,70px);aspect-ratio:1;max-width:100%;
+  transform:translate(calc(var(--x) * -1),-50%);transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
+.racer svg{width:100%;height:100%;overflow:visible}
+.racer.boost svg{animation:hop .9s ease}
+.rank{position:absolute;top:-6px;left:-6px;background:var(--ink);color:#fff;font-family:var(--mono);font-size:13px;border-radius:999px;padding:1px 7px}
+.flame{transform-origin:50% 0;animation:flick .35s infinite alternate;opacity:0}
+.racer.boost .flame{opacity:1}
+@keyframes flick{to{transform:scaleY(1.35)}}
+@keyframes hop{30%{translate:0 -10px} 60%{translate:0 2px}}
+.bubble{animation:rise 2.4s infinite ease-in}
+@keyframes rise{from{transform:translateY(0);opacity:.9}to{transform:translateY(-16px);opacity:0}}
+
+/* ---------- question console ---------- */
+.console{display:grid;grid-template-columns:1fr minmax(240px,300px);gap:14px;flex:1}
+.qcard{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.qtop{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-weight:700}
+.tag{background:#E3F2F4;color:var(--teal);border-radius:8px;padding:3px 10px;font-size:15px}
+.timer{margin-inline-start:auto;font-family:var(--mono);font-size:22px;color:var(--ink)}
+.timer.low{color:var(--bad)}
+.q{font-family:var(--display);font-size:clamp(22px,2.4vw,34px);line-height:1.55;margin:0;text-wrap:pretty}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:clamp(19px,1.9vw,27px);font-weight:700;background:#FAFCFD;min-width:0;text-align:start}
+.opt em{font-style:normal;font-family:var(--display);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--bg);flex:none;font-size:18px}
+.opt.right{border-color:var(--ok);background:#E7F6EE}
+.opt.right em{background:var(--ok);color:#fff}
+.opt.dim{opacity:.45}
+.f{font-family:var(--body);white-space:nowrap;unicode-bidi:isolate;direction:ltr;display:inline-block}
+sub,sup{font-size:.62em;line-height:0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:auto}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.side h2{font-family:var(--display);font-size:20px;margin:0}
+.side p{margin:0;color:var(--muted);font-size:15px;line-height:1.6}
+.tbtn{display:flex;align-items:center;justify-content:space-between;gap:8px;border-color:var(--tc);color:var(--tc);background:var(--panel);font-size:20px}
+.tbtn[aria-pressed="true"]{background:var(--tc);color:#fff}
+.tbtn:disabled{opacity:.4;cursor:not-allowed}
+.kbd{font-family:var(--mono);font-size:13px;border:1px solid currentColor;border-radius:6px;padding:0 6px;opacity:.8}
+
+/* ---------- overlays ---------- */
+.overlay{position:fixed;inset:0;background:rgba(19,35,43,.55);display:grid;place-items:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--panel);border-radius:22px;padding:24px;width:min(760px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:16px;box-sizing:border-box}
+.sheet h2{font-family:var(--display);font-size:30px;margin:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label.team{display:flex;align-items:center;gap:8px;border:2px solid var(--tc);border-radius:12px;padding:6px 10px}
+label.team input{border:0;font:700 19px var(--body);width:100%;min-width:0;background:transparent;color:var(--ink)}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 18px;margin:0}
+legend{font-weight:700;color:var(--muted);padding:0 6px}
+fieldset label{display:flex;gap:8px;align-items:center;font-weight:700}
+.win{text-align:center}
+.podium{display:grid;gap:8px;text-align:start}
+.podium div{display:flex;gap:12px;align-items:center;border-radius:12px;padding:8px 14px;background:var(--bg);font-weight:700;font-size:20px}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;height:100%}
+
+@media (max-width:900px){.console{grid-template-columns:1fr}.opts{grid-template-columns:1fr}.f{white-space:normal}}
+@media (max-width:520px){.lane{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.lname{font-size:15px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" dir="rtl">
+  <header>
+    <h1>سباق <span>الطاقة</span> الحرارية</h1>
+    <div class="meta">
+      <span class="chip" id="qcount">سؤال 0</span>
+      <span class="chip" id="goalchip">الهدف: 10 خطوات</span>
+      <button class="ghost" id="undoBtn" type="button">تراجع</button>
+      <button class="ghost" id="fsBtn" type="button">ملء الشاشة</button>
+      <button class="ghost" id="setupBtn" type="button">الإعدادات</button>
+    </div>
+  </header>
+
+  <section class="track" id="track" aria-label="مضمار السباق"></section>
+
+  <section class="console">
+    <div class="qcard">
+      <div class="qtop"><span class="tag" id="qtag">الحصة 1</span><span id="qhint">اقرأ السؤال، ثم أظهر الإجابة</span><span class="timer" id="timer"></span></div>
+      <p class="q" id="qtext"></p>
+      <div class="opts" id="opts"></div>
+      <div class="actions">
+        <button class="primary" id="revealBtn" type="button">إظهار الإجابة <span class="kbd">Space</span></button>
+        <button id="nextBtn" type="button">السؤال التالي <span class="kbd">Enter</span></button>
+      </div>
+    </div>
+    <aside class="side">
+      <h2>من أجاب صحيحًا؟</h2>
+      <p>بعد إظهار الإجابة، اضغط على كل مجموعة أجابت صحيحًا فتتقدّم خطوة. اضغط مرة ثانية للإلغاء.</p>
+      <div id="teamBtns" style="display:grid;gap:8px"></div>
+    </aside>
+  </section>
+</div>
+
+<div class="overlay" id="setup">
+  <form class="sheet" id="setupForm">
+    <h2>تجهيز السباق</h2>
+    <div class="grid2" id="nameFields"></div>
+    <fieldset id="lessons"><legend>الحصص المشمولة بالأسئلة</legend></fieldset>
+    <fieldset><legend>عدد الخطوات للفوز</legend>
+      <label><input type="radio" name="goal" value="6" id="g6"> 6</label>
+      <label><input type="radio" name="goal" value="8" id="g8"> 8</label>
+      <label><input type="radio" name="goal" value="10" id="g10" checked> 10</label>
+      <label><input type="radio" name="goal" value="12" id="g12"> 12</label>
+    </fieldset>
+    <fieldset><legend>المؤقّت</legend>
+      <label><input type="radio" name="time" value="0" id="t0"> بدون</label>
+      <label><input type="radio" name="time" value="30" id="t30" checked> 30 ثانية</label>
+      <label><input type="radio" name="time" value="45" id="t45"> 45 ثانية</label>
+      <label><input type="radio" name="time" value="60" id="t60"> 60 ثانية</label>
+    </fieldset>
+    <div class="actions"><button class="primary" type="submit" id="startBtn">ابدأ السباق</button></div>
+  </form>
+</div>
+
+<div class="overlay" id="winner" hidden>
+  <div class="sheet win">
+    <h2 id="winTitle"></h2>
+    <div class="podium" id="podium"></div>
+    <div class="actions" style="justify-content:center"><button class="primary" id="againBtn" type="button">سباق جديد</button><button id="closeWin" type="button">متابعة الأسئلة</button></div>
+  </div>
+</div>
+<canvas id="fx"></canvas>
+
+<script>
+/* ---------- question bank (lessons 1–4, no Hess's law) ----------
+   markup: [[...]] = formula/number kept left-to-right; _x = subscript (single token up to space/next _) */
+const LESSONS = {1:'الحصة 1: النظام وأنواع التفاعلات',2:'الحصة 2: التغيّر في الإنثالبي ΔH',3:'الحصة 3: حرارة التكوين القياسية',4:'الحصة 4: حرارة الاحتراق القياسية'};
+const BANK = [
+ [1,'الجزء المعيّن من الفضاء الذي يكون موضوع الدراسة يُسمّى:',['النظام','المحيط','الفضاء','الحرارة'],0],
+ [1,'الفضاء (الكون) يساوي:',['النظام + المحيط','النظام − المحيط','المحيط فقط','الحرارة + النظام'],0],
+ [1,'الطاقة التي تتدفّق داخل النظام أو خارجه بسبب اختلاف درجة الحرارة بينهما هي:',['الحرارة','درجة الحرارة','الضغط','الإنثالبي'],0],
+ [1,'عند شدّ الشريط المطاطي بسرعة نشعر بالسخونة لأنّ العملية:',['طاردة للحرارة','ماصّة للحرارة','لاحرارية','لا تحتاج طاقة'],0],
+ [1,'التفاعل الذي يطرد فيه النظام الحرارة إلى محيطه يُسمّى تفاعلًا:',['طاردًا للحرارة','ماصًّا للحرارة','لاحراريًا','متعادلًا'],0],
+ [1,'تفاعل حمض الأستيك مع الإيثانول لتكوين الإستر والماء مثال على تفاعل:',['لاحراري','طارد للحرارة','ماصّ للحرارة','احتراق'],0],
+ [1,'التفاعل [[2C_(s) + H_2(g) + 227 kJ → C_2H_2(g)]] هو تفاعل:',['ماصّ للحرارة','طارد للحرارة','لاحراري','احتراق'],0],
+ [1,'التفاعل [[CH_4(g) + 2O_2(g) → CO_2(g) + 2H_2O(l) + 890 kJ]] هو تفاعل:',['طارد للحرارة','ماصّ للحرارة','لاحراري','تكوين'],0],
+ [1,'في التفاعل اللاحراري تكون قيمة ΔH:',['صفرًا','موجبة','سالبة','أكبر من 100'],0],
+ [1,'التفاعل [[I_2(s) + H_2(g) + 51.8 kJ → 2HI(g)]] من النوع:',['الماصّ للحرارة','الطارد للحرارة','اللاحراري','الاحتراق'],0],
+ [1,'عندما يذوب هيدروكسيد الصوديوم في الماء ويسخن المحلول، يكون الذوبان:',['طاردًا للحرارة','ماصًّا للحرارة','لاحراريًا','بدون تغيّر في الطاقة'],0],
+
+ [2,'التغيّر في الإنثالبي لتفاعل ما يساوي:',['[[ΔH = H(نواتج) − H(متفاعلات)]]','[[ΔH = H(متفاعلات) − H(نواتج)]]','[[ΔH = H(نواتج) + H(متفاعلات)]]','[[ΔH = H(نواتج) × H(متفاعلات)]]'],0],
+ [2,'إذا كانت قيمة ΔH لتفاعل ما موجبة فالتفاعل:',['ماصّ للحرارة','طارد للحرارة','لاحراري','لا يتبادل الحرارة'],0],
+ [2,'في التفاعلات الطاردة للحرارة يكون المحتوى الحراري للمتفاعلات ........ المحتوى الحراري للنواتج:',['أكبر من','أقلّ من','يساوي','نصف'],0],
+ [2,'تتمثّل حرارة التفاعل بـ ΔH عندما يحدث التفاعل تحت:',['ضغط ثابت','حجم ثابت','درجة حرارة متغيّرة','ضغط متغيّر'],0],
+ [2,'إذا كان [[2H_2(g) + O_2(g) → 2H_2O(g)]] و [[ΔH = −483.6 kJ]]، فإنّ ΔH للتفاعل العكسي يساوي:',['[[+483.6 kJ]]','[[−483.6 kJ]]','[[−241.8 kJ]]','[[0 kJ]]'],0],
+ [2,'إذا كان [[C(graphite) + O_2(g) → CO_2(g)]] و [[ΔH = −394 kJ]]، فإنّ ΔH للتفاعل [[CO_2(g) → C(graphite) + O_2(g)]] يساوي:',['[[+394 kJ]]','[[−394 kJ]]','[[−788 kJ]]','[[+788 kJ]]'],0],
+ [2,'كلمة إنثالبي Enthalpy يونانية الأصل وتعني:',['الحرارة من الداخل','الطاقة المنطلقة','الضغط الثابت','التغيّر في'],0],
+ [2,'طبقًا للتفاعل [[N_2(g) + O_2(g) → 2NO(g)]] و [[ΔH = +180 kJ]]، المحتوى الحراري لغاز NO ........ مجموع المحتويات الحرارية لـ [[N_2]] و [[O_2]]:',['أكبر من','أقلّ من','يساوي','لا يمكن مقارنته'],0],
+ [2,'المحتوى الحراري لبخار الماء ........ المحتوى الحراري للماء السائل:',['أكبر من','أقلّ من','يساوي','نصف'],0],
+ [2,'طبقًا للتفاعل [[N_2(g) + 3H_2(g) → 2NH_3(g)]] و [[ΔH = −92 kJ]]، كمّية الحرارة عند تكوّن مولين من الأمونيا:',['[[−92 kJ]]','[[−46 kJ]]','[[+46 kJ]]','[[+92 kJ]]'],0],
+ [2,'الحرف اليوناني Δ يعني:',['التغيّر في','الحرارة','المحتوى','الضغط'],0],
+
+ [3,'الظروف القياسية هي:',['[[25 °C]] و [[1 atm]]','[[0 °C]] و [[1 atm]]','[[100 °C]] و [[1 atm]]','[[25 °C]] و [[2 atm]]'],0],
+ [3,'إحدى المواد التالية حرارة تكوينها القياسية تساوي صفرًا:',['[[F_2(g)]]','[[I_2(g)]]','[[Br_2(g)]]','[[Hg(g)]]'],0],
+ [3,'حرارة التكوين القياسية للألماس [[C(diamond)]] تساوي:',['[[+1.90 kJ/mol]]','[[0 kJ/mol]]','[[−393.5 kJ/mol]]','[[−110.5 kJ/mol]]'],0],
+ [3,'حرارة التكوين القياسية للماء السائل [[H_2O(l)]] تساوي:',['[[−285.8 kJ/mol]]','[[−241.8 kJ/mol]]','[[+285.8 kJ/mol]]','[[0 kJ/mol]]'],0],
+ [3,'تُحسب حرارة التكوين القياسية لكلّ:',['مول واحد من المركّب','جرام واحد من المركّب','مولين من العناصر','لتر واحد من المركّب'],0],
+ [3,'باستخدام جدول 11، قيمة ΔH° للتفاعل [[2CO(g) + O_2(g) → 2CO_2(g)]] تساوي:',['[[−566.0 kJ]]','[[−283.0 kJ]]','[[+566.0 kJ]]','[[−787.0 kJ]]'],0],
+ [3,'الدائرة الصغيرة (°) في الرمز ΔH° تعني أنّ:',['التفاعل في الحالة القياسية','التفاعل طارد','الحرارة بالدرجات','التفاعل لاحراري'],0],
+ [3,'الحالة القياسية للبروم هي:',['[[Br_2(l)]] سائل','[[Br_2(g)]] غاز','[[Br(s)]] صلب','[[Br_2(s)]] صلب'],0],
+ [3,'إذا كان [[4Cr(s) + 3O_2(g) → 2Cr_2O_3(s)]] و [[ΔH = −2282 kJ]]، فإنّ حرارة التكوين القياسية لـ [[Cr_2O_3]]:',['[[−1141 kJ/mol]]','[[−2282 kJ/mol]]','[[−4564 kJ/mol]]','[[+1141 kJ/mol]]'],0],
+ [3,'المحتوى الحراري للماء ........ المحتوى الحراري للعناصر المكوّنة له:',['أقلّ من','أكبر من','يساوي','ضعف'],0],
+ [3,'المحتوى الحراري لغاز الأكسجين [[O_2]] في الظروف القياسية يساوي المحتوى الحراري لـ:',['الصوديوم Na الصلب','الماء السائل','غاز [[CO_2]]','غاز [[O_3]]'],0],
+
+ [4,'إشارة حرارة الاحتراق القياسية تكون دائمًا:',['سالبة','موجبة','صفرًا','موجبة أو سالبة'],0],
+ [4,'حسب [[2Al(s) + 1½O_2(g) → Al_2O_3(s)]] و [[ΔH = −1670 kJ]]، حرارة الاحتراق القياسية للألومنيوم:',['[[−835 kJ/mol]]','[[−1670 kJ/mol]]','[[+835 kJ/mol]]','[[+1670 kJ/mol]]'],0],
+ [4,'حرارة الاحتراق القياسية لغاز الهيدروجين تساوي حرارة التكوين القياسية لـ:',['الماء السائل [[H_2O(l)]]','غاز الأكسجين','غاز الهيدروجين','فوق أكسيد الهيدروجين'],0],
+ [4,'الحرارة في [[SO_2(g) + ½O_2(g) + 49 kJ → SO_3(g)]] لا تُعتبر حرارة احتراق قياسية لأنّها:',['حرارة ممتصّة','حرارة منطلقة','تساوي صفرًا','لمولين'],0],
+ [4,'حرارة الاحتراق القياسية للكربون تساوي حرارة التكوين القياسية لـ:',['[[CO_2(g)]]','[[CO(g)]]','[[C(diamond)]]','[[O_2(g)]]'],0],
+ [4,'التفاعل [[S(s) + O_2(g) → SO_2(g) + 296 kJ]]، قيمة ΔH عند احتراق [[16 g]] من الكبريت [[(S = 32)]]:',['[[−148 kJ]]','[[−296 kJ]]','[[+148 kJ]]','[[−592 kJ]]'],0],
+ [4,'يُشترط في حرارة الاحتراق القياسية أن يكون الاحتراق:',['تامًّا في وفرة من الأكسجين','جزئيًا','في غياب الأكسجين','عند 100 °C'],0],
+ [4,'حرارة الاحتراق القياسية تُحسب لكلّ:',['مول واحد من المادّة المحترقة','مول واحد من الأكسجين','جرام من المادّة','مولين من النواتج'],0],
+ [4,'احتراق مول واحد من أول أكسيد الكربون [[CO(g) + ½O_2(g) → CO_2(g)]]، قيمة ΔH:',['[[−283 kJ/mol]]','[[+283 kJ/mol]]','[[−110.5 kJ/mol]]','[[−393.5 kJ/mol]]'],0],
+];
+
+/* ---------- formula rendering ---------- */
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function chem(s){ // H_2O(l) -> H<sub>2</sub>O<sub>(l)</sub>; also state after formula: X(g) -> sub
+  let out=esc(s);
+  out=out.replace(/_(\d+(?:\((?:g|l|s|aq)\))?|\((?:g|l|s|aq)\))/g,'<sub>$1</sub>');
+  out=out.replace(/([A-Za-z\)\]])(\((?:g|l|s|aq|graphite|diamond)\))/g,'$1<sub>$2</sub>');
+  return out;
+}
+function render(s){
+  return s.split(/(\[\[.*?\]\])/).map(p=>p.startsWith('[[')?`<bdi class="f" dir="ltr">${chem(p.slice(2,-2))}</bdi>`:esc(p)).join('');
+}
+
+/* ---------- state ---------- */
+const COLORS=['var(--t1)','var(--t2)','var(--t3)','var(--t4)'];
+const HEX=['#E8691E','#0E8F9E','#7A3FC4','#2E9D47'];
+let S={names:['المجموعة 1','المجموعة 2','المجموعة 3','المجموعة 4'],pos:[0,0,0,0],goal:10,time:30,lessons:[1,2],deck:[],qi:-1,revealed:false,scoredThis:[false,false,false,false],history:[],finished:false};
+const $=id=>document.getElementById(id);
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* ---------- racers ---------- */
+function flask(c,i){return `<svg viewBox="0 0 64 64" aria-hidden="true">
+ <g class="flame"><path d="M60 32c-8-5-14-4-18 0 4 4 10 5 18 0z" fill="#FFB547"/><path d="M56 32c-5-3-9-2-12 0 3 3 7 3 12 0z" fill="#E8691E"/></g>
+ <path d="M24 6h16v4h-2v12l14 22a8 8 0 0 1-7 12H19a8 8 0 0 1-7-12l14-22V10h-2z" fill="#fff" stroke="#13232B" stroke-width="3" stroke-linejoin="round"/>
+ <path d="M17.5 41h29l4.6 7.3A5 5 0 0 1 47 56H17a5 5 0 0 1-4.1-7.7z" fill="${c}"/>
+ <circle class="bubble" cx="26" cy="47" r="2.4" fill="#fff" style="animation-delay:${i*.4}s"/><circle class="bubble" cx="36" cy="50" r="1.8" fill="#fff" style="animation-delay:${i*.4+1}s"/>
+ <text x="32" y="36" text-anchor="middle" font-family="Readex Pro,sans-serif" font-weight="700" font-size="13" fill="#13232B">${i+1}</text></svg>`}
+
+function buildTrack(){
+  const t=$('track');t.innerHTML='';
+  S.names.forEach((n,i)=>{
+    t.insertAdjacentHTML('beforeend',`<div class="lane" style="--lc:${COLORS[i]}">
+      <div class="lname"><i style="background:${COLORS[i]}"></i><b id="ln${i}">${esc(n)}</b></div>
+      <div class="road" id="road${i}" style="--cell:calc(100% / ${S.goal})"><div class="finish"></div><div class="trail" id="trail${i}"></div>
+        <div class="racer" id="racer${i}" style="--x:0px">${flask(HEX[i],i)}<span class="rank" id="rank${i}"></span></div></div></div>`);
+  });
+  const tb=$('teamBtns');tb.innerHTML='';
+  S.names.forEach((n,i)=>tb.insertAdjacentHTML('beforeend',`<button type="button" class="tbtn" id="tb${i}" style="--tc:${COLORS[i]}" aria-pressed="false"><span>${esc(n)}</span><span class="kbd">${i+1}</span></button>`));
+  S.names.forEach((n,i)=>$('tb'+i).onclick=()=>toggleTeam(i));
+  $('goalchip').textContent=`الهدف: ${S.goal} خطوات`;
+  place(false);
+}
+function place(boostIdx){
+  S.pos.forEach((p,i)=>{
+    const road=$('road'+i),r=$('racer'+i);
+    const usable=road.clientWidth-r.clientWidth-30;
+    const x=Math.max(0,usable*Math.min(p,S.goal)/S.goal);
+    r.style.setProperty('--x',x+'px');
+    $('trail'+i).style.width=(x+r.clientWidth/2)+'px';
+    if(boostIdx!==false&&boostIdx.includes(i)){r.classList.remove('boost');void r.offsetWidth;r.classList.add('boost');setTimeout(()=>r.classList.remove('boost'),950)}
+  });
+  const order=[...S.pos.keys()].sort((a,b)=>S.pos[b]-S.pos[a]);
+  let rank=0,prev=null;
+  order.forEach((i,k)=>{if(S.pos[i]!==prev){rank=k+1;prev=S.pos[i]}$('rank'+i).textContent=S.pos.every(p=>p===0)?'':rank});
+}
+addEventListener('resize',()=>place(false));
+
+/* ---------- questions ---------- */
+function newDeck(){S.deck=shuffle(BANK.filter(q=>S.lessons.includes(q[0])).map(q=>{
+  const opts=q[2].map((o,k)=>({t:o,ok:k===q[3]}));return {l:q[0],q:q[1],opts:shuffle(opts)}}));S.qi=-1}
+let tick=null,left=0;
+function nextQ(){
+  if(S.finished) return;
+  if(S.qi>=S.deck.length-1) newDeck();
+  S.qi++;S.revealed=false;S.scoredThis=[false,false,false,false];
+  const Q=S.deck[S.qi];
+  $('qcount').textContent=`سؤال ${S.qi+1}`;
+  $('qtag').textContent=LESSONS[Q.l];
+  $('qhint').textContent='فكّروا في الإجابة…';
+  $('qtext').innerHTML=render(Q.q);
+  $('opts').innerHTML=Q.opts.map((o,k)=>`<div class="opt" id="o${k}"><em>${'أبجد'[k]}</em><span>${render(o.t)}</span></div>`).join('');
+  S.names.forEach((n,i)=>{const b=$('tb'+i);b.setAttribute('aria-pressed','false');b.disabled=true});
+  startTimer();
+}
+function startTimer(){
+  clearInterval(tick);const el=$('timer');
+  if(!S.time){el.textContent='';return}
+  left=S.time;el.textContent=left;el.classList.remove('low');
+  tick=setInterval(()=>{left--;el.textContent=Math.max(left,0);el.classList.toggle('low',left<=5);if(left<=5&&left>0)beep(660,.06);if(left<=0){clearInterval(tick);beep(220,.35);reveal()}},1000);
+}
+function reveal(){
+  if(S.revealed) return;S.revealed=true;clearInterval(tick);
+  const Q=S.deck[S.qi];
+  Q.opts.forEach((o,k)=>$('o'+k).classList.add(o.ok?'right':'dim'));
+  $('qhint').textContent='اختر المجموعات التي أجابت صحيحًا';
+  S.names.forEach((n,i)=>$('tb'+i).disabled=false);
+}
+function toggleTeam(i){
+  if(!S.revealed||S.finished) return;
+  const on=!S.scoredThis[i];S.scoredThis[i]=on;
+  S.history.push({i,d:on?1:-1});
+  S.pos[i]+=on?1:-1;
+  $('tb'+i).setAttribute('aria-pressed',on);
+  place(on?[i]:[]);
+  if(on) whoosh(i);
+  if(S.pos[i]>=S.goal) setTimeout(()=>win(i),950);
+}
+$('undoBtn').onclick=()=>{const h=S.history.pop();if(!h)return;S.pos[h.i]-=h.d;S.scoredThis[h.i]=h.d<0;$('tb'+h.i).setAttribute('aria-pressed',S.scoredThis[h.i]);S.finished=false;place([])};
+$('revealBtn').onclick=reveal;$('nextBtn').onclick=nextQ;
+
+/* ---------- win ---------- */
+function win(i){
+  if(S.finished) return;S.finished=true;clearInterval(tick);
+  $('winTitle').innerHTML=`فازت <span style="color:${COLORS[i]}">${esc(S.names[i])}</span>!`;
+  const order=[...S.pos.keys()].sort((a,b)=>S.pos[b]-S.pos[a]);
+  $('podium').innerHTML=order.map((k,n)=>`<div><span style="font-family:var(--mono)">${n+1}</span><i style="width:14px;height:14px;border-radius:50%;background:${COLORS[k]}"></i>${esc(S.names[k])}<span style="margin-inline-start:auto;font-family:var(--mono)">${S.pos[k]} / ${S.goal}</span></div>`).join('');
+  $('winner').hidden=false;fanfare();confetti();
+}
+$('againBtn').onclick=()=>{$('winner').hidden=true;$('setup').hidden=false};
+$('closeWin').onclick=()=>{$('winner').hidden=true;S.finished=false;S.goal+=4;buildTrack()};
+
+/* ---------- setup ---------- */
+(function initSetup(){
+  $('nameFields').innerHTML=S.names.map((n,i)=>`<label class="team" style="--tc:${COLORS[i]}"><i style="width:14px;height:14px;border-radius:50%;background:${COLORS[i]};flex:none"></i><input id="name${i}" value="${esc(n)}" maxlength="22" aria-label="اسم المجموعة ${i+1}"></label>`).join('');
+  $('lessons').insertAdjacentHTML('beforeend',Object.entries(LESSONS).map(([k,v])=>`<label><input type="checkbox" id="les${k}" value="${k}" ${S.lessons.includes(+k)?'checked':''}> ${v}</label>`).join(''));
+})();
+$('setupForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  S.names=S.names.map((n,i)=>$('name'+i).value.trim()||`المجموعة ${i+1}`);
+  S.lessons=[1,2,3,4].filter(k=>$('les'+k).checked);if(!S.lessons.length)S.lessons=[1];
+  S.goal=+document.querySelector('input[name=goal]:checked').value;
+  S.time=+document.querySelector('input[name=time]:checked').value;
+  S.pos=[0,0,0,0];S.history=[];S.finished=false;
+  $('setup').hidden=true;buildTrack();newDeck();nextQ();ensureAudio();
+});
+$('setupBtn').onclick=()=>{$('setup').hidden=false};
+$('fsBtn').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
+addEventListener('keydown',e=>{
+  if(!$('setup').hidden||e.target.tagName==='INPUT')return;
+  if(e.key===' '){e.preventDefault();reveal()}
+  else if(e.key==='Enter'){e.preventDefault();nextQ()}
+  else if(/^[1-4]$/.test(e.key)){toggleTeam(+e.key-1)}
+});
+
+/* ---------- sound (starts after first click) ---------- */
+let AC=null;function ensureAudio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function beep(f,d,type='sine',when=0){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.12,AC.currentTime+when);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+when+d);o.connect(g).connect(AC.destination);o.start(AC.currentTime+when);o.stop(AC.currentTime+when+d)}
+function whoosh(i){[0,.06,.12].forEach((t,k)=>beep(330+i*40+k*120,.12,'triangle',t))}
+function fanfare(){[523,659,784,1046].forEach((f,k)=>beep(f,.3,'square',k*.14))}
+
+/* ---------- confetti ---------- */
+function confetti(){
+  const c=$('fx'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const P=Array.from({length:160},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,v:2+Math.random()*4,s:5+Math.random()*7,a:Math.random()*6,c:HEX[Math.floor(Math.random()*4)]}));
+  let f=0;(function draw(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.y+=p.v;p.a+=.1;x.fillStyle=p.c;x.save();x.translate(p.x+Math.sin(p.a)*8,p.y);x.rotate(p.a);x.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);x.restore()});if(++f<260)requestAnimationFrame(draw);else x.clearRect(0,0,c.width,c.height)})();
+}
+
+/* initial state behind the setup sheet: track with racers spread, sample question */
+buildTrack();newDeck();nextQ();clearInterval(tick);$('timer').textContent='';
+S.pos=[3,5,2,4];place(false);S.pos=[0,0,0,0];
+</script>
