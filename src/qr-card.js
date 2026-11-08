@@ -66,7 +66,7 @@ const slidesIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" f
 const gameIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 14h-4l-1 1.6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="11.5" r=".8" fill="${c}"/><circle cx="18" cy="13.5" r=".8" fill="${c}"/></svg>`;
 const strategyIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`;
 // محتوى المجلد كما يظهر على البطاقة؛ wrap يكبّر الأيقونة عند الحاجة
-const ITEMS = [[bookIcon, 'كتاب ثلاثي الأبعاد'], [slidesIcon, 'عرض بوربوينت'], [gameIcon, 'ألعاب إلكترونية'], [strategyIcon, 'استراتيجيات']];
+const ITEMS = [[bookIcon, 'كتاب ثلاثي الأبعاد'], [slidesIcon, 'عرض بوربوينت'], [gameIcon, 'ألعاب إلكترونية']];
 const insideHTML = (c, wrap = s => s) => `<div class="inside"><span class="lbl">داخل الكود:</span><div class="chips">${ITEMS.map(([ic, txt]) => `<span class="chip">${wrap(ic(c))}${txt}</span>`).join('')}</div></div>`;
 const scissors = `<svg viewBox="0 0 24 24" width="4.5mm" height="4.5mm" fill="none" stroke="#8a94a6" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>`;
 
@@ -111,7 +111,7 @@ h1 span{color:${t.accent}}
 .sub{font-weight:600;font-size:3.6mm;line-height:1.45;color:${t.soft};margin-top:0.8mm}
 .sub b{font-weight:900;color:${t.ink}}
 .inside{display:flex;flex-direction:column;align-items:center;gap:1.2mm;margin-top:2.6mm;font-size:3.1mm;font-weight:800}
-.chips{display:grid;grid-template-columns:auto auto;gap:1.2mm 1.4mm}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;max-width:72mm;gap:1.2mm 1.4mm}
 .inside .lbl{color:${t.soft};font-weight:600}
 .chip{display:flex;align-items:center;justify-content:center;gap:1mm;background:${t.tagBg};border:0.3mm solid ${t.tagBorder};color:${t.ink};border-radius:10mm;padding:0.4mm 2.4mm}
 .qrwrap{position:relative;margin-top:2mm;padding:2.4mm}

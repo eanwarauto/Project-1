@@ -60,7 +60,7 @@ h1{font-family:Lalezar,Cairo;font-weight:400;font-size:13mm;line-height:1.15}
 h1 span{color:${t.accent}}
 .mol{width:50mm;height:17mm}
 .inside{display:flex;flex-direction:column;align-items:center;gap:2mm;font-size:5mm;font-weight:800}
-.chips{display:grid;grid-template-columns:auto auto;gap:2mm 3mm}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;max-width:130mm;gap:2mm 3mm}
 .inside .lbl{color:${t.soft};font-weight:600}
 .chip{display:flex;align-items:center;justify-content:center;gap:1.6mm;background:${t.tagBg};border:0.45mm solid ${t.tagBorder};border-radius:20mm;padding:0.6mm 4.5mm}
 .qrwrap{position:relative;padding:4mm}
