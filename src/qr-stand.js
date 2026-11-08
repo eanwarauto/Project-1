@@ -12,6 +12,7 @@ const t = THEMES.women;
 const FILE = 'ستاند-باركود-الرابطة-التساهمية-A4-للنساء';
 const SCHOOL = 'ثانوية الشرقية';
 const GIFT = 'إهداء من معلمات قسم الكيمياء';
+const GIFT_HTML = 'إهداء من معلمات<br>قسم الكيمياء';
 const SUPERVISOR_TITLE = 'تحت إشراف رئيسة القسم';
 const SUPERVISOR = 'أ. منيرة الهاجري';
 
@@ -39,11 +40,13 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
   display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:8mm 12mm 7mm}
 .deco{position:absolute;border-radius:50%;border:0.8mm solid ${t.deco}}
 .d1{width:150mm;height:150mm;top:-60mm;left:-70mm}.d2{width:120mm;height:120mm;bottom:-50mm;right:-55mm}.d3{width:60mm;height:60mm;top:95mm;right:-30mm}
-.head{display:flex;flex-direction:column;align-items:center;gap:1.5mm;position:relative}
-.logo{width:32mm;height:32mm;object-fit:contain}
+.head{display:flex;flex-direction:row;align-items:center;justify-content:space-between;width:100%;position:relative}
+.htext{display:flex;flex-direction:column;align-items:flex-start;text-align:right;gap:1mm}
+.hbar{width:16mm;height:0.8mm;border-radius:1mm;background:${t.accent2};margin:0.5mm 0}
+.logo{width:36mm;height:36mm;object-fit:contain}
 .logo.ph{border:0.5mm dashed ${t.accent2};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:3.6mm;font-weight:800;color:${t.accent2};background:rgba(255,255,255,.5)}
-.school{font-weight:800;font-size:4.6mm;color:${t.soft}}
-.gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:7.4mm;color:${t.accent};line-height:1.25;margin-top:-1mm}
+.school{font-weight:800;font-size:5.4mm;color:${t.soft}}
+.gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:8.6mm;color:${t.accent};line-height:1.35}
 .tag{font-weight:800;font-size:5.4mm;color:${t.accent2};background:${t.tagBg};border:0.5mm solid ${t.tagBorder};border-radius:20mm;padding:0.8mm 8mm}
 h1{font-family:Lalezar,Cairo;font-weight:400;font-size:13mm;line-height:1.15}
 h1 span{color:${t.accent}}
@@ -52,7 +55,7 @@ h1 span{color:${t.accent}}
 .inside .lbl{color:${t.soft};font-weight:600}
 .chip{display:flex;align-items:center;gap:1.6mm;background:${t.tagBg};border:0.45mm solid ${t.tagBorder};border-radius:20mm;padding:0.6mm 4.5mm}
 .qrwrap{position:relative;padding:4mm}
-.qr{width:68mm;height:68mm;background:#fff;border-radius:4mm;padding:1mm;box-shadow:0 2mm 6mm rgba(74,42,94,.12)}
+.qr{width:74mm;height:74mm;background:#fff;border-radius:4mm;padding:1mm;box-shadow:0 2mm 6mm rgba(74,42,94,.12)}
 .qr svg{display:block}
 .c{position:absolute;width:11mm;height:11mm;border:0 solid ${t.qrFrame}}
 .tl{top:0;left:0;border-top-width:1.6mm;border-left-width:1.6mm;border-top-left-radius:4mm}
@@ -66,7 +69,7 @@ h1 span{color:${t.accent}}
 .foot .n{font-weight:900;font-size:6mm;color:${t.ink}}
 </style></head><body><div class="page">
   <div class="deco d1"></div><div class="deco d2"></div><div class="deco d3"></div>
-  <div class="head">${logo}<div class="school">${SCHOOL}</div><div class="gift">${GIFT}</div></div>
+  <div class="head"><div class="htext"><div class="gift">${GIFT_HTML}</div><div class="hbar"></div><div class="school">${SCHOOL}</div></div>${logo}</div>
   <div class="tag">الرابطة التساهمية</div>
   <h1>المعرفة مثل الإلكترونات…<br>أحلى لما <span>نتشاركها</span></h1>
   <div class="mol">${molecule(t)}</div>
