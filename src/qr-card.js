@@ -59,6 +59,11 @@ function molecule(t) {
 const phone = c => `<svg viewBox="0 0 24 24" width="5.2mm" height="5.2mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg>`;
 const bookIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6C9.5 4 6 4 3 5v14c3-1 6.5-1 9 1 2.5-2 6-2 9-1V5c-3-1-6.5-1-9 1z"/><path d="M12 6v14"/></svg>`;
 const slidesIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8M7 12l3-3 2 2 4-4"/></svg>`;
+const gameIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 14h-4l-1 1.6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="11.5" r=".8" fill="${c}"/><circle cx="18" cy="13.5" r=".8" fill="${c}"/></svg>`;
+const strategyIcon = c => `<svg viewBox="0 0 24 24" width="3.6mm" height="3.6mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`;
+// محتوى المجلد كما يظهر على البطاقة؛ wrap يكبّر الأيقونة عند الحاجة
+const ITEMS = [[bookIcon, 'الكتاب الحي'], [slidesIcon, 'عرض بوربوينت'], [gameIcon, 'ألعاب إلكترونية'], [strategyIcon, 'استراتيجيات']];
+const insideHTML = (c, wrap = s => s) => `<div class="inside"><span class="lbl">داخل الكود:</span><div class="chips">${ITEMS.map(([ic, txt]) => `<span class="chip">${wrap(ic(c))}${txt}</span>`).join('')}</div></div>`;
 const scissors = `<svg viewBox="0 0 24 24" width="4.5mm" height="4.5mm" fill="none" stroke="#8a94a6" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>`;
 
 function card(t) {
@@ -70,7 +75,7 @@ function card(t) {
     <div class="tag">الرابطة التساهمية</div>
     <h1>المعرفة مثل الإلكترونات…<br>أحلى لما <span>نتشاركها</span></h1>
     <div class="mol">${molecule(t)}</div>
-    <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${bookIcon(t.accent2)}الكتاب الحي</span><span class="chip">${slidesIcon(t.accent2)}عرض بوربوينت</span></div>
+    ${insideHTML(t.accent2)}
     <div class="qrwrap"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="qr">${qr}</div></div>
     <div class="cta">${phone(t.ink === '#ffffff' ? '#0b1730' : '#ffffff')}<span>${t.cta || 'امسح الكود واكتشف السرّ'}</span></div>
   </div>`;
@@ -92,27 +97,28 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .cut.h{top:148.5mm;left:0;right:0;border-top-width:0.35mm}
 .sc{position:absolute;background:#fff;padding:0.6mm;line-height:0}
 .card{position:relative;overflow:hidden;width:97mm;height:140.5mm;border-radius:5mm;background:${t.bg};border:${t.border};color:${t.ink};
-  display:flex;flex-direction:column;align-items:center;text-align:center;padding:6mm 6mm 5mm}
+  display:flex;flex-direction:column;align-items:center;text-align:center;padding:5mm 6mm 5mm}
 .deco{position:absolute;border-radius:50%;border:0.5mm solid ${t.deco}}
 .d1{width:70mm;height:70mm;top:-28mm;left:-30mm}.d2{width:55mm;height:55mm;bottom:-22mm;right:-24mm}
 .tag{font-weight:800;font-size:3.4mm;color:${t.accent2};background:${t.tagBg};border:0.35mm solid ${t.tagBorder};border-radius:10mm;padding:0.6mm 4mm}
-h1{font-family:Lalezar,Cairo;font-weight:400;font-size:8.6mm;line-height:1.2;margin-top:3.4mm}
+h1{font-family:Lalezar,Cairo;font-weight:400;font-size:8.2mm;line-height:1.18;margin-top:2.4mm}
 h1 span{color:${t.accent}}
-.mol{width:48mm;height:21mm;margin-top:2.6mm}
+.mol{width:36mm;height:14mm;margin-top:1.2mm}
 .sub{font-weight:600;font-size:3.6mm;line-height:1.45;color:${t.soft};margin-top:0.8mm}
 .sub b{font-weight:900;color:${t.ink}}
-.inside{display:flex;align-items:center;gap:1.4mm;margin-top:3.4mm;font-size:3.1mm;font-weight:800}
+.inside{display:flex;flex-direction:column;align-items:center;gap:1.2mm;margin-top:2.6mm;font-size:3.1mm;font-weight:800}
+.chips{display:grid;grid-template-columns:auto auto;gap:1.2mm 1.4mm}
 .inside .lbl{color:${t.soft};font-weight:600}
-.chip{display:flex;align-items:center;gap:1mm;background:${t.tagBg};border:0.3mm solid ${t.tagBorder};color:${t.ink};border-radius:10mm;padding:0.4mm 2.4mm}
-.qrwrap{position:relative;margin-top:3mm;padding:2.4mm}
-.qr{width:44mm;height:44mm;background:#fff;border-radius:2.5mm;padding:0.5mm}
+.chip{display:flex;align-items:center;justify-content:center;gap:1mm;background:${t.tagBg};border:0.3mm solid ${t.tagBorder};color:${t.ink};border-radius:10mm;padding:0.4mm 2.4mm}
+.qrwrap{position:relative;margin-top:2mm;padding:2.4mm}
+.qr{width:38mm;height:38mm;background:#fff;border-radius:2.5mm;padding:0.5mm}
 .qr svg{display:block}
 .c{position:absolute;width:6mm;height:6mm;border:0 solid ${t.qrFrame}}
 .tl{top:0;left:0;border-top-width:1mm;border-left-width:1mm;border-top-left-radius:2.5mm}
 .tr{top:0;right:0;border-top-width:1mm;border-right-width:1mm;border-top-right-radius:2.5mm}
 .bl{bottom:0;left:0;border-bottom-width:1mm;border-left-width:1mm;border-bottom-left-radius:2.5mm}
 .br{bottom:0;right:0;border-bottom-width:1mm;border-right-width:1mm;border-bottom-right-radius:2.5mm}
-.cta{display:flex;align-items:center;gap:1.6mm;margin-top:3.4mm;background:${t.accent};color:${t.ink === '#ffffff' ? '#0b1730' : '#ffffff'};
+.cta{display:flex;align-items:center;gap:1.6mm;margin-top:2.6mm;background:${t.accent};color:${t.ink === '#ffffff' ? '#0b1730' : '#ffffff'};
   font-weight:900;font-size:4mm;border-radius:10mm;padding:1.2mm 4.5mm}
 .foot{margin-top:auto;font-weight:600;font-size:2.9mm;color:${t.soft}}
 </style></head><body><div class="sheet">
@@ -123,7 +129,7 @@ ${[0, 1, 2, 3].map(() => `<div class="cell">${card(t)}</div>`).join('')}
 </div></body></html>`;
 }
 
-module.exports = { THEMES, molecule, phone, bookIcon, slidesIcon, QR_RAW, font, OUT, BUILD };
+module.exports = { THEMES, molecule, phone, bookIcon, slidesIcon, insideHTML, QR_RAW, font, OUT, BUILD };
 if (require.main === module) (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(BUILD, { recursive: true });

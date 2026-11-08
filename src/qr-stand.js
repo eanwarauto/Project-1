@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
-const { THEMES, molecule, phone, bookIcon, slidesIcon, QR_RAW, font, OUT, BUILD } = require('./qr-card');
+const { THEMES, molecule, phone, bookIcon, slidesIcon, insideHTML, QR_RAW, font, OUT, BUILD } = require('./qr-card');
 
 const ROOT = path.join(__dirname, '..');
 const t = THEMES.women;
@@ -56,12 +56,13 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .tag{font-weight:800;font-size:5.4mm;color:${t.accent2};background:${t.tagBg};border:0.5mm solid ${t.tagBorder};border-radius:20mm;padding:0.8mm 8mm}
 h1{font-family:Lalezar,Cairo;font-weight:400;font-size:13mm;line-height:1.15}
 h1 span{color:${t.accent}}
-.mol{width:56mm;height:20mm}
-.inside{display:flex;align-items:center;gap:2.5mm;font-size:5mm;font-weight:800}
+.mol{width:50mm;height:17mm}
+.inside{display:flex;flex-direction:column;align-items:center;gap:2mm;font-size:5mm;font-weight:800}
+.chips{display:grid;grid-template-columns:auto auto;gap:2mm 3mm}
 .inside .lbl{color:${t.soft};font-weight:600}
-.chip{display:flex;align-items:center;gap:1.6mm;background:${t.tagBg};border:0.45mm solid ${t.tagBorder};border-radius:20mm;padding:0.6mm 4.5mm}
+.chip{display:flex;align-items:center;justify-content:center;gap:1.6mm;background:${t.tagBg};border:0.45mm solid ${t.tagBorder};border-radius:20mm;padding:0.6mm 4.5mm}
 .qrwrap{position:relative;padding:4mm}
-.qr{width:66mm;height:66mm;background:#fff;border-radius:4mm;padding:1mm;box-shadow:0 2mm 6mm rgba(74,42,94,.12)}
+.qr{width:62mm;height:62mm;background:#fff;border-radius:4mm;padding:1mm;box-shadow:0 2mm 6mm rgba(74,42,94,.12)}
 .qr svg{display:block}
 .c{position:absolute;width:11mm;height:11mm;border:0 solid ${t.qrFrame}}
 .tl{top:0;left:0;border-top-width:1.6mm;border-left-width:1.6mm;border-top-left-radius:4mm}
@@ -81,7 +82,7 @@ h1 span{color:${t.accent}}
   <div class="tag">الرابطة التساهمية</div>
   <h1>المعرفة مثل الإلكترونات…<br>أحلى لما <span>نتشاركها</span></h1>
   <div class="mol">${molecule(t)}</div>
-  <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${big(bookIcon(t.accent2))}الكتاب الحي</span><span class="chip">${big(slidesIcon(t.accent2))}عرض بوربوينت</span></div>
+  ${insideHTML(t.accent2, big)}
   <div class="qrwrap"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="qr">${qr}</div></div>
   <div class="cta">${phone('#ffffff').replace(/5\.2mm/g, '8mm')}<span>${t.cta}</span></div>
   <div class="foot"><div class="sig"><div class="t">${SUPERVISOR_TITLE}</div><div class="n">${SUPERVISOR}</div></div><i class="fsep"></i><div class="sig"><div class="t">${PRINCIPAL_TITLE}</div><div class="n">${PRINCIPAL}</div></div></div>
