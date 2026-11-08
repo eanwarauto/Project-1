@@ -1,0 +1,536 @@
+<title>سجل إنجازي</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@500;700&display=swap">
+<style>
+/* Layout: a single column "notebook" — summary meters on top, then one card per week with three sessions × three items. Teacher sees a ledger table. */
+:root{
+  --bg:#EEF2F6; --surface:#FFFFFF; --sunk:#F5F7FA; --ink:#18212E; --muted:#5B677A; --line:#D9E0E9;
+  --accent:#2B55C9; --accent-soft:#E3EAFB; --on-accent:#FFFFFF;
+  --c-p:#2B55C9; --c-p-soft:#E3EAFB;
+  --c-h:#7A3FB8; --c-h-soft:#F0E7FA;
+  --c-b:#1D7F57; --c-b-soft:#E0F3EA;
+  --warn:#9A5B00; --warn-soft:#FBEFD9; --bad:#B3261E; --bad-soft:#FBE4E2;
+  --shadow:0 1px 2px rgba(24,33,46,.06),0 4px 14px rgba(24,33,46,.05);
+  --f-display:"Reem Kufi","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",system-ui,"Segoe UI",Tahoma,sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F141B; --surface:#171E28; --sunk:#121821; --ink:#E6EBF2; --muted:#98A3B5; --line:#2A3443;
+  --accent:#86A6FF; --accent-soft:#1E2A47; --on-accent:#0F141B;
+  --c-p:#86A6FF; --c-p-soft:#1E2A47; --c-h:#C49BF0; --c-h-soft:#2E2140; --c-b:#5FD3A0; --c-b-soft:#16352A;
+  --warn:#F2B861; --warn-soft:#3A2A10; --bad:#FF8A80; --bad-soft:#3E1D1B;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F141B; --surface:#171E28; --sunk:#121821; --ink:#E6EBF2; --muted:#98A3B5; --line:#2A3443;
+  --accent:#86A6FF; --accent-soft:#1E2A47; --on-accent:#0F141B;
+  --c-p:#86A6FF; --c-p-soft:#1E2A47; --c-h:#C49BF0; --c-h-soft:#2E2140; --c-b:#5FD3A0; --c-b-soft:#16352A;
+  --warn:#F2B861; --warn-soft:#3A2A10; --bad:#FF8A80; --bad-soft:#3E1D1B;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;direction:rtl}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.7rem} h2{font-size:1.2rem} h3{font-size:1.02rem}
+.num{font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:44px;height:44px;border-radius:10px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--f-display);font-size:1.35rem}
+.who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:.86rem}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+.notice{padding:12px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn);font-size:.92rem}
+.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.notice.info{background:var(--accent-soft);color:var(--accent)}
+
+.tabs{display:flex;gap:6px;background:var(--sunk);border:1px solid var(--line);padding:4px;border-radius:12px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.tab{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-weight:500;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* summary meters */
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.meter{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:6px}
+.meter .lbl{font-size:.88rem;color:var(--muted);letter-spacing:.01em}
+.meter .val{font-family:var(--f-display);font-size:1.7rem;line-height:1}
+.meter .val small{font-size:.9rem;color:var(--muted);font-family:var(--f-body)}
+.bar{height:6px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:99px;background:var(--c,var(--accent));transition:width .3s}
+.meter.total{background:var(--accent-soft);border-color:transparent}
+.meter.total .val{color:var(--accent)}
+@media (max-width:640px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* weeks */
+.weeks{display:flex;flex-direction:column;gap:12px}
+.week{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.week-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sessions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sess{background:var(--sunk);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.sess-title{font-size:.84rem;color:var(--muted);font-weight:600}
+.toggles{display:flex;flex-direction:column;gap:6px}
+.tg{display:flex;align-items:center;gap:8px;width:100%;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:.9rem;transition:background .15s,border-color .15s}
+.tg .box{width:18px;height:18px;border-radius:5px;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.tg .box svg{width:12px;height:12px;opacity:0}
+.tg[aria-pressed="true"]{background:var(--soft);border-color:var(--c);color:var(--c);font-weight:600}
+.tg[aria-pressed="true"] .box{background:var(--c);border-color:var(--c)}
+.tg[aria-pressed="true"] .box svg{opacity:1}
+.tg[disabled]{cursor:default}
+.it-p{--c:var(--c-p);--soft:var(--c-p-soft)} .it-h{--c:var(--c-h);--soft:var(--c-h-soft)} .it-b{--c:var(--c-b);--soft:var(--c-b-soft)}
+.tg .box svg path{stroke:var(--surface)}
+@media (max-width:640px){.sessions{grid-template-columns:1fr}.toggles{flex-direction:row}.tg{justify-content:center;padding:8px 6px;font-size:.85rem}}
+
+.savebar{position:sticky;bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);display:flex;justify-content:center;pointer-events:none}
+.saveflag{pointer-events:auto;background:var(--ink);color:var(--bg);padding:6px 14px;border-radius:99px;font-size:.85rem;margin-bottom:10px;opacity:0;transition:opacity .2s}
+.saveflag.show{opacity:1}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px}
+.field input,.field select,.search{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.form{display:grid;gap:14px;max-width:440px}
+
+/* teacher */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.toolbar .grp{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{min-width:0;width:220px;max-width:100%}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.92rem}
+th,td{padding:10px 12px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:.82rem;background:var(--sunk);position:sticky;top:0}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--sunk)}
+tbody tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:.84rem;font-weight:600;font-variant-numeric:tabular-nums}
+.pill.p{background:var(--c-p-soft);color:var(--c-p)} .pill.h{background:var(--c-h-soft);color:var(--c-h)} .pill.b{background:var(--c-b-soft);color:var(--c-b)}
+.pill.t{background:var(--accent);color:var(--on-accent)}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.lock{display:inline-flex;align-items:center;gap:8px;font-size:.9rem}
+.switch{width:38px;height:22px;border-radius:99px;background:var(--line);border:0;position:relative;padding:0;flex:none}
+.switch::after{content:"";position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:right .2s}
+.switch[aria-checked="true"]{background:var(--warn)}
+.switch[aria-checked="true"]::after{right:19px}
+
+dialog{border:0;border-radius:16px;padding:0;background:var(--surface);color:var(--ink);width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px)}
+dialog::backdrop{background:rgba(10,14,20,.45)}
+.dlg{padding:18px;display:flex;flex-direction:column;gap:14px}
+.dlg-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.mini{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:4px;font-size:.82rem}
+.mini .h{color:var(--muted);font-weight:600;padding:2px 4px}
+.mini .c{display:flex;gap:3px;padding:4px;background:var(--sunk);border-radius:6px;justify-content:center}
+.dot{width:12px;height:12px;border-radius:3px;background:var(--line)}
+.dot.on.p{background:var(--c-p)} .dot.on.h{background:var(--c-h)} .dot.on.b{background:var(--c-b)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.empty{text-align:center;padding:36px 16px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">س</div>
+      <div>
+        <h1>سجل إنجازي</h1>
+        <div class="muted small" id="subtitle">المشاركة والواجبات والسلوك · ٣ حصص في الأسبوع</div>
+      </div>
+    </div>
+    <div class="who" id="who"></div>
+  </header>
+  <main id="main" style="display:flex;flex-direction:column;gap:18px">
+    <div class="panel"><p class="muted" style="margin:0">جارٍ تحميل السجل…</p></div>
+  </main>
+</div>
+<div class="savebar"><div class="saveflag" id="saveflag" role="status" aria-live="polite"></div></div>
+<dialog id="dlg"></dialog>
+
+<script>
+(() => {
+const ITEMS = [
+  {i:0, cls:'p', name:'المشاركة', short:'مشاركة'},
+  {i:1, cls:'h', name:'الواجبات', short:'واجب'},
+  {i:2, cls:'b', name:'السلوك', short:'سلوك'},
+];
+const SESS = 3, MAX = 3, WEEKS_PER = 6;
+const PERIODS = [
+  {n:1, label:'الفترة الأولى', weeks:[1,2,3,4,5,6]},
+  {n:2, label:'الفترة الثانية', weeks:[7,8,9,10,11,12]},
+];
+const SLOTS = WEEKS_PER * SESS; // 18 حصة في كل فترة
+const CHECK = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+const nf = new Intl.NumberFormat('ar', {maximumFractionDigits:1});
+const n0 = new Intl.NumberFormat('ar');
+const fmt = v => nf.format(Math.round(v*10)/10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const key = (w,s) => 'w'+w+'s'+s;
+
+function itemScore(marks, period, i){
+  let c = 0;
+  for (const w of period.weeks) for (let s=1; s<=SESS; s++) if (marks?.[key(w,s)]?.[i]) c++;
+  return c / SLOTS * MAX;
+}
+function periodScores(marks, period){
+  const it = ITEMS.map(x => itemScore(marks, period, x.i));
+  return {items: it, total: it.reduce((a,b)=>a+b,0)};
+}
+function sessionsLogged(marks, period){
+  let c=0;
+  for (const w of period.weeks) for (let s=1;s<=SESS;s++){ const m = marks?.[key(w,s)]; if (m && m.some(Boolean)) c++; }
+  return c;
+}
+
+const $main = document.getElementById('main');
+const $who = document.getElementById('who');
+const $flag = document.getElementById('saveflag');
+const $dlg = document.getElementById('dlg');
+
+const S = {
+  db:null, user:null, dl:null, uid:null, owner:false,
+  view:'student', period:1, tperiod:'1',
+  me:null, meLoaded:false, myRef:null,
+  settings:{locked:{}}, all:[], allLoaded:false,
+  q:'', section:'', editingProfile:false, writeBlocked:false, loadSlow:false,
+};
+
+function flag(msg, ms){
+  $flag.textContent = msg; $flag.classList.add('show');
+  clearTimeout(flag.t); if (ms) flag.t = setTimeout(()=> $flag.classList.remove('show'), ms);
+}
+
+/* ---------- boot ---------- */
+async function boot(){
+  if (!window.claude || !window.claude.use){ renderNoDb(); return; }
+  const [db, user, dl] = await Promise.all([
+    claude.use('db'), claude.use('user'), claude.use('downloads')
+  ]);
+  S.db = db; S.user = user; S.dl = dl;
+  if (!db || !user){ renderNoDb(); return; }
+  S.uid = await user.id();
+  S.owner = await user.isOwner();
+  if (!S.uid){ renderNoDb(); return; }
+  S.view = S.owner ? 'teacher' : 'student';
+  S.myRef = db.collection('grades').doc(S.uid);
+
+  const slow = setTimeout(()=>{ S.loadSlow = true; render(); }, 10000);
+  db.doc('settings/main').onSnapshot(snap => {
+    S.settings = snap.exists ? (snap.data() || {locked:{}}) : {locked:{}};
+    render();
+  }, () => {});
+  S.myRef.onSnapshot(snap => {
+    if (!snap.metadata.fromCache){ clearTimeout(slow); S.loadSlow = false; }
+    if (dirty || saving) return; // لا نكتب فوق تعديلات لم تُحفظ بعد
+    S.me = snap.exists ? structuredClone(snap.data()) : null;
+    S.meLoaded = true;
+    render();
+  }, e => { clearTimeout(slow); S.meLoaded = true; render(); });
+  if (S.owner){
+    db.collection('grades').onSnapshot(snap => {
+      if (!snap.metadata.fromCache){ clearTimeout(slow); S.loadSlow = false; }
+      S.all = snap.docs.filter(d => d.id !== S.uid).map(d => ({id:d.id, ...d.data()}));
+      S.allLoaded = true;
+      render();
+    }, () => { S.allLoaded = true; render(); });
+  }
+  render();
+}
+
+function renderNoDb(){
+  $who.innerHTML = '';
+  $main.innerHTML = `<div class="panel" style="display:grid;gap:8px">
+    <h2>سجّلي الدخول لفتح سجلك</h2>
+    <p class="muted" style="margin:0">يحتاج هذا السجل إلى حساب Claude لحفظ درجاتك. افتحي الرابط الذي أرسلته المعلمة بعد تسجيل الدخول بالبريد الذي دعتك به.</p>
+  </div>`;
+}
+
+/* ---------- saving (one write at a time) ---------- */
+let saveTimer = null, saving = false, dirty = false;
+function queueSave(){
+  dirty = true; flag('جارٍ الحفظ…');
+  clearTimeout(saveTimer); saveTimer = setTimeout(flush, 700);
+}
+async function flush(){
+  if (saving || !dirty) return;
+  saving = true; dirty = false;
+  try {
+    await S.myRef.set({...S.me, updatedAt: Date.now()});
+    flag('تم الحفظ', 1600);
+  } catch(e){
+    if (e && e.code === 'invalid_argument'){ S.writeBlocked = true; render(); flag('لم يُحفظ: لا تملكين صلاحية الحفظ', 4000); }
+    else if (e && e.code === 'unavailable'){ dirty = true; setTimeout(flush, 1200 + Math.random()*800); }
+    else flag('تعذّر الحفظ، حاولي مرة أخرى', 4000);
+  }
+  saving = false;
+  if (dirty) flush();
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderWho();
+  if (S.view === 'teacher') renderTeacher();
+  else renderStudent();
+}
+
+function renderWho(){
+  const parts = [];
+  if (S.view === 'student' && S.me){
+    parts.push(`<span class="chip">${esc(S.me.name)} · ${esc(S.me.section)}</span>`);
+    parts.push(`<button class="btn" id="editProfile">تعديل البيانات</button>`);
+  }
+  if (S.owner){
+    parts.push(S.view === 'teacher'
+      ? `<button class="btn" id="toStudent">معاينة واجهة الطالبة</button>`
+      : `<button class="btn primary" id="toTeacher">العودة لواجهة المعلمة</button>`);
+  }
+  $who.innerHTML = parts.join('');
+  $who.querySelector('#editProfile')?.addEventListener('click', ()=>{ S.editingProfile = true; render(); });
+  $who.querySelector('#toStudent')?.addEventListener('click', ()=>{ S.view='student'; render(); });
+  $who.querySelector('#toTeacher')?.addEventListener('click', ()=>{ S.view='teacher'; render(); });
+}
+
+/* ----- student ----- */
+function renderStudent(){
+  const notes = [];
+  if (S.owner) notes.push(`<div class="notice info">هذه معاينة لما تراه الطالبة. ما تسجلينه هنا لا يظهر في جدول الطالبات.</div>`);
+  if (S.loadSlow && !S.meLoaded) notes.push(`<div class="notice">لم نتمكن من الوصول إلى السجل بعد. تأكدي من الاتصال بالإنترنت.</div>`);
+  if (S.writeBlocked) notes.push(`<div class="notice bad">لا يمكن حفظ درجاتك من هذا الحساب. اطلبي من المعلمة إضافة بريدك إلى قائمة المشاركة.</div>`);
+
+  if (!S.meLoaded){ $main.innerHTML = notes.join('') + `<div class="panel"><p class="muted" style="margin:0">جارٍ تحميل سجلك…</p></div>`; return; }
+  if (!S.me || S.editingProfile){ renderProfileForm(notes); return; }
+
+  const P = PERIODS[S.period-1];
+  const locked = !!S.settings?.locked?.[String(P.n)];
+  const sc = periodScores(S.me.marks, P);
+  const logged = sessionsLogged(S.me.marks, P);
+  if (locked) notes.push(`<div class="notice">أغلقت المعلمة التسجيل في ${P.label}. يمكنك الاطلاع على درجاتك فقط.</div>`);
+
+  const meters = ITEMS.map(x => `
+    <div class="meter it-${x.cls}">
+      <span class="lbl">${x.name}</span>
+      <span class="val num" style="color:var(--c)">${fmt(sc.items[x.i])} <small>من ${n0.format(MAX)}</small></span>
+      <div class="bar"><i style="width:${sc.items[x.i]/MAX*100}%;--c:var(--c-${x.cls})"></i></div>
+    </div>`).join('') + `
+    <div class="meter total">
+      <span class="lbl">المجموع</span>
+      <span class="val num">${fmt(sc.total)} <small>من ${n0.format(MAX*3)}</small></span>
+      <div class="bar"><i style="width:${sc.total/(MAX*3)*100}%"></i></div>
+    </div>`;
+
+  const weeks = P.weeks.map(w => {
+    let wc = 0;
+    const sess = [1,2,3].map(s => {
+      const m = S.me.marks?.[key(w,s)] || [0,0,0];
+      const tg = ITEMS.map(x => {
+        if (m[x.i]) wc++;
+        return `<button class="tg it-${x.cls}" data-w="${w}" data-s="${s}" data-i="${x.i}" aria-pressed="${m[x.i]?'true':'false'}" ${locked||S.writeBlocked?'disabled':''}>
+          <span class="box">${CHECK}</span>${x.short}</button>`;
+      }).join('');
+      return `<div class="sess"><span class="sess-title">الحصة ${n0.format(s)}</span><div class="toggles" role="group" aria-label="الأسبوع ${w} الحصة ${s}">${tg}</div></div>`;
+    }).join('');
+    return `<section class="week">
+      <div class="week-head"><h3>الأسبوع ${n0.format(w)}</h3><span class="muted small num">${n0.format(wc)} من ${n0.format(9)}</span></div>
+      <div class="sessions">${sess}</div></section>`;
+  }).join('');
+
+  $main.innerHTML = notes.join('') + `
+    <div class="toolbar">
+      <div class="tabs" role="tablist">${PERIODS.map(p => `<button class="tab" role="tab" data-p="${p.n}" aria-selected="${p.n===S.period}">${p.label} <span class="muted small">(الأسابيع ${n0.format(p.weeks[0])}–${n0.format(p.weeks[5])})</span></button>`).join('')}</div>
+      <span class="muted small num">سجّلتِ ${n0.format(logged)} من ${n0.format(SLOTS)} حصة</span>
+    </div>
+    <div class="summary">${meters}</div>
+    <p class="muted small" style="margin:0">ضعي علامة على كل بند حققتِه في الحصة. درجة كل بند = عدد الحصص التي حققتِه فيها ÷ ${n0.format(SLOTS)} × ${n0.format(MAX)}.</p>
+    <div class="weeks">${weeks}</div>`;
+
+  $main.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { S.period = +b.dataset.p; render(); }));
+  $main.querySelectorAll('.tg').forEach(b => b.addEventListener('click', () => {
+    const k = key(b.dataset.w, b.dataset.s), i = +b.dataset.i;
+    S.me.marks = S.me.marks || {};
+    const m = (S.me.marks[k] || [0,0,0]).slice();
+    m[i] = m[i] ? 0 : 1;
+    if (m.some(Boolean)) S.me.marks[k] = m; else delete S.me.marks[k];
+    queueSave(); render();
+  }));
+}
+
+function renderProfileForm(notes){
+  const first = !S.me;
+  $main.innerHTML = notes.join('') + `
+    <div class="panel">
+      <form class="form" id="pf">
+        <div><h2>${first ? 'أهلاً بك! عرّفي بنفسك' : 'تعديل البيانات'}</h2>
+        <p class="muted small" style="margin:4px 0 0">${first ? 'تظهر هذه البيانات للمعلمة فقط مع درجاتك.' : ''}</p></div>
+        <div class="field"><label for="pf-name">الاسم الثلاثي</label><input id="pf-name" required maxlength="60" value="${esc(S.me?.name||'')}" placeholder="مثال: سارة أحمد العلي"></div>
+        <div class="field"><label for="pf-sec">الصف والشعبة</label><input id="pf-sec" required maxlength="20" value="${esc(S.me?.section||'')}" placeholder="مثال: ١٠/٣"></div>
+        <div class="confirm"><button class="btn primary" type="submit">${first ? 'ابدئي التسجيل' : 'حفظ'}</button>
+        ${first ? '' : '<button class="btn" type="button" id="pf-cancel">إلغاء</button>'}</div>
+      </form>
+    </div>`;
+  const f = $main.querySelector('#pf');
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = f.querySelector('#pf-name').value.trim(), section = f.querySelector('#pf-sec').value.trim();
+    if (!name || !section) return;
+    S.me = {...(S.me || {marks:{}, createdAt: Date.now()}), name, section};
+    S.editingProfile = false; queueSave(); render();
+  });
+  f.querySelector('#pf-cancel')?.addEventListener('click', () => { S.editingProfile = false; render(); });
+}
+
+/* ----- teacher ----- */
+function rowScores(st){
+  const p1 = periodScores(st.marks, PERIODS[0]), p2 = periodScores(st.marks, PERIODS[1]);
+  return {p1, p2, all: p1.total + p2.total};
+}
+function renderTeacher(){
+  const sections = [...new Set(S.all.map(s => s.section).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  const q = S.q.trim();
+  const rows = S.all
+    .filter(s => (!S.section || s.section === S.section) && (!q || (s.name||'').includes(q)))
+    .sort((a,b) => (a.section||'').localeCompare(b.section||'','ar') || (a.name||'').localeCompare(b.name||'','ar'));
+  const locked = S.settings?.locked || {};
+  const tp = S.tperiod;
+
+  let head, body;
+  if (tp === 'all'){
+    head = `<th>الطالبة</th><th>الشعبة</th><th>الفترة الأولى /٩</th><th>الفترة الثانية /٩</th><th>المجموع /١٨</th><th>آخر تحديث</th>`;
+    body = rows.map(s => { const r = rowScores(s); return `<tr data-id="${esc(s.id)}">
+      <td>${esc(s.name)}</td><td>${esc(s.section)}</td>
+      <td class="n">${fmt(r.p1.total)}</td><td class="n">${fmt(r.p2.total)}</td>
+      <td><span class="pill t">${fmt(r.all)}</span></td><td class="muted small">${when(s.updatedAt)}</td></tr>`; }).join('');
+  } else {
+    const P = PERIODS[+tp-1];
+    head = `<th>الطالبة</th><th>الشعبة</th>${ITEMS.map(x=>`<th>${x.name} /٣</th>`).join('')}<th>المجموع /٩</th><th>الحصص المسجلة</th><th>آخر تحديث</th>`;
+    body = rows.map(s => { const r = periodScores(s.marks, P); return `<tr data-id="${esc(s.id)}">
+      <td>${esc(s.name)}</td><td>${esc(s.section)}</td>
+      ${ITEMS.map(x=>`<td><span class="pill ${x.cls}">${fmt(r.items[x.i])}</span></td>`).join('')}
+      <td><span class="pill t">${fmt(r.total)}</span></td>
+      <td class="n muted">${n0.format(sessionsLogged(s.marks,P))} / ${n0.format(SLOTS)}</td>
+      <td class="muted small">${when(s.updatedAt)}</td></tr>`; }).join('');
+  }
+
+  const avg = rows.length ? rows.reduce((a,s)=> a + (tp==='all' ? rowScores(s).all : periodScores(s.marks, PERIODS[+tp-1]).total), 0) / rows.length : 0;
+  const outOf = tp==='all' ? 18 : 9;
+
+  const empty = !S.allLoaded
+    ? `<div class="panel empty"><p class="muted" style="margin:0">${S.loadSlow ? 'لم نتمكن من الوصول إلى السجل بعد. تأكدي من الاتصال.' : 'جارٍ تحميل سجلات الطالبات…'}</p></div>`
+    : `<div class="panel empty">
+        <h2>لم تسجّل أي طالبة بعد</h2>
+        <p class="muted" style="margin:0;max-width:52ch">شاركي رابط هذه الصفحة مع الطالبات من زر المشاركة. كل طالبة تدخل بحسابها، تكتب اسمها وشعبتها، ثم تسجل المشاركة والواجبات والسلوك لكل حصة، وتظهر درجاتها هنا مباشرة.</p>
+      </div>`;
+
+  $main.innerHTML = `
+    <div class="toolbar">
+      <div class="tabs" role="tablist">
+        <button class="tab" data-tp="1" aria-selected="${tp==='1'}">الفترة الأولى</button>
+        <button class="tab" data-tp="2" aria-selected="${tp==='2'}">الفترة الثانية</button>
+        <button class="tab" data-tp="all" aria-selected="${tp==='all'}">المجموع الكلي</button>
+      </div>
+      <div class="grp">
+        <span class="lock"><button class="switch" role="switch" data-lock="1" aria-checked="${!!locked['1']}" aria-label="قفل الفترة الأولى"></button>قفل الأولى</span>
+        <span class="lock"><button class="switch" role="switch" data-lock="2" aria-checked="${!!locked['2']}" aria-label="قفل الفترة الثانية"></button>قفل الثانية</span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="grp">
+        <input class="search" id="q" type="search" placeholder="ابحثي باسم الطالبة" value="${esc(S.q)}">
+        <select class="search" id="sec" style="width:auto"><option value="">كل الشعب</option>${sections.map(s=>`<option ${s===S.section?'selected':''}>${esc(s)}</option>`).join('')}</select>
+      </div>
+      <div class="grp">
+        <span class="chip num">${n0.format(rows.length)} طالبة</span>
+        <span class="chip num">المتوسط ${fmt(avg)} من ${n0.format(outOf)}</span>
+        ${S.dl ? `<button class="btn" id="csv" ${rows.length?'':'disabled'}>تنزيل Excel (CSV)</button>` : ''}
+      </div>
+    </div>
+    ${S.all.length ? `<div class="tbl-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body || `<tr><td colspan="9" class="muted">لا توجد نتائج مطابقة.</td></tr>`}</tbody></table></div>
+      <p class="muted small" style="margin:0">اضغطي على اسم الطالبة لعرض تفاصيل كل حصة. القفل يمنع الطالبات من تعديل درجات الفترة.</p>` : empty}
+  `;
+
+  $main.querySelectorAll('[data-tp]').forEach(b => b.addEventListener('click', ()=>{ S.tperiod = b.dataset.tp; render(); }));
+  const qi = $main.querySelector('#q');
+  qi.addEventListener('input', ()=>{ S.q = qi.value; const pos = qi.selectionStart; render(); const n = $main.querySelector('#q'); n.focus(); try{n.setSelectionRange(pos,pos);}catch(_){} });
+  $main.querySelector('#sec').addEventListener('change', e => { S.section = e.target.value; render(); });
+  $main.querySelectorAll('[data-lock]').forEach(b => b.addEventListener('click', async ()=>{
+    const p = b.dataset.lock;
+    const next = {...(S.settings.locked||{}), [p]: !(S.settings.locked||{})[p]};
+    S.settings = {...S.settings, locked: next}; render();
+    try { await S.db.doc('settings/main').set({locked: next}); flag(next[p] ? 'تم قفل الفترة' : 'تم فتح الفترة', 1600); }
+    catch(e){ flag('تعذّر حفظ القفل', 3000); }
+  }));
+  $main.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', ()=> openDetail(tr.dataset.id)));
+  $main.querySelector('#csv')?.addEventListener('click', ()=> exportCsv(rows));
+}
+
+function when(t){
+  if (!t) return '—';
+  const d = new Date(t);
+  return d.toLocaleDateString('ar', {day:'numeric', month:'short'}) + ' ' + d.toLocaleTimeString('ar', {hour:'numeric', minute:'2-digit'});
+}
+
+function openDetail(id){
+  const st = S.all.find(s => s.id === id); if (!st) return;
+  const r = rowScores(st);
+  const grid = P => {
+    let h = `<div class="mini"><span class="h">الأسبوع</span>${[1,2,3].map(s=>`<span class="h" style="text-align:center">الحصة ${n0.format(s)}</span>`).join('')}`;
+    for (const w of P.weeks){
+      h += `<span class="h">${n0.format(w)}</span>`;
+      for (let s=1;s<=3;s++){ const m = st.marks?.[key(w,s)] || [0,0,0];
+        h += `<span class="c">${ITEMS.map(x=>`<i class="dot ${x.cls} ${m[x.i]?'on':''}" title="${x.name}"></i>`).join('')}</span>`; }
+    }
+    return h + '</div>';
+  };
+  const block = (P, sc) => `<div style="display:grid;gap:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><h3>${P.label}</h3>
+    <div class="stats">${ITEMS.map(x=>`<span class="pill ${x.cls}">${x.short} ${fmt(sc.items[x.i])}</span>`).join('')}<span class="pill t">${fmt(sc.total)} / ٩</span></div></div>
+    ${grid(P)}</div>`;
+  $dlg.innerHTML = `<div class="dlg">
+    <div class="dlg-head"><div><h2>${esc(st.name)}</h2><span class="muted small">${esc(st.section)} · المجموع الكلي ${fmt(r.all)} من ١٨</span></div>
+    <button class="btn" id="dlg-x" aria-label="إغلاق">إغلاق</button></div>
+    <div class="legend">${ITEMS.map(x=>`<span><i class="dot on ${x.cls}"></i>${x.name}</span>`).join('')}</div>
+    ${block(PERIODS[0], r.p1)}${block(PERIODS[1], r.p2)}
+    <div class="confirm" id="delzone"><button class="btn danger" id="del">حذف سجل الطالبة</button></div>
+  </div>`;
+  $dlg.querySelector('#dlg-x').onclick = () => $dlg.close();
+  $dlg.querySelector('#del').onclick = () => {
+    const z = $dlg.querySelector('#delzone');
+    z.innerHTML = `<span class="small">سيُحذف السجل نهائياً. متأكدة؟</span><button class="btn danger" id="del-yes">نعم، احذفي</button><button class="btn" id="del-no">تراجع</button>`;
+    z.querySelector('#del-no').onclick = () => openDetail(id);
+    z.querySelector('#del-yes').onclick = async () => {
+      try { await S.db.collection('grades').doc(id).delete(); $dlg.close(); flag('تم حذف السجل', 1600); }
+      catch(e){ flag('تعذّر الحذف', 3000); }
+    };
+  };
+  if (!$dlg.open) $dlg.showModal();
+}
+
+async function exportCsv(rows){
+  const cell = v => '"' + String(v).replace(/"/g,'""') + '"';
+  const r1 = v => (Math.round(v*10)/10).toString();
+  const header = ['الاسم','الشعبة',
+    ...ITEMS.map(x=>x.name+' ف١'),'مجموع ف١',
+    ...ITEMS.map(x=>x.name+' ف٢'),'مجموع ف٢','المجموع الكلي'];
+  const lines = [header.map(cell).join(',')];
+  for (const s of rows){
+    const r = rowScores(s);
+    lines.push([s.name, s.section, ...r.p1.items.map(r1), r1(r.p1.total), ...r.p2.items.map(r1), r1(r.p2.total), r1(r.all)].map(cell).join(','));
+  }
+  try { await S.dl.save({filename:'درجات-الطالبات.csv', data: '﻿' + lines.join('\r\n')}); }
+  catch(e){ if (e?.code !== 'declined' && e?.code !== 'cancelled') flag('تعذّر تنزيل الملف', 3000); }
+}
+
+boot();
+})();
+</script>
