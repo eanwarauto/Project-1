@@ -43,6 +43,11 @@ const THEMES = {
 // جزيء: ذرتان تتشاركان زوج إلكترونات في منطقة التداخل
 function molecule(t) {
   const e = (x, y, c, r = 3.2) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`;
+  // 6 إلكترونات غير مشاركة لكل ذرة: 3 أزواج حرة على المدار (فوق، والجهة الخارجية، وتحت)؛ مع الزوج المشترك يكتمل الثماني
+  const lonePairs = (cx, outer) => [90, outer, 270].flatMap(deg => [-12, 12].map(d => {
+    const a = (deg + d) * Math.PI / 180;
+    return e((cx + 38 * Math.cos(a)).toFixed(1), (45 - 38 * Math.sin(a)).toFixed(1), t.electron, 3);
+  })).join('');
   return `<svg viewBox="0 0 200 90" width="100%" height="100%">
     <defs><radialGradient id="glow"><stop offset="0" stop-color="${t.shared}" stop-opacity=".75"/><stop offset="1" stop-color="${t.shared}" stop-opacity="0"/></radialGradient></defs>
     <circle cx="72" cy="45" r="38" fill="none" stroke="${t.orbit}" stroke-width="1.6" stroke-dasharray="4 4"/>
@@ -51,8 +56,7 @@ function molecule(t) {
     <circle cx="72" cy="45" r="12" fill="${t.nucleus}"/><circle cx="68" cy="41" r="4" fill="#fff" opacity=".55"/>
     <circle cx="128" cy="45" r="12" fill="${t.nucleus}"/><circle cx="124" cy="41" r="4" fill="#fff" opacity=".55"/>
     ${e(100, 35, t.shared, 4.2)}${e(100, 55, t.shared, 4.2)}
-    ${e(34, 45, t.electron)}${e(45, 18, t.electron)}${e(45, 72, t.electron)}
-    ${e(166, 45, t.electron)}${e(155, 18, t.electron)}${e(155, 72, t.electron)}
+    ${lonePairs(72, 180)}${lonePairs(128, 0)}
   </svg>`;
 }
 
