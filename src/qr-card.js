@@ -123,7 +123,8 @@ ${[0, 1, 2, 3].map(() => `<div class="cell">${card(t)}</div>`).join('')}
 </div></body></html>`;
 }
 
-(async () => {
+module.exports = { THEMES, molecule, phone, bookIcon, slidesIcon, QR_RAW, font, OUT, BUILD };
+if (require.main === module) (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(BUILD, { recursive: true });
   const browser = await chromium.launch();
