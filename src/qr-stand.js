@@ -22,7 +22,8 @@ const PRINCIPAL = 'د. سلمى الريش';
 const LOGO_DIR = path.join(ROOT, 'assets', 'logo');
 const LOGOS = ['moe-logo.png', 'dept-logo-poster.png', 'science-guidance-logo.png'];
 const logoFile = LOGOS.join('، ');
-const logos = LOGOS.map(f => `<img class="logo" src="file://${path.join(LOGO_DIR, f)}">`).join('<i class="sep"></i>');
+// اسم المدرسة تحت شعار وزارة التربية
+const logos = LOGOS.map(f => `<div class="lcol"><img class="logo" src="file://${path.join(LOGO_DIR, f)}">${f === 'moe-logo.png' ? `<div class="school">${SCHOOL}</div>` : ''}</div>`).join('<i class="sep"></i>');
 
 const qr = QR_RAW.replace(/<\?xml[^>]*>\s*/, '')
   .replace(/width="(\d+)" height="(\d+)"/, (_, w, h) => `viewBox="0 0 ${w} ${h}" width="100%" height="100%"`)
@@ -46,12 +47,13 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .logos{display:flex;align-items:center;justify-content:space-around;width:100%;padding-bottom:3mm;border-bottom:0.4mm solid ${t.tagBorder}}
 .sep{width:0.4mm;height:18mm;background:${t.tagBorder}}
 .giftrow{display:flex;align-items:center;gap:4mm;margin-top:3mm}
+.lcol{display:flex;flex-direction:column;align-items:center;gap:1mm}
 .giftrow .dot{width:2mm;height:2mm;border-radius:50%;background:${t.accent2}}
 .htext{display:flex;flex-direction:column;align-items:flex-start;text-align:right;gap:1mm}
 .hbar{width:16mm;height:0.8mm;border-radius:1mm;background:${t.accent2};margin:0.5mm 0}
 .logo{width:40mm;height:24mm;object-fit:contain}
 .logo.ph{border:0.5mm dashed ${t.accent2};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:3.6mm;font-weight:800;color:${t.accent2};background:rgba(255,255,255,.5)}
-.school{font-weight:800;font-size:5mm;color:${t.soft}}
+.school{font-weight:800;font-size:4.4mm;color:${t.soft}}
 .gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:7.6mm;color:${t.accent};line-height:1.35}
 .tag{font-weight:800;font-size:5.4mm;color:${t.accent2};background:${t.tagBg};border:0.5mm solid ${t.tagBorder};border-radius:20mm;padding:0.8mm 8mm}
 h1{font-family:Lalezar,Cairo;font-weight:400;font-size:13mm;line-height:1.15}
@@ -78,7 +80,7 @@ h1 span{color:${t.accent}}
 .foot .n{font-weight:900;font-size:6mm;color:${t.ink}}
 </style></head><body><div class="page">
   <div class="deco d1"></div><div class="deco d2"></div><div class="deco d3"></div>
-  <div class="head"><div class="logos">${logos}</div><div class="giftrow"><span class="gift">${GIFT}</span><i class="dot"></i><span class="school">${SCHOOL}</span></div></div>
+  <div class="head"><div class="logos">${logos}</div><div class="giftrow"><span class="gift">${GIFT}</span></div></div>
   <div class="tag">الرابطة التساهمية</div>
   <h1>المعرفة مثل الإلكترونات…<br>أحلى لما <span>نتشاركها</span></h1>
   <div class="mol">${molecule(t)}</div>
