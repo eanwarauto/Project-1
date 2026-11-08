@@ -15,12 +15,14 @@ const GIFT = 'إهداء من معلمات قسم الكيمياء';
 const GIFT_HTML = 'إهداء من معلمات<br>قسم الكيمياء';
 const SUPERVISOR_TITLE = 'تحت إشراف رئيسة القسم';
 const SUPERVISOR = 'أ. منيرة الهاجري';
+const PRINCIPAL_TITLE = 'مديرة المدرسة';
+const PRINCIPAL = 'د. سلمى الريش';
 
+// الشعارات من اليمين لليسار: وزارة التربية، قسم الفيزياء والكيمياء، التوجيه الفني العام للعلوم
 const LOGO_DIR = path.join(ROOT, 'assets', 'logo');
-const logoFile = fs.existsSync(LOGO_DIR) && fs.readdirSync(LOGO_DIR).find(f => /\.(png|jpe?g|svg|webp)$/i.test(f));
-const logo = logoFile
-  ? `<img class="logo" src="file://${path.join(LOGO_DIR, logoFile)}">`
-  : `<div class="logo ph">شعار القسم</div>`;
+const LOGOS = ['moe-logo.png', 'dept-logo-poster.png', 'science-guidance-logo.png'];
+const logoFile = LOGOS.join('، ');
+const logos = LOGOS.map(f => `<img class="logo" src="file://${path.join(LOGO_DIR, f)}">`).join('<i class="sep"></i>');
 
 const qr = QR_RAW.replace(/<\?xml[^>]*>\s*/, '')
   .replace(/width="(\d+)" height="(\d+)"/, (_, w, h) => `viewBox="0 0 ${w} ${h}" width="100%" height="100%"`)
@@ -40,22 +42,26 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
   display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:8mm 12mm 7mm}
 .deco{position:absolute;border-radius:50%;border:0.8mm solid ${t.deco}}
 .d1{width:150mm;height:150mm;top:-60mm;left:-70mm}.d2{width:120mm;height:120mm;bottom:-50mm;right:-55mm}.d3{width:60mm;height:60mm;top:95mm;right:-30mm}
-.head{display:flex;flex-direction:row;align-items:center;justify-content:space-between;width:100%;position:relative}
+.head{display:flex;flex-direction:column;align-items:center;width:100%;position:relative}
+.logos{display:flex;align-items:center;justify-content:space-around;width:100%;padding-bottom:3mm;border-bottom:0.4mm solid ${t.tagBorder}}
+.sep{width:0.4mm;height:18mm;background:${t.tagBorder}}
+.giftrow{display:flex;align-items:center;gap:4mm;margin-top:3mm}
+.giftrow .dot{width:2mm;height:2mm;border-radius:50%;background:${t.accent2}}
 .htext{display:flex;flex-direction:column;align-items:flex-start;text-align:right;gap:1mm}
 .hbar{width:16mm;height:0.8mm;border-radius:1mm;background:${t.accent2};margin:0.5mm 0}
-.logo{width:36mm;height:36mm;object-fit:contain}
+.logo{width:40mm;height:24mm;object-fit:contain}
 .logo.ph{border:0.5mm dashed ${t.accent2};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:3.6mm;font-weight:800;color:${t.accent2};background:rgba(255,255,255,.5)}
-.school{font-weight:800;font-size:5.4mm;color:${t.soft}}
-.gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:8.6mm;color:${t.accent};line-height:1.35}
+.school{font-weight:800;font-size:5mm;color:${t.soft}}
+.gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:7.6mm;color:${t.accent};line-height:1.35}
 .tag{font-weight:800;font-size:5.4mm;color:${t.accent2};background:${t.tagBg};border:0.5mm solid ${t.tagBorder};border-radius:20mm;padding:0.8mm 8mm}
 h1{font-family:Lalezar,Cairo;font-weight:400;font-size:13mm;line-height:1.15}
 h1 span{color:${t.accent}}
-.mol{width:64mm;height:24mm}
+.mol{width:56mm;height:20mm}
 .inside{display:flex;align-items:center;gap:2.5mm;font-size:5mm;font-weight:800}
 .inside .lbl{color:${t.soft};font-weight:600}
 .chip{display:flex;align-items:center;gap:1.6mm;background:${t.tagBg};border:0.45mm solid ${t.tagBorder};border-radius:20mm;padding:0.6mm 4.5mm}
 .qrwrap{position:relative;padding:4mm}
-.qr{width:74mm;height:74mm;background:#fff;border-radius:4mm;padding:1mm;box-shadow:0 2mm 6mm rgba(74,42,94,.12)}
+.qr{width:66mm;height:66mm;background:#fff;border-radius:4mm;padding:1mm;box-shadow:0 2mm 6mm rgba(74,42,94,.12)}
 .qr svg{display:block}
 .c{position:absolute;width:11mm;height:11mm;border:0 solid ${t.qrFrame}}
 .tl{top:0;left:0;border-top-width:1.6mm;border-left-width:1.6mm;border-top-left-radius:4mm}
@@ -63,20 +69,22 @@ h1 span{color:${t.accent}}
 .bl{bottom:0;left:0;border-bottom-width:1.6mm;border-left-width:1.6mm;border-bottom-left-radius:4mm}
 .br{bottom:0;right:0;border-bottom-width:1.6mm;border-right-width:1.6mm;border-bottom-right-radius:4mm}
 .cta{display:flex;align-items:center;gap:2.5mm;background:${t.accent};color:#fff;font-weight:900;font-size:6.6mm;border-radius:20mm;padding:2mm 9mm}
-.foot{display:flex;flex-direction:column;align-items:center;position:relative}
+.foot{display:flex;flex-direction:row;align-items:center;justify-content:space-around;width:100%;position:relative;border-top:0.4mm solid ${t.tagBorder};padding-top:3mm}
+.sig{display:flex;flex-direction:column;align-items:center}
+.fsep{width:0.4mm;height:12mm;background:${t.tagBorder}}
 .foot .line{width:50mm;height:0.4mm;background:linear-gradient(90deg,transparent,${t.accent2},transparent);margin-bottom:2mm}
 .foot .t{font-weight:600;font-size:4.2mm;color:${t.soft}}
 .foot .n{font-weight:900;font-size:6mm;color:${t.ink}}
 </style></head><body><div class="page">
   <div class="deco d1"></div><div class="deco d2"></div><div class="deco d3"></div>
-  <div class="head"><div class="htext"><div class="gift">${GIFT_HTML}</div><div class="hbar"></div><div class="school">${SCHOOL}</div></div>${logo}</div>
+  <div class="head"><div class="logos">${logos}</div><div class="giftrow"><span class="gift">${GIFT}</span><i class="dot"></i><span class="school">${SCHOOL}</span></div></div>
   <div class="tag">الرابطة التساهمية</div>
   <h1>المعرفة مثل الإلكترونات…<br>أحلى لما <span>نتشاركها</span></h1>
   <div class="mol">${molecule(t)}</div>
   <div class="inside"><span class="lbl">داخل الكود:</span><span class="chip">${big(bookIcon(t.accent2))}الكتاب الحي</span><span class="chip">${big(slidesIcon(t.accent2))}عرض بوربوينت</span></div>
   <div class="qrwrap"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="qr">${qr}</div></div>
   <div class="cta">${phone('#ffffff').replace(/5\.2mm/g, '8mm')}<span>${t.cta}</span></div>
-  <div class="foot"><div class="line"></div><div class="t">${SUPERVISOR_TITLE}</div><div class="n">${SUPERVISOR}</div></div>
+  <div class="foot"><div class="sig"><div class="t">${SUPERVISOR_TITLE}</div><div class="n">${SUPERVISOR}</div></div><i class="fsep"></i><div class="sig"><div class="t">${PRINCIPAL_TITLE}</div><div class="n">${PRINCIPAL}</div></div></div>
 </div></body></html>`;
 
 (async () => {
