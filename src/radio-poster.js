@@ -70,8 +70,9 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 /* النص */
 h1{font-family:Lalezar,Cairo;font-weight:400;font-size:17mm;line-height:1.1;margin-top:3mm}
 h1 span{color:${t.accent}}
-.tagline{font-weight:800;font-size:5.4mm;color:${t.soft};margin-top:1mm}
-.tagline b{color:${t.accent2};font-weight:900}
+.ayah{font-weight:900;font-size:6mm;color:${t.ink};margin-top:1.5mm}
+.ayah .br{color:${t.accent2};font-family:'Amiri','Noto Naskh Arabic','DejaVu Sans',serif;font-size:7mm;padding:0 1mm}
+.ayah i{font-style:normal;font-weight:700;font-size:3.8mm;color:${t.soft}}
 .hadith{position:relative;margin-top:5mm;background:rgba(255,255,255,.75);border:0.4mm solid ${t.tagBorder};border-radius:5mm;padding:3.5mm 6mm 2.5mm;font-weight:700;font-size:4.3mm;line-height:1.7}
 .hadith .q{position:absolute;top:-4mm;right:8mm;background:${t.accent};color:#fff;font-weight:900;font-size:3.6mm;border-radius:10mm;padding:0.3mm 4mm}
 .hadith i{font-style:normal;font-weight:700;font-size:3.6mm;color:${t.soft}}
@@ -104,7 +105,7 @@ h1 span{color:${t.accent}}
   <div class="logos">${logoImg(LOGOS[0])}<div class="pill">${mic(t.accent2)}برنامج إذاعي</div>${logoImg(LOGOS[1])}</div>
 
   <h1>الصحبة <span>الصالحة</span></h1>
-  <div class="tagline">قُل لي مَن تُصاحب… <b>أقُل لك مَن أنت</b></div>
+  <div class="ayah"><span class="br">﴿</span>إِذْ يَقُولُ لِصَاحِبِهِ لَا تَحْزَنْ إِنَّ اللَّهَ مَعَنَا<span class="br">﴾</span> <i>[التوبة: 40]</i></div>
 
   <div class="hadith"><span class="q">قال رسول الله ﷺ</span>«${HADITH}» <i>متفق عليه</i></div>
 
