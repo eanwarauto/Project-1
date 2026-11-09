@@ -1,37 +1,37 @@
-// ورقة A4 فيها 12 بطاقة صغيرة (3 أعمدة × 4 صفوف) للقص والتوزيع على المعلمات مع قطعة شوكولاتة:
-// باركود مجلد «البرنامج الإذاعي» على Google Drive — إهداء من قسم الكيمياء.
+// ورقة A4 فيها 9 بطاقات (3 أعمدة × 3 صفوف) للقص والتوزيع على المعلمات مع قطعة شوكولاتة:
+// برنامج إذاعي عن قيمة «الصحبة الصالحة» برعاية قسم الفيزياء والكيمياء — باركود مجلد البرنامج على Google Drive.
 // التشغيل: node src/radio-tags.js  →  qr-card/بطاقات-البرنامج-الإذاعي-A4.pdf و.png
-// الشعارات: القائمة LOGOS أدناه (ملفات في assets/logo/)، من اليمين لليسار.
+// الشعاران: المدرسة يميناً، والقسم يساراً (assets/logo/).
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
-const { THEMES, font, OUT, BUILD } = require('./qr-card');
+const { THEMES, molecule, font, OUT, BUILD } = require('./qr-card');
 
 const ROOT = path.join(__dirname, '..');
 const t = THEMES.women;
 const FILE = 'بطاقات-البرنامج-الإذاعي-A4';
-const LOGOS = ['moe-logo.png', 'dept-logo-poster.png', 'science-guidance-logo.png'];
+const LOGOS = ['school-logo.png', 'dept-logo-hd.png'];
 const QR_RAW = fs.readFileSync(path.join(ROOT, 'assets', 'qr', 'radio-program-qr.svg'), 'utf8');
 
 const qr = QR_RAW.replace(/<\?xml[^>]*>\s*/, '')
   .replace(/width="(\d+)" height="(\d+)"/, (_, w, h) => `viewBox="0 0 ${w} ${h}" width="100%" height="100%"`);
-const logos = LOGOS.map(f => `<img src="file://${path.join(ROOT, 'assets', 'logo', f)}">`).join('');
+const logoImg = f => `<img src="file://${path.join(ROOT, 'assets', 'logo', f)}">`;
 const mic = c => `<svg viewBox="0 0 24 24" width="3.4mm" height="3.4mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>`;
 
 const tag = `<div class="tag">
   <div class="deco"></div>
-  <div class="logos">${logos}</div>
-  <div class="pill">${mic(t.accent2)}برنامج إذاعي</div>
-  <div class="hook">شي حلو… <span>ومعاه شي أحلى!</span></div>
-  <div class="mid">
-    <div class="qr">${qr}</div>
-  </div>
+  <div class="logos">${logoImg(LOGOS[0])}<div class="mid"><div class="pill">${mic(t.accent2)}برنامج إذاعي</div><div class="spon">برعاية قسم<br>الفيزياء والكيمياء</div></div>${logoImg(LOGOS[1])}</div>
+  <div class="hook">الصحبة <span>الصالحة</span></div>
+  <div class="mol">${molecule(t)}</div>
+  <div class="line">مثل الرابطة التساهمية… <b>نتشارك فنكتمل</b></div>
+  <div class="qr">${qr}</div>
   <div class="cta">امسحي الكود</div>
+  <div class="sweet">وهذي قطعة من حلاوة الصحبة…</div>
   <div class="gift">إهداء من قسم الكيمياء</div>
   <div class="by">إعداد المعلمات: أ. أنوار الفضلي • أ. فاطمة الموسوي</div>
 </div>`;
 
-const COLS = 3, ROWS = 4, CW = 210 / COLS, CH = 297 / ROWS;
+const COLS = 3, ROWS = 3, CW = 210 / COLS, CH = 297 / ROWS;
 const lines = [...Array(COLS - 1)].map((_, i) => `<div class="cut v" style="left:${(i + 1) * CW}mm"></div>`).join('')
   + [...Array(ROWS - 1)].map((_, i) => `<div class="cut h" style="top:${(i + 1) * CH}mm"></div>`).join('');
 
@@ -50,19 +50,24 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .cut.v{top:0;bottom:0;border-left-width:0.3mm}
 .cut.h{left:0;right:0;border-top-width:0.3mm}
 .tag{position:relative;overflow:hidden;width:${CW - 5}mm;height:${CH - 5}mm;border-radius:3.5mm;background:${t.bg};border:0.35mm solid #ecd3e6;color:${t.ink};
-  display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.2mm 2.5mm 2mm}
+  display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.4mm 2.5mm 2.4mm}
 .deco{position:absolute;width:40mm;height:40mm;border-radius:50%;border:0.4mm solid ${t.deco};top:-18mm;left:-18mm}
-.logos{display:flex;align-items:center;justify-content:center;gap:3mm;height:7.5mm;width:100%;padding-bottom:1mm;border-bottom:0.25mm solid ${t.tagBorder}}
+.logos{display:flex;align-items:center;justify-content:space-between;height:13mm;width:100%;padding:0 2mm 1mm;border-bottom:0.25mm solid ${t.tagBorder}}
 .logos img{height:100%;max-width:17mm;object-fit:contain}
-.pill{display:flex;align-items:center;gap:0.8mm;margin-top:1.4mm;font-weight:800;font-size:2.6mm;color:${t.accent2};background:${t.tagBg};border:0.25mm solid ${t.tagBorder};border-radius:5mm;padding:0 2.4mm}
-.hook{font-family:Lalezar,Cairo;font-size:4.3mm;line-height:1.25;margin-top:1mm}
+.pill{display:flex;align-items:center;gap:0.8mm;font-weight:800;font-size:2.6mm;color:${t.accent2};background:${t.tagBg};border:0.25mm solid ${t.tagBorder};border-radius:5mm;padding:0 2.4mm}
+.mid{display:flex;flex-direction:column;align-items:center}
+.spon{font-weight:700;font-size:2.3mm;line-height:1.3;color:${t.soft};margin-top:0.6mm}
+.hook{font-family:Lalezar,Cairo;font-size:7.2mm;line-height:1.2;margin-top:1.6mm}
+.mol{width:28mm;height:11mm;margin-top:0.2mm}
+.line{font-weight:600;font-size:2.6mm;color:${t.soft};margin-top:0.4mm}
+.line b{font-weight:900;color:${t.accent}}
+.sweet{font-weight:700;font-size:2.4mm;color:${t.accent2};margin-top:0.6mm}
 .hook span{color:${t.accent}}
-.mid{margin-top:1.2mm}
-.qr{width:27mm;height:27mm;background:#fff;border-radius:1.8mm;border:0.5mm solid ${t.qrFrame};padding:0.3mm}
+.qr{margin-top:1.4mm;width:28mm;height:28mm;background:#fff;border-radius:1.8mm;border:0.5mm solid ${t.qrFrame};padding:0.3mm}
 .qr svg{display:block}
 .cta{margin-top:1.2mm;background:${t.accent};color:#fff;font-weight:900;font-size:2.8mm;border-radius:5mm;padding:0.1mm 3.5mm}
-.gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:3.4mm;color:${t.accent};margin-top:auto;line-height:1.3}
-.by{font-weight:700;font-size:2.15mm;color:${t.soft};line-height:1.35}
+.gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:3.8mm;color:${t.accent};margin-top:auto;padding-top:0.8mm;line-height:1.3}
+.by{font-weight:700;font-size:2.3mm;color:${t.soft};line-height:1.35}
 </style></head><body><div class="sheet">
 ${[...Array(COLS * ROWS)].map(() => `<div class="cell">${tag}</div>`).join('')}
 ${lines}
