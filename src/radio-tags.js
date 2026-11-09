@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
-const { molecule, font, OUT, BUILD } = require('./qr-card');
+const { font, OUT, BUILD } = require('./qr-card');
 
 const ROOT = path.join(__dirname, '..');
 // ألوان شعار قسم الفيزياء والكيمياء (كحلي، تركواز، برتقالي ذهبي) بخلفية فاتحة جداً
@@ -26,12 +26,42 @@ const qr = QR_RAW.replace(/<\?xml[^>]*>\s*/, '')
 const logoImg = f => `<img src="file://${path.join(ROOT, 'assets', 'logo', f)}">`;
 const mic = c => `<svg viewBox="0 0 24 24" width="3.4mm" height="3.4mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>`;
 
+// حديث الجليس الصالح: حامل المسك (أثر طيب) مقابل نافخ الكير (أثر سيئ)
+const companions = `<svg viewBox="0 0 200 74" width="100%" height="100%" font-family="Cairo" font-weight="800">
+  <defs>
+    <linearGradient id="musk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe9e5"/><stop offset="1" stop-color="#62c1bb"/></linearGradient>
+    <radialGradient id="ember"><stop offset="0" stop-color="#ffd27a"/><stop offset="1" stop-color="#e0652b"/></radialGradient>
+  </defs>
+  <!-- حامل المسك (يمين) -->
+  <g>
+    <path d="M141 6 c-6 6 6 10 0 16 M152 2 c-6 7 6 11 0 18 M163 6 c-6 6 6 10 0 16" fill="none" stroke="#e6a650" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M131 14 l1.6 3.4 3.4 1.6 -3.4 1.6 -1.6 3.4 -1.6 -3.4 -3.4 -1.6 3.4 -1.6z M173 10 l1.2 2.6 2.6 1.2 -2.6 1.2 -1.2 2.6 -1.2 -2.6 -2.6 -1.2 2.6 -1.2z" fill="#e6a650"/>
+    <rect x="144" y="24" width="16" height="7" rx="2" fill="#e6a650" stroke="#1d2a4a" stroke-width="1.6"/>
+    <rect x="147.5" y="31" width="9" height="5" fill="#f4f1e8" stroke="#1d2a4a" stroke-width="1.6"/>
+    <path d="M138 36 h28 a5 5 0 0 1 5 5 v14 a6 6 0 0 1 -6 6 h-26 a6 6 0 0 1 -6 -6 v-14 a5 5 0 0 1 5 -5z" fill="url(#musk)" stroke="#1d2a4a" stroke-width="1.8"/>
+    <path d="M146.5 48.5 c-3-3.5 1.5-7 5.5-3 4-4 8.5-.5 5.5 3 l-5.5 5.5z" fill="#fff"/>
+    <text x="152" y="72" text-anchor="middle" font-size="9.5" fill="#2a9d95">حامل المسك</text>
+  </g>
+  <line x1="100" y1="10" x2="100" y2="62" stroke="rgba(29,42,74,.25)" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <!-- نافخ الكير (يسار) -->
+  <g>
+    <circle cx="36" cy="14" r="7" fill="#c7cbd3"/><circle cx="46" cy="10" r="8.5" fill="#b3b8c2"/><circle cx="57" cy="15" r="6.5" fill="#c7cbd3"/><circle cx="47" cy="20" r="6" fill="#d5d8de"/>
+    <path d="M22 42 q-4-10 6-14 l20 10 -20 10 q-10-2-6-6z" fill="#8a6a52" stroke="#1d2a4a" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M14 34 l10 4 M14 50 l10 -4" stroke="#1d2a4a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M48 38 l12 3" stroke="#1d2a4a" stroke-width="3.2" stroke-linecap="round"/>
+    <ellipse cx="72" cy="52" rx="13" ry="5" fill="#5a4636"/>
+    <circle cx="68" cy="48" r="4.5" fill="url(#ember)"/><circle cx="76" cy="49" r="3.6" fill="url(#ember)"/><circle cx="71" cy="43" r="1.4" fill="#e0652b"/><circle cx="79" cy="41" r="1" fill="#e0652b"/>
+    <text x="48" y="72" text-anchor="middle" font-size="9.5" fill="#7b8396">نافخ الكير</text>
+  </g>
+</svg>`;
+
 const tag = `<div class="tag">
   <div class="deco"></div>
   <div class="logos">${logoImg(LOGOS[0])}<div class="mid"><div class="pill">${mic(t.accent2)}برنامج إذاعي</div><div class="spon">برعاية قسم<br>الفيزياء والكيمياء</div></div>${logoImg(LOGOS[1])}</div>
   <div class="hook">الصحبة <span>الصالحة</span></div>
-  <div class="mol">${molecule(t)}</div>
-  <div class="line">مثل الرابطة التساهمية… <b>نتشارك فنكتمل</b></div>
+  <div class="hadith">«مَثَلُ الجليسِ الصالحِ والسَّوْءِ<br>كحاملِ المسكِ ونافخِ الكِيرِ» <i>متفق عليه</i></div>
+  <div class="mol">${companions}</div>
+  <div class="line">كوني <b>حاملة المسك</b>… واتركي أثراً طيباً</div>
   <div class="qr">${qr}</div>
   <div class="cta">امسحي الكود</div>
   <div class="sweet">وهذي قطعة من حلاوة الصحبة…</div>
@@ -60,20 +90,22 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .tag{position:relative;overflow:hidden;width:${CW - 5}mm;height:${CH - 5}mm;border-radius:3.5mm;background:${t.bg};border:0.35mm solid ${t.border};color:${t.ink};
   display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.4mm 2.5mm 2.4mm}
 .deco{position:absolute;width:40mm;height:40mm;border-radius:50%;border:0.4mm solid ${t.deco};top:-18mm;left:-18mm}
-.logos{display:flex;align-items:center;justify-content:space-between;height:13mm;width:100%;padding:0 2mm 1mm;border-bottom:0.25mm solid ${t.tagBorder}}
+.logos{display:flex;align-items:center;justify-content:space-between;height:11.5mm;width:100%;padding:0 2mm 0.8mm;border-bottom:0.25mm solid ${t.tagBorder}}
 .logos img{height:100%;max-width:17mm;object-fit:contain}
 .pill{display:flex;align-items:center;gap:0.8mm;font-weight:800;font-size:2.6mm;color:${t.accent2};background:${t.tagBg};border:0.25mm solid ${t.tagBorder};border-radius:5mm;padding:0 2.4mm}
 .mid{display:flex;flex-direction:column;align-items:center}
 .spon{font-weight:700;font-size:2.3mm;line-height:1.3;color:${t.soft};margin-top:0.6mm}
-.hook{font-family:Lalezar,Cairo;font-size:7.2mm;line-height:1.2;margin-top:1.6mm}
-.mol{width:28mm;height:11mm;margin-top:0.2mm}
-.line{font-weight:600;font-size:2.6mm;color:${t.soft};margin-top:0.4mm}
+.hook{font-family:Lalezar,Cairo;font-size:6.4mm;line-height:1.1;margin-top:0.8mm}
+.hadith{font-weight:700;font-size:2.3mm;line-height:1.3;color:${t.ink};margin-top:0.4mm;padding:0 1mm}
+.hadith i{font-style:normal;font-weight:600;font-size:1.9mm;color:${t.soft}}
+.mol{width:34mm;height:12.6mm;margin-top:0.6mm}
+.line{font-weight:600;font-size:2.5mm;color:${t.soft};margin-top:0.2mm}
 .line b{font-weight:900;color:${t.accent}}
 .sweet{font-weight:700;font-size:2.4mm;color:${t.accent2};margin-top:0.6mm}
 .hook span{color:${t.accent}}
-.qr{margin-top:1.4mm;width:28mm;height:28mm;background:#fff;border-radius:1.8mm;border:0.5mm solid ${t.qrFrame};padding:0.3mm}
+.qr{margin-top:1mm;width:24mm;height:24mm;background:#fff;border-radius:1.8mm;border:0.5mm solid ${t.qrFrame};padding:0.3mm}
 .qr svg{display:block}
-.cta{margin-top:1.2mm;background:${t.accent};color:#fff;font-weight:900;font-size:2.8mm;border-radius:5mm;padding:0.1mm 3.5mm}
+.cta{margin-top:1mm;background:${t.accent};color:#fff;font-weight:900;font-size:2.8mm;border-radius:5mm;padding:0.1mm 3.5mm}
 .gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:3.8mm;color:${t.accent};margin-top:auto;padding-top:0.8mm;line-height:1.3}
 .by{font-weight:700;font-size:2.3mm;color:${t.soft};line-height:1.35}
 </style></head><body><div class="sheet">
