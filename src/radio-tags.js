@@ -116,7 +116,8 @@ ${[...Array(COLS * ROWS)].map(() => `<div class="cell">${tag}</div>`).join('')}
 ${lines}
 </div></body></html>`;
 
-(async () => {
+module.exports = { t, LOGOS, qr, logoImg, mic };
+if (require.main === module) (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(BUILD, { recursive: true });
   const file = path.join(BUILD, 'radio-tags.html');
