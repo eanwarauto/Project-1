@@ -5,16 +5,24 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
-const { THEMES, molecule, font, OUT, BUILD } = require('./qr-card');
+const { molecule, font, OUT, BUILD } = require('./qr-card');
 
 const ROOT = path.join(__dirname, '..');
-const t = THEMES.women;
+// ألوان شعار قسم الفيزياء والكيمياء (كحلي، تركواز، برتقالي ذهبي) بخلفية فاتحة جداً
+const t = {
+  bg: 'linear-gradient(170deg, #f1fbfa 0%, #f8fcfb 55%, #fdf8ef 100%)',
+  ink: '#1d2a4a', soft: '#4d5b78', accent: '#2a9d95', accent2: '#d48a2c',
+  tagBg: 'rgba(98,193,187,.12)', tagBorder: 'rgba(98,193,187,.55)',
+  orbit: 'rgba(29,42,74,.30)', nucleus: '#f0bd72', electron: '#3fb0a8', shared: '#d9712a',
+  qrInk: '#1d2a4a', qrFrame: '#62c1bb', deco: 'rgba(98,193,187,.12)', border: '#cdebe8', cut: '#9fb8c0',
+};
 const FILE = 'بطاقات-البرنامج-الإذاعي-A4';
 const LOGOS = ['school-logo.png', 'dept-logo-hd.png'];
 const QR_RAW = fs.readFileSync(path.join(ROOT, 'assets', 'qr', 'radio-program-qr.svg'), 'utf8');
 
 const qr = QR_RAW.replace(/<\?xml[^>]*>\s*/, '')
-  .replace(/width="(\d+)" height="(\d+)"/, (_, w, h) => `viewBox="0 0 ${w} ${h}" width="100%" height="100%"`);
+  .replace(/width="(\d+)" height="(\d+)"/, (_, w, h) => `viewBox="0 0 ${w} ${h}" width="100%" height="100%"`)
+  .replace(/stroke="#[0-9a-f]+"/i, `stroke="${t.qrInk}"`);
 const logoImg = f => `<img src="file://${path.join(ROOT, 'assets', 'logo', f)}">`;
 const mic = c => `<svg viewBox="0 0 24 24" width="3.4mm" height="3.4mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>`;
 
@@ -46,10 +54,10 @@ const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-
 html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet{position:relative;width:210mm;height:297mm;display:grid;grid-template-columns:repeat(${COLS},${CW}mm);grid-template-rows:repeat(${ROWS},${CH}mm)}
 .cell{display:flex;align-items:center;justify-content:center}
-.cut{position:absolute;border:0 dashed #b3a6bd}
+.cut{position:absolute;border:0 dashed ${t.cut}}
 .cut.v{top:0;bottom:0;border-left-width:0.3mm}
 .cut.h{left:0;right:0;border-top-width:0.3mm}
-.tag{position:relative;overflow:hidden;width:${CW - 5}mm;height:${CH - 5}mm;border-radius:3.5mm;background:${t.bg};border:0.35mm solid #ecd3e6;color:${t.ink};
+.tag{position:relative;overflow:hidden;width:${CW - 5}mm;height:${CH - 5}mm;border-radius:3.5mm;background:${t.bg};border:0.35mm solid ${t.border};color:${t.ink};
   display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.4mm 2.5mm 2.4mm}
 .deco{position:absolute;width:40mm;height:40mm;border-radius:50%;border:0.4mm solid ${t.deco};top:-18mm;left:-18mm}
 .logos{display:flex;align-items:center;justify-content:space-between;height:13mm;width:100%;padding:0 2mm 1mm;border-bottom:0.25mm solid ${t.tagBorder}}
