@@ -58,7 +58,7 @@ const companions = `<svg viewBox="0 0 200 74" width="100%" height="100%" font-fa
 
 const tag = `<div class="tag">
   <div class="deco"></div>
-  <div class="logos">${logoImg(LOGOS[0])}<div class="mid"><div class="pill">${mic(t.accent2)}برنامج إذاعي</div><div class="spon">برعاية قسم<br>الفيزياء والكيمياء</div></div>${logoImg(LOGOS[1])}</div>
+  <div class="logos">${logoImg(LOGOS[0])}<div class="mid"><div class="pill">${mic(t.accent2)}برنامج إذاعي</div></div>${logoImg(LOGOS[1])}</div>
   <div class="hook">الصحبة <span>الصالحة</span></div>
   <div class="hadith">«مَثَلُ الجليسِ الصالحِ والسَّوْءِ<br>كحاملِ المسكِ ونافخِ الكِيرِ» <i>متفق عليه</i></div>
   <div class="mol">${companions}</div>
