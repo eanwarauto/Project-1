@@ -751,15 +751,10 @@ function labFrame(s,t){
   L.parts.forEach(p=>{p.y+=3.2*fr;p.x=bx+L.D*Math.pow(Math.max(0,Math.min(1,(p.y-134)/span)),1.5);
     if(p.y>=surf-2){p.gone=1;if(p.x>bl+4&&p.x<br-4)landed++}});
   L.parts=L.parts.filter(p=>!p.gone);
-  if(def&&L.D>6&&L.parts.length>8){c.save();c.setLineDash([6,6]);c.strokeStyle='rgba(23,50,77,.45)';c.lineWidth=2;c.beginPath();c.moveTo(bx,136);c.lineTo(bx,surf-4);c.stroke();c.restore();
-    c.fillStyle='#5b6b7b';c.font='600 11px Tahoma';c.fillText('المسار الأصلي',bx-38,surf-30)}
   if(L.parts.length>1){const ps=L.parts.slice().sort((a,b)=>a.y-b.y);c.save();c.strokeStyle=liq;c.lineWidth=6;c.lineCap='round';c.lineJoin='round';c.beginPath();
     ps.forEach((p,i)=>{if(i&&p.y-ps[i-1].y>14)c.moveTo(p.x,p.y);else if(i)c.lineTo(p.x,p.y);else c.moveTo(p.x,p.y)});c.stroke();
     c.strokeStyle='rgba(255,255,255,.55)';c.lineWidth=1.6;c.stroke();c.restore();
     c.fillStyle='rgba(255,255,255,.85)';ps.forEach((p,i)=>{if(i%6===Math.floor(t*20)%6){c.beginPath();c.arc(p.x,p.y,1.6,0,7);c.fill()}})}
-  if(def&&L.open&&L.parts.length>8){const my=134+Math.min(span*.55,60);
-    if(L.D>25){c.fillStyle='#c2410c';c.font='800 15px Tahoma';c.fillText('⟶ انحرف نحو الساق!',Math.min(W-70,bx+L.D*.45+70),my)}
-    else if(L.charge>0&&prox>.6&&!pol){c.fillStyle='#1f6f43';c.font='800 15px Tahoma';c.fillText('لا ينحرف ↓',bx+58,my)}}
   if(landed)L.level[smp]=Math.min(.55,lvl+landed*.0025);
   if(def&&L.open&&L.charge>0&&L.rod<.72&&L.parts.length>8&&!L.done[smp].near){L.done[smp].near=1;s.onChange()}
   let lit=false;
