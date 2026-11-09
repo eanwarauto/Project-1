@@ -17,13 +17,14 @@ const t = {
   qrInk: '#1d2a4a', qrFrame: '#62c1bb', deco: 'rgba(98,193,187,.12)', border: '#cdebe8', cut: '#9fb8c0',
 };
 const FILE = 'بطاقات-البرنامج-الإذاعي-A4';
-const LOGOS = ['school-logo.png', 'dept-logo-hd.png'];
+// الشعاران بدون الكتابة اللي داخلهما، والاسم مكتوب تحتهما بخط عريض أسود ليكون واضحاً في الطباعة
+const LOGOS = [['school-logo-icon.png', 'مدرسة الشرقية<br>الثانوية بنات'], ['dept-logo-hd-icon.png', 'قسم الفيزياء<br>والكيمياء']];
 const QR_RAW = fs.readFileSync(path.join(ROOT, 'assets', 'qr', 'radio-program-qr.svg'), 'utf8');
 
 const qr = QR_RAW.replace(/<\?xml[^>]*>\s*/, '')
   .replace(/width="(\d+)" height="(\d+)"/, (_, w, h) => `viewBox="0 0 ${w} ${h}" width="100%" height="100%"`)
   .replace(/stroke="#[0-9a-f]+"/i, `stroke="${t.qrInk}"`);
-const logoImg = f => `<img src="file://${path.join(ROOT, 'assets', 'logo', f)}">`;
+const logoImg = ([f, name]) => `<div class="lg"><img src="file://${path.join(ROOT, 'assets', 'logo', f)}"><b>${name}</b></div>`;
 const mic = c => `<svg viewBox="0 0 24 24" width="3.4mm" height="3.4mm" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>`;
 
 // حديث الجليس الصالح: حامل المسك (أثر طيب) مقابل نافخ الكير (أثر سيئ)
@@ -90,20 +91,22 @@ html,body{width:210mm;height:297mm;background:#fff;font-family:Cairo,sans-serif;
 .tag{position:relative;overflow:hidden;width:${CW - 5}mm;height:${CH - 5}mm;border-radius:3.5mm;background:${t.bg};border:0.35mm solid ${t.border};color:${t.ink};
   display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.4mm 2.5mm 2.4mm}
 .deco{position:absolute;width:40mm;height:40mm;border-radius:50%;border:0.4mm solid ${t.deco};top:-18mm;left:-18mm}
-.logos{display:flex;align-items:center;justify-content:space-between;height:11.5mm;width:100%;padding:0 2mm 0.8mm;border-bottom:0.25mm solid ${t.tagBorder}}
-.logos img{height:100%;max-width:17mm;object-fit:contain}
+.logos{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 0.5mm 1mm;border-bottom:0.25mm solid ${t.tagBorder}}
+.lg{display:flex;flex-direction:column;align-items:center;width:17mm}
+.lg img{height:8mm;max-width:14mm;object-fit:contain}
+.lg b{font-weight:900;font-size:2.1mm;line-height:1.25;color:#111;margin-top:0.5mm}
 .pill{display:flex;align-items:center;gap:0.8mm;font-weight:800;font-size:2.6mm;color:${t.accent2};background:${t.tagBg};border:0.25mm solid ${t.tagBorder};border-radius:5mm;padding:0 2.4mm}
 .mid{display:flex;flex-direction:column;align-items:center}
 .spon{font-weight:700;font-size:2.3mm;line-height:1.3;color:${t.soft};margin-top:0.6mm}
-.hook{font-family:Lalezar,Cairo;font-size:6.4mm;line-height:1.1;margin-top:0.8mm}
+.hook{font-family:Lalezar,Cairo;font-size:6mm;line-height:1.1;margin-top:0.6mm}
 .hadith{font-weight:700;font-size:2.3mm;line-height:1.3;color:${t.ink};margin-top:0.4mm;padding:0 1mm}
 .hadith i{font-style:normal;font-weight:600;font-size:1.9mm;color:${t.soft}}
-.mol{width:34mm;height:12.6mm;margin-top:0.6mm}
+.mol{width:30mm;height:11mm;margin-top:0.4mm}
 .line{font-weight:600;font-size:2.5mm;color:${t.soft};margin-top:0.2mm}
 .line b{font-weight:900;color:${t.accent}}
 .sweet{font-weight:700;font-size:2.4mm;color:${t.accent2};margin-top:0.6mm}
 .hook span{color:${t.accent}}
-.qr{margin-top:1mm;width:24mm;height:24mm;background:#fff;border-radius:1.8mm;border:0.5mm solid ${t.qrFrame};padding:0.3mm}
+.qr{margin-top:0.8mm;width:24mm;height:24mm;background:#fff;border-radius:1.8mm;border:0.5mm solid ${t.qrFrame};padding:0.3mm}
 .qr svg{display:block}
 .cta{margin-top:1mm;background:${t.accent};color:#fff;font-weight:900;font-size:2.8mm;border-radius:5mm;padding:0.1mm 3.5mm}
 .gift{font-family:Ruqaa,Cairo;font-weight:700;font-size:3.8mm;color:${t.accent};margin-top:auto;padding-top:0.8mm;line-height:1.3}
