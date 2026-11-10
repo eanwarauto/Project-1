@@ -87,7 +87,7 @@ canvas.grab{cursor:grabbing}
 const $=s=>document.querySelector(s),cv=$('#cv');
 if(!window.THREE){$('#err').hidden=false;$('#err').textContent='تعذّر تحميل محرك العرض الثلاثي الأبعاد. تأكد من اتصال الإنترنت ثم أعد فتح الصفحة.';$('#enter').hidden=true;return}
 const T3=THREE,V3=(x,y,z)=>new T3.Vector3(x,y,z);
-const Y0=.92,ZP=.3,BKX=[-.3,-.08],BALX=.3,PANY=Y0+.054,TARGET=5,SCOOP=2.5;
+const Y0=.92,ZP=.3,BKX=[-.3,-.08],BALX=.3,PANY=Y0+.054,TARGET=3,SCOOP=1.5;
 const ION={A:1,B:0};
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,damp=(r,dt)=>1-Math.pow(r,dt);
 const S={};
@@ -190,7 +190,7 @@ function txt(c,s,x,y,size,col='#16283a',w=800,al='center'){c.font=`${w} ${size}p
 })();
 
 /* السبورة أمام الطالب */
-const BSTEP=['انظر إلى العينتين وحدّد الحالة الفيزيائية لكل منهما.','خذ كأسين زجاجيين وسجّل عليهما الرمزين (A) و (B).','زِن 5 g من كل عينة بالميزان الإلكتروني وانقلها إلى كأسها.','أذِب كل عينة في كأسها بالماء المقطر: هل تذوب؟','ضع قطبي الكربون في الكأس (A): هل يوصل المحلول التيار؟','كرّر الخطوة 5 للكأس (B).'];
+const BSTEP=['انظر إلى العينتين وحدّد الحالة الفيزيائية لكل منهما.','خذ كأسين زجاجيين وسجّل عليهما الرمزين (A) و (B).','زِن 3 g من كل عينة بالميزان الإلكتروني وانقلها إلى كأسها.','أذِب كل عينة في كأسها بالماء المقطر: هل تذوب؟','ضع قطبي الكربون في الكأس (A): هل يوصل المحلول التيار؟','كرّر الخطوة 5 للكأس (B).'];
 let boardHi=-1;
 const boardT=tex(1400,680,(c,w,h)=>{c.fillStyle='#fdfefe';c.fillRect(0,0,w,h);c.fillStyle='#eef3f6';c.fillRect(0,0,w,8);
   txt(c,'النشاط العملي الأول: الكشف عن المركبات الأيونية',w/2,66,52,'#0f3d57');c.fillStyle='#d64545';c.fillRect(w/2-420,112,840,6);
@@ -231,7 +231,7 @@ box(.2,.002,.09,mat(0xf4f1e6,.9),-.5,Y0+.001,.55);
 let MASS=0;
 const dispT=tex(256,96,(c,w,h)=>{c.fillStyle='#0f1c14';c.fillRect(0,0,w,h);c.fillStyle='#7dffb0';c.font='800 62px "Courier New",monospace';c.textAlign='right';c.textBaseline='middle';c.direction='ltr';c.fillText(MASS.toFixed(2)+' g',w-14,h/2+4)});
 (function(){const g=new T3.Group();add(g,BALX,Y0,ZP);box(.22,.045,.22,mat(0xe9eef2,.5),0,.0225,0,g);box(.2,.004,.2,mat(0xcfd8de,.4),0,.047,0,g);
-  cyl(.082,.082,.006,mat(0xb9c4cd,.25,.8),0,.05,-.01,g);const d=plane(.1,.036,dispT,0,.024,.111,0,g);box(.11,.042,.004,mat(0x1c2630,.5),0,.024,.109,g);
+  cyl(.074,.074,.006,mat(0xb9c4cd,.25,.8),0,.05,-.028,g);const bz=box(.14,.006,.062,mat(0x1c2630,.5),0,.062,.078,g);bz.rotation.x=.75;const d=plane(.125,.05,dispT,0,.066,.08,0,g);d.rotation.x=-.82;
   const p=G.paper=new T3.Group();scene.add(p);box(.105,.0015,.105,new T3.MeshPhongMaterial({color:0xffffff,transparent:true,opacity:.85}),0,0,0,p);G.ppile=pileOf(p,.02,12,.011);proxy('paper',.14,.06,.14,p,.02)})();
 // الملعقة
 (function(){const g=G.spoon=new T3.Group();scene.add(g);const st=mat(0xc9d3da,.25,.85);const h=cyl(.004,.004,.17,st,.095,.004,0,g);h.rotation.z=Math.PI/2;
@@ -287,7 +287,7 @@ function labelTex(s){if(labT[s])return labT[s];const c=document.createElement('c
 
 /* ---------- الحالة ---------- */
 let st,O,drag=null,T=0;
-const HOME={A:[-.68,Y0+.047,ZP],B:[-.54,Y0+.047,ZP],spoon:[.16,Y0+.012,.47],wash:[.62,Y0+.057,.26],stir:[.52,Y0+.006,.56],elec:[.76,1.18,.25],paper:[BALX,PANY,ZP-.01],lA:[-.55,Y0+.004,.55],lB:[-.45,Y0+.004,.55]};
+const HOME={A:[-.68,Y0+.047,ZP],B:[-.54,Y0+.047,ZP],spoon:[.16,Y0+.012,.47],wash:[.62,Y0+.057,.26],stir:[.52,Y0+.006,.56],elec:[.76,1.18,.25],paper:[BALX,PANY,ZP-.028],lA:[-.55,Y0+.004,.55],lB:[-.45,Y0+.004,.55]};
 const KEYS=Object.keys(HOME);
 const STEPS=[['Q0','A'],['Q0','B'],['LABEL'],['WEIGH','A'],['MOVE','A'],['WEIGH','B'],['MOVE','B'],['WATER','A'],['STIR','A'],['Q1','A'],['WATER','B'],['STIR','B'],['Q1','B'],['DIP','A'],['Q2','A'],['DIP','B'],['Q2','B'],['FINAL'],['END']].map(([t,k])=>({t,k}));
 const cur=()=>STEPS[st.i],bi=k=>st.lab.indexOf(k);
