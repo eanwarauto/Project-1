@@ -1,0 +1,405 @@
+<title>مختبر الطاقة ثلاثي الأبعاد</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;700&display=swap">
+<style>
+/* Layout: full-screen first-person 3D lab; only an entry card and a fading hint sit on top. Single deliberate look (bright lab under a dark entry veil). */
+:root{--ink:#13232B;--veil:rgba(11,20,24,.72);--hot:#E8691E;--cold:#1C7FC4;--zero:#7A3FC4;--paper:#FFFFFF;--muted:#5B6E77;
+  --font:"Readex Pro","Geeza Pro",Tahoma,sans-serif;color-scheme:light}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:#0B1418;color:var(--ink);font-family:var(--font)}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+canvas#gl:active{cursor:grabbing}
+.veil{position:fixed;inset:0;display:grid;place-items:center;background:var(--veil);z-index:5;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.card{background:var(--paper);border-radius:26px;padding:28px 30px;width:min(620px,100%);box-sizing:border-box;text-align:center;display:grid;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.card h1{margin:0;font-size:clamp(30px,5vw,48px);line-height:1.2;text-wrap:balance}
+.card h1 span{color:var(--hot)} .card h1 em{font-style:normal;color:var(--cold)}
+.card p{margin:0;color:var(--muted);font-size:19px;line-height:1.7}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:16px;font-weight:700}
+.how div{background:#F1F6F8;border-radius:16px;padding:12px 8px;display:grid;gap:6px;justify-items:center}
+.how svg{width:40px;height:40px}
+#go{font:700 24px var(--font);background:var(--ink);color:#fff;border:0;border-radius:18px;padding:16px 28px;cursor:pointer}
+#go:focus-visible{outline:4px solid var(--hot);outline-offset:3px}
+.hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:4;background:rgba(19,35,43,.82);color:#fff;
+  border-radius:999px;padding:10px 20px;font-size:17px;font-weight:700;white-space:nowrap;transition:opacity .8s;pointer-events:none;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
+.hint.off{opacity:0}
+@media (max-width:520px){.how{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.hint{transition:none}}
+</style>
+
+<canvas id="gl" aria-label="مختبر ثلاثي الأبعاد: اسحبي للنظر حولك والمسي الأدوات لتجربتها"></canvas>
+<div class="hint off" id="hint" dir="rtl">اسحبي بإصبعك للنظر حولك · المسي الأداة المضيئة</div>
+<div class="veil" id="veil" dir="rtl">
+  <div class="card">
+    <h1>مختبر <span>الطاقة</span> <em>الحرارية</em></h1>
+    <p>ادخلي المختبر بمعطفك وقفّازاتك، جرّبي خمس تجارب، واكتشفي بنفسك: أين نكتب الطاقة في المعادلة؟</p>
+    <div class="how">
+      <div><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 20h24M8 20l6-6M8 20l6 6M32 20l-6-6M32 20l-6 6" stroke="#13232B" stroke-width="3" fill="none" stroke-linecap="round"/></svg>اسحبي للنظر حولك</div>
+      <div><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="8" fill="#FFC93C"/><circle cx="20" cy="20" r="15" fill="none" stroke="#FFC93C" stroke-width="3" stroke-dasharray="4 4"/></svg>المسي الأداة المضيئة</div>
+      <div><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="9" width="30" height="20" rx="3" fill="#fff" stroke="#13232B" stroke-width="3"/><path d="M12 19h16" stroke="#E8691E" stroke-width="3"/></svg>أجيبي على اللوح</div>
+    </div>
+    <button id="go" type="button">ادخلي المختبر</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(async function(){
+const AF='"Readex Pro","Geeza Pro",Tahoma,Arial,sans-serif';
+const COL=['#E8691E','#1C7FC4','#7A3FC4'];
+const TYPE=['طارد للحرارة','ماصّ للحرارة','لاحراري'];
+try{await Promise.race([document.fonts.load('700 40px "Readex Pro"'),new Promise(r=>setTimeout(r,2500))])}catch(e){}
+
+/* ================= renderer / scene ================= */
+const cv=document.getElementById('gl');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xDDE8EC);
+scene.fog=new THREE.Fog(0xDDE8EC,9,18);
+const camera=new THREE.PerspectiveCamera(68,1,0.03,40);
+const player=new THREE.Group();player.position.set(0,0,-0.05);scene.add(player);
+const head=new THREE.Group();head.position.y=1.6;player.add(head);head.add(camera);
+let yaw=0,pitch=-0.16;
+function applyView(){player.rotation.y=yaw;head.rotation.x=pitch}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w/h<1?84:66;camera.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x8FA3AD,0.95));
+const sun=new THREE.DirectionalLight(0xffffff,0.55);sun.position.set(2,5,3);scene.add(sun);
+scene.add(new THREE.AmbientLight(0xffffff,0.18));
+
+/* ================= canvas helpers ================= */
+function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+function rr(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
+function fit(x,t,maxW,size,w='700'){let s=size;do{x.font=`${w} ${s}px ${AF}`;s-=2}while(x.measureText(t).width>maxW&&s>12);return s+2}
+function wrap(x,t,maxW){const words=t.split(' ');const lines=[];let cur='';words.forEach(w=>{const tr=cur?cur+' '+w:w;if(x.measureText(tr).width>maxW&&cur){lines.push(cur);cur=w}else cur=tr});if(cur)lines.push(cur);return lines}
+function para(x,t,cx,y,maxW,size,color,lh=1.45,align='center',w='700'){x.font=`${w} ${size}px ${AF}`;x.fillStyle=color;x.textAlign=align;x.textBaseline='alphabetic';const L=wrap(x,t,maxW);L.forEach((l,i)=>x.fillText(l,cx,y+i*size*lh));return L.length*size*lh}
+function tex(c){const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t}
+function plane(c,w,h){return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex(c)}))}
+/* chemistry markup: CH_{4(g)} -> subscripts */
+function segs(s){const o=[];s.replace(/([^_]+)|_\{([^}]*)\}/g,(m,a,b)=>{o.push(a!==undefined?{t:a,sub:0}:{t:b,sub:1})});return o}
+function chemW(x,s,size){let w=0;segs(s).forEach(g=>{x.font=`700 ${g.sub?size*.62:size}px ${AF}`;w+=x.measureText(g.t).width});return w}
+function chemDraw(x,s,X,Y,size,color){x.textAlign='left';x.textBaseline='alphabetic';x.fillStyle=color;let cx=X;segs(s).forEach(g=>{const sz=g.sub?size*.62:size;x.font=`700 ${sz}px ${AF}`;x.fillText(g.t,cx,Y+(g.sub?size*.26:0));cx+=x.measureText(g.t).width});return cx}
+
+/* ================= room ================= */
+const W=4,FRONT=-2.4,BACK=4,HGT=3.2;
+(function room(){
+  const fc=mkCanvas(512,512),fx=fc.getContext('2d');for(let i=0;i<8;i++)for(let j=0;j<8;j++){fx.fillStyle=(i+j)%2?'#E6EDF0':'#F7FAFB';fx.fillRect(i*64,j*64,64,64)}
+  const ft=tex(fc);ft.wrapS=ft.wrapT=THREE.RepeatWrapping;ft.repeat.set(5,4);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(2*W,BACK-FRONT),new THREE.MeshStandardMaterial({map:ft,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.z=(BACK+FRONT)/2;scene.add(floor);
+  const wallM=new THREE.MeshStandardMaterial({color:0xEAF2F4,roughness:.95});
+  const band=new THREE.MeshStandardMaterial({color:0x0E8F9E,roughness:.8});
+  function wall(w,px,pz,ry){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,HGT),wallM);m.position.set(px,HGT/2,pz);m.rotation.y=ry;scene.add(m);
+    const b=new THREE.Mesh(new THREE.PlaneGeometry(w,.9),band);b.position.set(px,.45,pz);b.rotation.y=ry;b.translateZ(.005);scene.add(b);
+    const s=new THREE.Mesh(new THREE.PlaneGeometry(w,.06),new THREE.MeshStandardMaterial({color:0xE8691E}));s.position.set(px,.93,pz);s.rotation.y=ry;s.translateZ(.006);scene.add(s)}
+  wall(2*W,0,FRONT,0);wall(2*W,0,BACK,Math.PI);wall(BACK-FRONT,-W,(BACK+FRONT)/2,Math.PI/2);wall(BACK-FRONT,W,(BACK+FRONT)/2,-Math.PI/2);
+  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(2*W,BACK-FRONT),new THREE.MeshStandardMaterial({color:0xF7FAFB}));ceil.rotation.x=Math.PI/2;ceil.position.set(0,HGT,(BACK+FRONT)/2);scene.add(ceil);
+  for(let i=-1;i<=1;i++)for(let j=0;j<3;j++){const l=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.35),new THREE.MeshBasicMaterial({color:0xFFFFFF}));l.rotation.x=Math.PI/2;l.position.set(i*2.4,HGT-.01,-1.5+j*2);scene.add(l)}
+})();
+
+/* ---------- posters ---------- */
+function poster(draw,w,h,pw,ph,pos,ry){const c=mkCanvas(w,h),x=c.getContext('2d');draw(x,w,h);const m=plane(c,pw,ph);m.position.copy(pos);m.rotation.y=ry;scene.add(m);
+  const fr=new THREE.Mesh(new THREE.PlaneGeometry(pw+.06,ph+.06),new THREE.MeshStandardMaterial({color:0x13232B}));fr.position.copy(pos);fr.rotation.y=ry;fr.translateZ(-.004);scene.add(fr);return m}
+function grad(x,w,h,a,b){const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,a);g.addColorStop(1,b);x.fillStyle=g;x.fillRect(0,0,w,h)}
+function flame(x,cx,cy,s){x.save();x.translate(cx,cy);x.scale(s,s);x.fillStyle='#FFD25A';x.beginPath();x.moveTo(0,-200);x.bezierCurveTo(120,-60,110,90,0,120);x.bezierCurveTo(-110,90,-120,-60,0,-200);x.fill();
+  x.fillStyle='#FFF4C2';x.beginPath();x.moveTo(0,-80);x.bezierCurveTo(60,0,55,80,0,100);x.bezierCurveTo(-55,80,-60,0,0,-80);x.fill();x.restore()}
+function flake(x,cx,cy,r,col){x.save();x.translate(cx,cy);x.strokeStyle=col;x.lineWidth=r*.09;x.lineCap='round';for(let i=0;i<6;i++){x.rotate(Math.PI/3);x.beginPath();x.moveTo(0,0);x.lineTo(0,-r);x.moveTo(0,-r*.55);x.lineTo(r*.22,-r*.75);x.moveTo(0,-r*.55);x.lineTo(-r*.22,-r*.75);x.stroke()}x.restore()}
+const P=Math.PI;
+poster((x,w,h)=>{grad(x,w,h,'#FFB04A','#E2431B');flame(x,w/2,430,1.6);para(x,'طارد للحرارة',w/2,830,w-80,110,'#fff');x.font=`700 120px ${AF}`;x.textAlign='center';x.fillText('ΔH < 0',w/2,990);para(x,'النظام يطرد الحرارة إلى المحيط',w/2,1130,w-120,58,'#FFF2E2')},1024,1300,1.0,1.27,new THREE.Vector3(2.75,1.75,FRONT+.01),0);
+poster((x,w,h)=>{grad(x,w,h,'#7FD0FF','#1C6FB8');flake(x,w/2,420,260,'#fff');para(x,'ماصّ للحرارة',w/2,830,w-80,110,'#fff');x.font=`700 120px ${AF}`;x.textAlign='center';x.fillText('ΔH > 0',w/2,990);para(x,'النظام يمتصّ الحرارة من المحيط',w/2,1130,w-120,58,'#E6F4FF')},1024,1300,1.0,1.27,new THREE.Vector3(-2.75,1.75,FRONT+.01),0);
+poster((x,w,h)=>{grad(x,w,h,'#B892F0','#5B2CA8');x.strokeStyle='#fff';x.lineWidth=18;x.lineCap='round';x.beginPath();x.moveTo(w/2,180);x.lineTo(w/2,560);x.moveTo(w/2-260,300);x.lineTo(w/2+260,300);x.moveTo(w/2-160,580);x.lineTo(w/2+160,580);x.stroke();
+  [-260,260].forEach(d=>{x.beginPath();x.moveTo(w/2+d,300);x.lineTo(w/2+d-90,470);x.lineTo(w/2+d+90,470);x.closePath();x.stroke()});
+  para(x,'لاحراري',w/2,820,w-80,120,'#fff');x.font=`700 120px ${AF}`;x.textAlign='center';x.fillText('ΔH = 0',w/2,990);para(x,'لا يطرد ولا يمتصّ الحرارة',w/2,1130,w-120,58,'#F1E8FF')},1024,1300,1.0,1.27,new THREE.Vector3(-W+.01,1.75,-.6),P/2);
+poster((x,w,h)=>{x.fillStyle='#FFFDF5';x.fillRect(0,0,w,h);const g=x.createRadialGradient(260,300,30,260,300,220);g.addColorStop(0,'#FFF3A0');g.addColorStop(1,'#FFB200');x.fillStyle=g;x.beginPath();x.arc(260,300,170,0,7);x.fill();
+  x.strokeStyle='#E8691E';x.lineWidth=16;x.beginPath();x.moveTo(470,300);x.lineTo(640,300);x.stroke();x.beginPath();x.moveTo(640,300);x.lineTo(605,270);x.moveTo(640,300);x.lineTo(605,330);x.stroke();
+  x.fillStyle='#2E9D47';x.beginPath();x.ellipse(820,290,110,60,-.6,0,7);x.fill();x.strokeStyle='#1E6E31';x.lineWidth=10;x.beginPath();x.moveTo(740,360);x.lineTo(900,220);x.stroke();
+  para(x,'الشمس: المصدر المطلق للطاقة',w/2,640,w-100,70,'#13232B');para(x,'تخزّن النباتات طاقة الشمس، ثمّ تتحوّل عبر ملايين السنين إلى وقود أحفوري.',w/2,760,w-160,46,'#5B6E77','1.5','center','500')},1024,920,1.3,1.17,new THREE.Vector3(W-.01,1.8,-.4),-P/2);
+poster((x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);const g=x.createLinearGradient(120,0,w-120,0);g.addColorStop(0,'#E8491E');g.addColorStop(1,'#1C7FC4');x.fillStyle=g;rr(x,120,230,w-240,70,35);x.fill();
+  x.fillStyle='#1C7FC4';x.beginPath();x.moveTo(w-120,190);x.lineTo(w-30,265);x.lineTo(w-120,340);x.fill();
+  x.font=`700 70px ${AF}`;x.textAlign='center';x.fillStyle='#E8491E';x.fillText('أسخن',220,150);x.fillStyle='#1C7FC4';x.fillText('أبرد',w-220,150);
+  para(x,'تنتقل الحرارة دائمًا من الجسم الأسخن إلى الجسم الأبرد',w/2,470,w-120,62,'#13232B')},1024,640,1.4,.875,new THREE.Vector3(W-.01,1.85,1.5),-P/2);
+poster((x,w,h)=>{grad(x,w,h,'#2EBE6B','#14804A');x.fillStyle='#fff';rr(x,180,170,660,190,90);x.fill();x.fillStyle='#14804A';x.beginPath();x.arc(370,265,62,0,7);x.arc(650,265,62,0,7);x.fill();
+  para(x,'سلامتكِ أوّلًا',w/2,560,w-80,96,'#fff');para(x,'ارتدي النظّارة والقفّازات والمعطف',w/2,690,w-120,56,'#E8FFF1')},1024,860,1.0,.84,new THREE.Vector3(-W+.01,1.8,1.6),P/2);
+poster((x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);para(x,'التغيّر في الإنثالبي',w/2,150,w-80,80,'#0E8F9E');chemDraw(x,'',0,0,10,'#000');
+  const s='ΔH = ΔH_{(Products)} − ΔH_{(Reactants)}';const sz=96;const wd=chemW(x,s,sz);chemDraw(x,s,(w-wd)/2,340,sz,'#13232B');
+  para(x,'إنثالبي النواتج − إنثالبي المتفاعلات',w/2,500,w-120,60,'#5B6E77')},1365,600,2.0,.88,new THREE.Vector3(0,1.9,BACK-.01),P);
+poster((x,w,h)=>{x.fillStyle='#0E8F9E';x.fillRect(0,0,w,h);flame(x,150,h/2+30,.42);flake(x,w-150,h/2,80,'#fff');x.font=`700 150px ${AF}`;x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';x.fillText('الكيمياء الحرارية',w/2,h/2+10)},2048,300,2.2,.3,new THREE.Vector3(0,3.03,FRONT+.012),0);
+(function elements(){const E=[['H','#FF8A80'],['C','#90A4AE'],['O','#4FC3F7'],['N','#9575CD'],['Na','#FFB74D'],['Cl','#AED581'],['S','#FFF176'],['Al','#B0BEC5'],['Fe','#BCAAA4']];
+  E.forEach(([s,c],i)=>poster((x,w,h)=>{x.fillStyle=c;x.fillRect(0,0,w,h);x.fillStyle='#13232B';x.font=`700 130px ${AF}`;x.textAlign='center';x.textBaseline='middle';x.fillText(s,w/2,h/2)},256,256,.28,.28,new THREE.Vector3(-W+.012,2.75,-1.9+i*.34),P/2))})();
+
+/* ---------- shelves & glassware ---------- */
+const glassM=()=>new THREE.MeshStandardMaterial({color:0xDFF4FA,transparent:true,opacity:.35,roughness:.05,side:THREE.DoubleSide,depthWrite:false});
+function shelf(px,pz,ry){const g=new THREE.Group();g.position.set(px,0,pz);g.rotation.y=ry;scene.add(g);
+  for(let k=0;k<2;k++){const b=new THREE.Mesh(new THREE.BoxGeometry(2.0,.04,.3),new THREE.MeshStandardMaterial({color:0xFFFFFF}));b.position.set(0,1.25+k*.55,.15);g.add(b);
+    const cols=[0xE8691E,0x1C7FC4,0x7A3FC4,0x2E9D47,0xFFC93C,0xE53935];
+    for(let i=0;i<6;i++){const c=cols[(i+k*2)%6];const fl=new THREE.Group();fl.position.set(-.8+i*.32,1.27+k*.55,.15);
+      const tall=(i+k)%2;const gl=new THREE.Mesh(new THREE.CylinderGeometry(.06,.07,tall?.26:.18,16,1,true),glassM());gl.position.y=tall?.13:.09;fl.add(gl);
+      const lq=new THREE.Mesh(new THREE.CylinderGeometry(.055,.065,tall?.15:.1,16),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.25,roughness:.3}));lq.position.y=tall?.075:.05;fl.add(lq);g.add(fl)}}}
+shelf(-W+.02,2.2,P/2);shelf(W-.02,3.0,-P/2);
+
+/* ================= bench ================= */
+const TOP=0.93,BZ=-1.32;
+(function bench(){const top=new THREE.Mesh(new THREE.BoxGeometry(3.4,.06,.78),new THREE.MeshStandardMaterial({color:0x24323A,roughness:.5}));top.position.set(0,TOP-.03,BZ);scene.add(top);
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(3.3,TOP-.06,.7),new THREE.MeshStandardMaterial({color:0xF7FAFB,roughness:.8}));cab.position.set(0,(TOP-.06)/2,BZ);scene.add(cab);
+  for(let i=0;i<5;i++){const d=new THREE.Mesh(new THREE.BoxGeometry(.6,.6,.01),new THREE.MeshStandardMaterial({color:0xEAF2F4}));d.position.set(-1.32+i*.66,.45,BZ+.355);scene.add(d);
+    const hd=new THREE.Mesh(new THREE.BoxGeometry(.16,.025,.03),new THREE.MeshStandardMaterial({color:0xE8691E}));hd.position.set(-1.32+i*.66,.66,BZ+.37);scene.add(hd)}})();
+
+/* ================= board ================= */
+const BWp=2048,BHp=1024;const bc=mkCanvas(BWp,BHp),bx=bc.getContext('2d');const btex=tex(bc);
+const board=new THREE.Mesh(new THREE.PlaneGeometry(3.0,1.5),new THREE.MeshBasicMaterial({map:btex}));board.position.set(0,2.13,FRONT+.02);board.userData.board=1;scene.add(board);
+const bframe=new THREE.Mesh(new THREE.BoxGeometry(3.12,1.62,.04),new THREE.MeshStandardMaterial({color:0x8FA3AD,metalness:.4,roughness:.4}));bframe.position.set(0,2.13,FRONT-.012);scene.add(bframe);
+const tray=new THREE.Mesh(new THREE.BoxGeometry(2.4,.04,.08),new THREE.MeshStandardMaterial({color:0x8FA3AD}));tray.position.set(0,1.35,FRONT+.06);scene.add(tray);
+let hits=[];
+
+/* ================= station objects ================= */
+const ST={};const pickables=[];
+function thermometer(){const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.035,.04,.015,20),new THREE.MeshStandardMaterial({color:0x37474F}));base.position.y=.008;g.add(base);
+  const tube=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.32,16),new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.45,roughness:.05}));tube.position.y=.2;g.add(tube);
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.022,16,12),new THREE.MeshStandardMaterial({color:0xE53935,emissive:0x7a0000}));bulb.position.y=.045;g.add(bulb);
+  const liq=new THREE.Mesh(new THREE.CylinderGeometry(.007,.007,1,10),new THREE.MeshStandardMaterial({color:0xE53935,emissive:0x7a0000}));g.add(liq);
+  const dc=mkCanvas(320,140),dx=dc.getContext('2d');const dt=tex(dc);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:dt}));sp.scale.set(.16,.07,1);sp.position.y=.4;g.add(sp);
+  g.userData.set=(T)=>{const lv=Math.max(.04,Math.min(1,(T+10)/80));liq.scale.y=lv*.28;liq.position.y=.06+lv*.14;
+    const c=T>30?'#E8491E':T<20?'#1C7FC4':'#13232B';dx.clearRect(0,0,320,140);dx.fillStyle='#fff';rr(dx,6,6,308,128,26);dx.fill();dx.lineWidth=8;dx.strokeStyle=c;dx.stroke();
+    dx.fillStyle=c;dx.font=`700 78px ${AF}`;dx.textAlign='center';dx.textBaseline='middle';dx.fillText(T.toFixed(1)+' °C',160,74);dt.needsUpdate=true};
+  g.userData.set(25);return g}
+function label(t,col){const c=mkCanvas(560,120),x=c.getContext('2d');x.fillStyle='rgba(255,255,255,.95)';rr(x,6,6,548,108,40);x.fill();x.lineWidth=8;x.strokeStyle=col;x.stroke();
+  const s=fit(x,t,500,56);x.fillStyle='#13232B';x.textAlign='center';x.textBaseline='middle';x.fillText(t,280,66);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex(c)}));sp.scale.set(.37,.08,1);return sp}
+function pouch(col,icon){const g=new THREE.Group();const c=mkCanvas(256,180),x=c.getContext('2d');x.fillStyle=col;x.fillRect(0,0,256,180);
+  if(icon==='f')flame(x,128,100,.32);else flake(x,128,90,60,'#fff');
+  const m=new THREE.MeshStandardMaterial({color:0xffffff,map:tex(c),roughness:.6,emissive:0x000000});
+  const b=new THREE.Mesh(new THREE.BoxGeometry(.22,.04,.15),[new THREE.MeshStandardMaterial({color:col}),new THREE.MeshStandardMaterial({color:col}),m,new THREE.MeshStandardMaterial({color:col}),new THREE.MeshStandardMaterial({color:col}),new THREE.MeshStandardMaterial({color:col})]);
+  b.position.y=.02;g.add(b);g.userData.top=m;g.userData.body=b;return g}
+function makeStation(id,x,build,name,col){const g=new THREE.Group();g.position.set(x,TOP,BZ+.05);scene.add(g);const obj=build();g.add(obj);
+  const th=thermometer();th.position.set(.16,0,.04);g.add(th);
+  const lb=label(name,col);lb.position.set(0,.44,0);g.add(lb);
+  const hit=new THREE.Mesh(new THREE.BoxGeometry(.42,.6,.36),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.y=.28;hit.userData.station=id;g.add(hit);pickables.push(hit);
+  ST[id]={g,obj,th,T:25};return ST[id]}
+
+const xs=[1.1,.55,0,-.55,-1.1];
+makeStation('warm',xs[0],()=>pouch('#FF7A2E','f'),'كمادة التدفئة','#E8691E');
+makeStation('cold',xs[1],()=>pouch('#3BA7E8','s'),'كمادة التبريد','#1C7FC4');
+makeStation('ch4',xs[2],()=>{const g=new THREE.Group();const m=new THREE.MeshStandardMaterial({color:0x90A4AE,metalness:.6,roughness:.35});
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(.07,.08,.025,24),new THREE.MeshStandardMaterial({color:0x37474F}));b.position.y=.012;g.add(b);
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(.018,.022,.2,16),m);t.position.y=.12;g.add(t);
+  const hose=new THREE.Mesh(new THREE.TorusGeometry(.08,.008,8,24,P),new THREE.MeshStandardMaterial({color:0xE8691E}));hose.position.set(-.06,.03,.02);hose.rotation.x=P/2;g.add(hose);
+  const fo=new THREE.Mesh(new THREE.ConeGeometry(.035,.16,20),new THREE.MeshBasicMaterial({color:0xFF9A2E,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));fo.position.y=.3;
+  const fi=new THREE.Mesh(new THREE.ConeGeometry(.018,.09,16),new THREE.MeshBasicMaterial({color:0x5BB8FF,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));fi.position.y=.265;
+  const fl=new THREE.Group();fl.add(fo,fi);fl.visible=false;g.add(fl);const L=new THREE.PointLight(0xFF8A30,0,1.6);L.position.y=.35;g.add(L);g.userData.flame=fl;g.userData.light=L;return g},'احتراق الميثان','#E8691E');
+makeStation('c2h2',xs[3],()=>{const g=new THREE.Group();const gl=new THREE.Mesh(new THREE.CylinderGeometry(.075,.07,.2,24,1,true),glassM());gl.position.y=.1;g.add(gl);
+  const pw=new THREE.Mesh(new THREE.CylinderGeometry(.066,.066,.025,24),new THREE.MeshStandardMaterial({color:0x37474F}));pw.position.y=.015;g.add(pw);
+  const gas=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.15,24),new THREE.MeshStandardMaterial({color:0xBFE6FF,transparent:true,opacity:0,depthWrite:false}));gas.position.y=.105;g.add(gas);
+  g.userData.gas=gas;g.userData.glass=gl;return g},'تكوين الإيثاين','#1C7FC4');
+makeStation('est',xs[4],()=>{const g=new THREE.Group();const pts=[[.09,0],[.09,.01],[.02,.17],[.02,.24],[.025,.25]].map(p=>new THREE.Vector2(p[0],p[1]));
+  const fl=new THREE.Mesh(new THREE.LatheGeometry(pts,28),glassM());g.add(fl);
+  const lq=new THREE.Mesh(new THREE.LatheGeometry([[.0,.005],[.083,.005],[.05,.09],[.0,.09]].map(p=>new THREE.Vector2(p[0],p[1])),28),new THREE.MeshStandardMaterial({color:0xF2D35B,transparent:true,opacity:.85,roughness:.2}));g.add(lq);
+  g.userData.liq=lq;return g},'حمض الأستيك + الإيثانول','#7A3FC4');
+
+/* guide ring */
+const ring=new THREE.Mesh(new THREE.RingGeometry(.17,.21,40),new THREE.MeshBasicMaterial({color:0xFFC93C,transparent:true,opacity:.9,side:THREE.DoubleSide}));ring.rotation.x=-P/2;scene.add(ring);
+const pin=new THREE.Mesh(new THREE.ConeGeometry(.04,.09,16),new THREE.MeshBasicMaterial({color:0xFFC93C}));pin.rotation.x=P;scene.add(pin);
+
+/* heat arrows */
+function arrow(col){const g=new THREE.Group();const m=new THREE.MeshBasicMaterial({color:col});const s=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,.09,8),m);s.rotation.z=-P/2;s.position.x=.045;const c=new THREE.Mesh(new THREE.ConeGeometry(.024,.05,12),m);c.rotation.z=-P/2;c.position.x=.11;g.add(s,c);return g}
+const arrowsOut=[],arrowsIn=[];const AG=new THREE.Group();scene.add(AG);
+for(let i=0;i<8;i++){const a=arrow(0xE8691E);arrowsOut.push(a);AG.add(a);const b=arrow(0x1C7FC4);arrowsIn.push(b);AG.add(b)}
+let arrowMode='none',arrowAt=new THREE.Vector3();
+
+/* particles */
+const pTex=(()=>{const c=mkCanvas(64,64),x=c.getContext('2d');const g=x.createRadialGradient(32,32,2,32,32,30);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return tex(c)})();
+const parts=[];for(let i=0;i<160;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:pTex,transparent:true,depthWrite:false}));s.visible=false;scene.add(s);parts.push({s,v:new THREE.Vector3(),life:0,max:1})}
+function emit(pos,vel,color,size,life){const p=parts.find(q=>q.life<=0);if(!p)return;p.s.position.copy(pos);p.v.copy(vel);p.life=p.max=life;p.s.material.color.set(color);p.s.scale.setScalar(size);p.s.visible=true;p.size=size}
+
+/* ================= first-person body ================= */
+const gloveM=new THREE.MeshStandardMaterial({color:0x4FA3E0,roughness:.55});
+const coatM=new THREE.MeshStandardMaterial({color:0xF7F9FA,roughness:.85});
+function hand(side){const h=new THREE.Group();const palm=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),gloveM);palm.scale.set(.043,.02,.052);h.add(palm);const fingers=[];
+  for(let i=0;i<4;i++){const f=new THREE.Group();f.position.set((i-1.5)*.019,0,-.045);const len=i===1||i===2?.055:.047;const sg=new THREE.Mesh(new THREE.CylinderGeometry(.0088,.0088,len,10),gloveM);sg.rotation.x=P/2;sg.position.z=-len/2;const tp=new THREE.Mesh(new THREE.SphereGeometry(.0088,10,8),gloveM);tp.position.z=-len;f.add(sg,tp);h.add(f);fingers.push(f)}
+  const th=new THREE.Group();th.position.set(-side*.04,-.004,-.012);th.rotation.y=side*.75;const ts=new THREE.Mesh(new THREE.CylinderGeometry(.0095,.0095,.045,10),gloveM);ts.rotation.x=P/2;ts.position.z=-.022;th.add(ts);h.add(th);
+  const wr=new THREE.Mesh(new THREE.CylinderGeometry(.041,.044,.06,16),gloveM);wr.rotation.x=P/2;wr.position.z=.055;h.add(wr);
+  const sl=new THREE.Mesh(new THREE.CylinderGeometry(.056,.062,.5,18),coatM);sl.rotation.x=P/2;sl.position.z=.33;h.add(sl);
+  const cf=new THREE.Mesh(new THREE.TorusGeometry(.057,.009,8,22),new THREE.MeshStandardMaterial({color:0xD6E0E4}));cf.position.z=.085;h.add(cf);
+  h.userData.fingers=fingers;return h}
+const RH=hand(1),LH=hand(-1);camera.add(RH,LH);
+const RREST=new THREE.Vector3(.2,-.27,-.42),LREST=new THREE.Vector3(-.21,-.29,-.44);
+const RQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.28,.12,.05)),LQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.3,-.12,-.05));
+RH.position.copy(RREST);RH.quaternion.copy(RQ);LH.position.copy(LREST);LH.quaternion.copy(LQ);
+(function torso(){const t=new THREE.Group();t.position.z=.17;player.add(t);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.2,.24,.82,26),coatM);body.scale.z=.62;body.position.set(0,1.1,.03);t.add(body);
+  [-1,1].forEach(s=>{const sh=new THREE.Mesh(new THREE.SphereGeometry(.1,16,12),coatM);sh.scale.set(1,.7,.8);sh.position.set(s*.2,1.48,.03);t.add(sh);
+    const lp=new THREE.Mesh(new THREE.BoxGeometry(.06,.34,.01),new THREE.MeshStandardMaterial({color:0xE3EAED}));lp.position.set(s*.06,1.36,-.118);lp.rotation.z=s*.35;t.add(lp)});
+  [1.32,1.18,1.04].forEach(y=>{const b=new THREE.Mesh(new THREE.SphereGeometry(.012,10,8),new THREE.MeshStandardMaterial({color:0x8FA3AD}));b.position.set(0,y,-.12);t.add(b)});
+  const pk=new THREE.Mesh(new THREE.BoxGeometry(.11,.1,.01),new THREE.MeshStandardMaterial({color:0xEEF3F5}));pk.position.set(-.1,1.24,-.12);t.add(pk);
+  [[0xE8691E,-.125],[0x1C7FC4,-.1],[0x2E9D47,-.075]].forEach(([c,x])=>{const pen=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.09,8),new THREE.MeshStandardMaterial({color:c}));pen.position.set(x,1.3,-.118);t.add(pen)});
+  const bc2=mkCanvas(256,96),x=bc2.getContext('2d');x.fillStyle='#0E8F9E';rr(x,0,0,256,96,18);x.fill();x.fillStyle='#fff';fit(x,'مختبر الطاقة',230,44);x.textAlign='center';x.textBaseline='middle';x.fillText('مختبر الطاقة',128,52);
+  const bd=plane(bc2,.1,.0375);bd.position.set(.1,1.3,-.123);bd.rotation.y=P;t.add(bd)})();
+
+/* ================= audio ================= */
+let AC=null,NB=null,MG=null;
+function audio(){if(AC){AC.resume&&AC.resume();return}try{AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.9;MG.connect(AC.destination);
+  NB=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const hum=AC.createOscillator(),hg=AC.createGain();hum.frequency.value=110;hg.gain.value=.012;hum.connect(hg).connect(MG);hum.start()}catch(e){AC=null}}
+function tone(f,d,type='sine',v=.14,w=0,f2){if(!AC)return;const t=AC.currentTime+w,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(MG);o.start(t);o.stop(t+d+.02)}
+function noise(d,v,type,f1,f2,w=0){if(!AC)return;const t=AC.currentTime+w,s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=NB;fl.type=type;fl.frequency.setValueAtTime(f1,t);fl.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(v,t+d*.2);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(fl).connect(g).connect(MG);s.start(t);s.stop(t+d+.05)}
+const sfx={tap:()=>tone(1100,.05,'sine',.08),
+  heat:()=>{noise(2.8,.25,'lowpass',300,2600);for(let i=0;i<14;i++)noise(.05,.18,'bandpass',2500,3500,.2+i*.18*Math.random())},
+  cold:()=>{[2093,1760,1568,1319].forEach((f,i)=>tone(f,.6,'sine',.09,i*.18));noise(2.4,.12,'highpass',5000,8000)},
+  flame:()=>{noise(.6,.4,'bandpass',200,1400);noise(2.8,.18,'lowpass',500,300,.3)},
+  neutral:()=>{for(let i=0;i<8;i++)tone(300+Math.random()*200,.12,'sine',.07,i*.3,900)},
+  right:()=>{tone(660,.14,'triangle',.16);tone(990,.25,'triangle',.16,.11)},
+  wrong:()=>tone(180,.3,'square',.07),
+  fan:()=>[523,659,784,1046,1318].forEach((f,i)=>tone(f,.35,'triangle',.13,i*.13))};
+
+/* ================= lesson steps ================= */
+const STEPS=[
+ {id:'warm',kind:'daily',name:'كمادة التدفئة',t1:52,mode:'out',type:0,
+  q:'الكيس صار ساخنًا! أين ذهبت الحرارة؟',opts:[['خرجت من الكيس إلى يدي',1],['دخلت إلى الكيس من يدي',0]],
+  c1:'الكيس هو النظام، ويدكِ هي المحيط.',c2:'النظام طرد الحرارة إلى المحيط',word:'المتفاعلات ← النواتج + طاقة'},
+ {id:'cold',kind:'daily',name:'كمادة التبريد',t1:4,mode:'in',type:1,
+  q:'الكيس صار باردًا! ماذا حدث للحرارة؟',opts:[['خرجت من الكيس إلى يدي',0],['دخلت إلى الكيس من يدي',1]],
+  c1:'الكيس هو النظام، ويدكِ هي المحيط.',c2:'النظام امتصّ الحرارة من المحيط',word:'المتفاعلات + طاقة ← النواتج'},
+ {id:'ch4',kind:'eq',name:'احتراق الميثان (من الكتاب)',t1:62,mode:'out',type:0,react:'CH_{4(g)} + 2O_{2(g)}',arr:'→',prod:'CO_{2(g)} + 2H_{2}O_{(l)}',card:'890 kJ',ans:'R',dh:'ΔH = −890 kJ'},
+ {id:'c2h2',kind:'eq',name:'تكوين غاز الإيثاين (من الكتاب)',t1:6,mode:'in',type:1,react:'2C_{(s)} + H_{2(g)}',arr:'→',prod:'C_{2}H_{2(g)}',card:'227 kJ',ans:'L',dh:'ΔH = +227 kJ'},
+ {id:'est',kind:'eq',name:'حمض الأستيك والإيثانول (من الكتاب)',t1:25,mode:'none',type:2,react:'CH_{3}COOH_{(l)} + C_{2}H_{5}OH_{(l)}',arr:'⇌',prod:'CH_{3}COOC_{2}H_{5(l)} + H_{2}O_{(l)}',card:'طاقة ؟',ans:'N',dh:'ΔH = 0'}];
+let step=0,phase='intro',hint='',effT=0;
+
+/* ---------- board drawing ---------- */
+function bBase(){const x=bx;x.fillStyle='#FDFEFE';x.fillRect(0,0,BWp,BHp);x.strokeStyle='#DCE6EA';x.lineWidth=4;for(let i=1;i<8;i++){x.beginPath();x.moveTo(0,i*128);x.lineTo(BWp,i*128);x.globalAlpha=.35;x.stroke();x.globalAlpha=1}
+  if(phase!=='intro'&&phase!=='summary'){x.font=`700 40px ${AF}`;x.fillStyle='#8FA3AD';x.textAlign='right';x.fillText(`التجربة ${step+1} من ${STEPS.length}`,BWp-50,BHp-36)}hits=[]}
+function title(t,c='#13232B'){bx.font=`700 84px ${AF}`;const s=fit(bx,t,BWp-160,84);bx.fillStyle=c;bx.textAlign='center';bx.textBaseline='alphabetic';bx.fillText(t,BWp/2,130)}
+function box(X,Y,Wd,Hh,fill,stroke,dash){const x=bx;x.save();rr(x,X,Y,Wd,Hh,30);x.fillStyle=fill;x.fill();if(stroke){x.lineWidth=8;x.strokeStyle=stroke;if(dash)x.setLineDash([26,18]);x.stroke()}x.restore()}
+function footer(t){bx.font=`700 46px ${AF}`;bx.fillStyle='#0E8F9E';bx.textAlign='center';bx.fillText(t,BWp/2,BHp-40)}
+function hintLine(){if(hint){para(bx,hint,BWp/2,BHp-110,BWp-300,50,'#C62828')}}
+function eqLine(S,y,solved){const x=bx;let size=92;const card='+ '+S.card,gap=26;
+  const slotW=()=>{x.font=`700 ${size*.8}px ${AF}`;return x.measureText(S.ans==='N'?'+ 000 kJ':card).width+60};
+  const items=solved?(S.ans==='L'?[['c',S.react],['f',card],['a',S.arr],['c',S.prod]]:S.ans==='R'?[['c',S.react],['a',S.arr],['c',S.prod],['f',card]]:[['c',S.react],['a',S.arr],['c',S.prod]])
+    :[['c',S.react],['s','L'],['a',S.arr],['c',S.prod],['s','R']];
+  const width=()=>items.reduce((w,[k,v])=>w+(k==='c'?chemW(x,v,size):k==='a'?(x.font=`700 ${size}px ${AF}`,x.measureText(' '+v+' ').width):slotW())+gap,-gap);
+  while(width()>BWp-120&&size>40)size-=4;
+  let cx=(BWp-width())/2;
+  items.forEach(([k,v])=>{if(k==='c'){chemDraw(x,v,cx,y,size,'#13232B');cx+=chemW(x,v,size)+gap}
+    else if(k==='a'){x.font=`700 ${size}px ${AF}`;x.textAlign='left';x.fillStyle='#13232B';const t=' '+v+' ';x.fillText(t,cx,y);cx+=x.measureText(t).width+gap}
+    else{const w=slotW(),h=size*1.25,Y=y-size*.95;
+      if(k==='s'){box(cx,Y,w,h,'#F4F9FB','#0E8F9E',true);x.font=`700 ${size*.7}px ${AF}`;x.fillStyle='#0E8F9E';x.textAlign='center';x.fillText('؟',cx+w/2,y-size*.1);hits.push({id:v,x:cx,y:Y,w,h})}
+      else{box(cx,Y,w,h,COL[S.type],null);x.font=`700 ${size*.8}px ${AF}`;x.fillStyle='#fff';x.textAlign='center';x.fillText(card,cx+w/2,y-size*.12)}
+      cx+=w+gap}});
+}
+function ladder(S,X,Y){const x=bx,c=COL[S.type];const hi=Y+70,lo=Y+300,mid=Y+185;const yr=S.type===0?hi:S.type===1?lo:mid,yp=S.type===0?lo:S.type===1?hi:mid;
+  x.strokeStyle='#13232B';x.lineWidth=6;x.beginPath();x.moveTo(X,Y+360);x.lineTo(X,Y+10);x.stroke();x.beginPath();x.moveTo(X-16,Y+34);x.lineTo(X,Y+6);x.lineTo(X+16,Y+34);x.stroke();
+  x.font=`700 50px ${AF}`;x.fillStyle='#13232B';x.textAlign='left';x.fillText('H',X+20,Y+46);
+  x.lineWidth=12;x.strokeStyle='#13232B';x.beginPath();x.moveTo(X+60,yr);x.lineTo(X+330,yr);x.stroke();x.strokeStyle=c;x.beginPath();x.moveTo(X+420,yp);x.lineTo(X+690,yp);x.stroke();
+  x.setLineDash([16,12]);x.lineWidth=4;x.strokeStyle='#8FA3AD';x.beginPath();x.moveTo(X+330,yr);x.lineTo(X+760,yr);x.stroke();x.setLineDash([]);
+  x.font=`700 40px ${AF}`;x.textAlign='center';x.fillStyle='#13232B';x.fillText('المتفاعلات',X+195,yr-22);x.fillStyle=c;x.fillText('النواتج',X+555,yp+(S.type===2?-22:S.type===0?56:-22));
+  if(S.type!==2){x.strokeStyle=c;x.lineWidth=10;x.beginPath();x.moveTo(X+760,yr);x.lineTo(X+760,yp+(S.type===0?-24:24));x.stroke();x.fillStyle=c;x.beginPath();const d=S.type===0?1:-1;x.moveTo(X+736,yp-d*34);x.lineTo(X+760,yp);x.lineTo(X+784,yp-d*34);x.fill()}
+  x.font=`700 54px ${AF}`;x.fillStyle=c;x.textAlign='left';x.fillText(S.type===0?'ΔH < 0':S.type===1?'ΔH > 0':'ΔH = 0',X+790,(yr+yp)/2+18)}
+function drawBoard(){bBase();const S=STEPS[step];
+  if(phase==='intro'){title('مرحبًا بكِ في مختبر الطاقة!');para(bx,'خمس تجارب: اثنتان من حياتنا، وثلاث من الكتاب. راقبي ميزان الحرارة في كل تجربة، ثمّ أجيبي هنا على اللوح.',BWp/2,300,BWp-360,60,'#5B6E77')}
+  else if(phase==='approach'||phase==='effect'){title(`التجربة ${step+1}: ${S.name}`,COL[S.type]);
+    para(bx,phase==='approach'?'المسي الأداة المضيئة على الطاولة، وراقبي ميزان الحرارة.':'راقبي ميزان الحرارة جيّدًا…',BWp/2,330,BWp-360,64,'#13232B');
+    if(S.kind==='eq'){para(bx,'بعدها سنكتشف: أين نكتب الطاقة في المعادلة؟',BWp/2,470,BWp-360,52,'#5B6E77')}}
+  else if(phase==='ask'&&S.kind==='daily'){title(S.q);S.opts.forEach(([t,ok],i)=>{const X=i?150:BWp/2+40,Y=300,Wd=BWp/2-190,Hh=300;box(X,Y,Wd,Hh,'#F4F9FB','#0E8F9E');para(bx,t,X+Wd/2,Y+130,Wd-80,66,'#13232B');hits.push({id:i,x:X,y:Y,w:Wd,h:Hh,ok})});hintLine()}
+  else if(phase==='ask'&&S.kind==='eq'){title('أين نضع الطاقة في المعادلة؟');
+    const ct='الطاقة في هذه التجربة:';bx.font=`700 50px ${AF}`;bx.fillStyle='#5B6E77';bx.textAlign='right';bx.fillText(ct,BWp/2+330,236);bx.font=`700 60px ${AF}`;const cw=bx.measureText(S.card).width+70;box(BWp/2-520-cw/2,180,cw,84,'#FFF4E6','#E8691E');bx.fillStyle='#E8691E';bx.textAlign='center';bx.fillText(S.card,BWp/2-520,242);
+    eqLine(S,470,false);
+    const X=BWp/2-430,Y=590,Wd=860,Hh=170;box(X,Y,Wd,Hh,'#F6F1FF','#7A3FC4');para(bx,'لا مكان للطاقة في المعادلة',BWp/2,Y+70,Wd-60,54,'#7A3FC4');bx.font=`700 50px ${AF}`;bx.textAlign='center';bx.fillText('ΔH = 0',BWp/2,Y+140);hits.push({id:'N',x:X,y:Y,w:Wd,h:Hh});
+    para(bx,'المسي المكان الصحيح',BWp/2,830,BWp-300,44,'#5B6E77');hintLine()}
+  else if(phase==='solved'&&S.kind==='daily'){title('✓ '+TYPE[S.type],COL[S.type]);para(bx,S.c1,BWp/2,250,BWp-300,58,'#13232B');para(bx,S.c2,BWp/2,340,BWp-300,58,COL[S.type]);
+    box(BWp/2-640,420,1280,170,'#F4F9FB',COL[S.type]);para(bx,S.word,BWp/2,530,1200,84,COL[S.type]);
+    para(bx,S.type===0?'الطاقة تُكتب مع النواتج':'الطاقة تُكتب مع المتفاعلات',BWp/2,700,BWp-300,58,'#13232B');footer('المسي اللوح للتجربة التالية ←')}
+  else if(phase==='solved'&&S.kind==='eq'){title('✓ '+TYPE[S.type],COL[S.type]);eqLine(S,290,true);ladder(S,120,360);
+    const msg=S.ans==='R'?'الطاقة مع النواتج':S.ans==='L'?'الطاقة مع المتفاعلات':'لا توجد طاقة في المعادلة';
+    para(bx,msg,1650,520,700,62,COL[S.type]);bx.font=`700 70px ${AF}`;bx.fillStyle=COL[S.type];bx.textAlign='center';bx.fillText(S.dh,1650,680);footer(step<STEPS.length-1?'المسي اللوح للتجربة التالية ←':'المسي اللوح لرؤية الاستنتاج ←')}
+  else if(phase==='summary'){title('استنتجتِ القاعدة بنفسك!','#0E8F9E');
+    const cols=[[BWp-140,560,'نوع التفاعل'],[BWp-700,620,'مكان الطاقة في المعادلة'],[BWp-1320,560,'إشارة ΔH']];
+    const rows=[['طارد للحرارة','مع النواتج','ΔH < 0'],['ماصّ للحرارة','مع المتفاعلات','ΔH > 0'],['لاحراري','لا توجد','ΔH = 0']];
+    const Y0=200,RH=150;box(cols[2][0]-cols[2][1],Y0,1760,RH,'#0E8F9E',null);
+    cols.forEach(([r,w,t])=>{bx.font=`700 50px ${AF}`;bx.fillStyle='#fff';bx.textAlign='center';bx.fillText(t,r-w/2,Y0+95)});
+    rows.forEach((row,i)=>{const y=Y0+RH*(i+1)+14;box(cols[2][0]-cols[2][1],y,1760,RH-14,'#F4F9FB',COL[i]);row.forEach((t,j)=>{bx.font=`700 58px ${AF}`;bx.fillStyle=j===1?'#13232B':COL[i];bx.textAlign='center';bx.fillText(t,cols[j][0]-cols[j][1]/2,y+88)})});
+    footer('المسي اللوح لإعادة التجربة')}
+  btex.needsUpdate=true}
+
+/* ================= camera tween ================= */
+let tw=null;
+function lookAt(v,dur=1.1){const cp=new THREE.Vector3();camera.getWorldPosition(cp);const d=v.clone().sub(cp);
+  let ty=Math.atan2(-d.x,-d.z),tp=Math.atan2(d.y,Math.hypot(d.x,d.z));let dy=ty-yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));
+  tw={y0:yaw,y1:yaw+dy,p0:pitch,p1:Math.max(-1.25,Math.min(.5,tp)),t:0,d:dur}}
+const boardView=new THREE.Vector3(0,1.75,FRONT);
+function stationView(id){const p=new THREE.Vector3();ST[id].g.getWorldPosition(p);p.y+=.12;return p}
+
+/* ================= hand reach ================= */
+let reach=null;
+function reachTo(world){const l=camera.worldToLocal(world.clone());if(l.length()>.62)l.setLength(.62);reach={t:0,d:1.0,to:l}}
+
+/* ================= flow ================= */
+function setGuide(){const S=STEPS[step];if(phase==='approach'){const p=new THREE.Vector3();ST[S.id].g.getWorldPosition(p);ring.position.set(p.x,TOP+.004,p.z);ring.visible=pin.visible=true;pin.position.set(p.x,TOP+.6,p.z)}else ring.visible=pin.visible=false}
+function goApproach(){phase='approach';hint='';drawBoard();setGuide();lookAt(stationView(STEPS[step].id))}
+function startEffect(){const S=STEPS[step];phase='effect';effT=0;drawBoard();setGuide();reachTo(stationView(S.id));
+  const st=ST[S.id];arrowMode=S.mode;st.g.getWorldPosition(arrowAt);arrowAt.y+=.07;
+  if(S.id==='warm')sfx.heat();else if(S.id==='cold')sfx.cold();else if(S.id==='ch4'){sfx.flame();st.obj.userData.flame.visible=true}else if(S.id==='c2h2')sfx.cold();else sfx.neutral()}
+function endEffect(){phase='ask';hint='';drawBoard();setTimeout(()=>lookAt(boardView,1.2),350)}
+function answer(h){const S=STEPS[step];const ok=S.kind==='daily'?h.ok===1:h.id===S.ans;
+  if(ok){sfx.right();phase='solved';hint='';drawBoard()}
+  else{sfx.wrong();hint=S.kind==='daily'?'راقبي ميزان الحرارة: هل ارتفعت درجة حرارة الكيس أم انخفضت؟':S.type===0?'تذكّري كمادة التدفئة: الحرارة خرجت مع النواتج.':S.type===1?'تذكّري كمادة التبريد: الحرارة دخلت مع المتفاعلات.':'ميزان الحرارة لم يتغيّر… هل خرجت طاقة أو دخلت؟';drawBoard()}}
+function next(){arrowMode='none';if(step<STEPS.length-1){step++;goApproach()}else{phase='summary';drawBoard();setGuide();sfx.fan();confetti=3.5}}
+function reset(){step=0;Object.values(ST).forEach(s=>{s.T=25;s.th.userData.set(25)});ST.ch4.obj.userData.flame.visible=false;ST.ch4.obj.userData.light.intensity=0;
+  ST.warm.obj.userData.top.emissive.setHex(0);ST.cold.obj.userData.top.emissive.setHex(0);ST.c2h2.obj.userData.gas.material.opacity=0;ST.est.obj.userData.liq.material.color.setHex(0xF2D35B);goApproach()}
+let confetti=0;
+
+/* ================= input ================= */
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let down=null,dragged=false,hintEl=document.getElementById('hint');
+cv.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,yaw,pitch};dragged=false;cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(!dragged&&Math.hypot(dx,dy)>9){dragged=true;tw=null;hintEl.classList.add('off')}
+  if(dragged){yaw=down.yaw+dx*.0055;pitch=Math.max(-1.25,Math.min(.5,down.pitch+dy*.0045))}});
+cv.addEventListener('pointerup',e=>{if(down&&!dragged)tap(e.clientX,e.clientY);down=null});
+cv.addEventListener('pointercancel',()=>{down=null});
+function tap(cx,cy){if(phase==='intro')return;audio();ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
+  const hb=ray.intersectObject(board)[0];const hs=ray.intersectObjects(pickables)[0];
+  if(hs&&(!hb||hs.distance<hb.distance)){const id=hs.object.userData.station;if(phase==='approach'&&id===STEPS[step].id){sfx.tap();startEffect()}else{sfx.tap();reachTo(hs.point)}return}
+  if(hb){const u=hb.uv,px=u.x*BWp,py=(1-u.y)*BHp;reachTo(hb.point);
+    if(phase==='ask'){const h=hits.find(r=>px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h);if(h){sfx.tap();answer(h)}}
+    else if(phase==='solved'){sfx.tap();next()}else if(phase==='summary'){sfx.tap();reset()}}}
+document.getElementById('go').onclick=()=>{audio();document.getElementById('veil').hidden=true;hintEl.classList.remove('off');setTimeout(()=>hintEl.classList.add('off'),7000);
+  try{const el=document.documentElement;el.requestFullscreen&&el.requestFullscreen().catch(()=>{})}catch(e){}goApproach()};
+
+/* ================= loop ================= */
+const clock=new THREE.Clock();const tmpQ=new THREE.Quaternion(),fwd=new THREE.Vector3(0,0,-1);
+function loop(){const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+  if(tw){tw.t+=dt;const k=Math.min(1,tw.t/tw.d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;yaw=tw.y0+(tw.y1-tw.y0)*e;pitch=tw.p0+(tw.p1-tw.p0)*e;if(k>=1)tw=null}
+  applyView();
+  /* hands: idle bob + reach */
+  const bob=Math.sin(t*1.6)*.006;LH.position.set(LREST.x,LREST.y+bob,LREST.z);
+  if(reach){reach.t+=dt;const p=Math.min(1,reach.t/reach.d),k=Math.sin(P*p);RH.position.copy(RREST).lerp(reach.to,k*.8);
+    tmpQ.setFromUnitVectors(fwd,reach.to.clone().sub(RREST).normalize());RH.quaternion.copy(RQ).slerp(tmpQ,k*.7);RH.userData.fingers.forEach(f=>f.rotation.x=-k*1.0);if(p>=1)reach=null}
+  else{RH.position.set(RREST.x,RREST.y-bob,RREST.z);RH.quaternion.copy(RQ);RH.userData.fingers.forEach(f=>f.rotation.x=0)}
+  /* guide */
+  if(ring.visible){const s=1+Math.sin(t*4)*.12;ring.scale.set(s,s,s);ring.material.opacity=.6+Math.sin(t*4)*.3;pin.position.y=TOP+.58+Math.sin(t*3)*.04}
+  /* effect */
+  const S=STEPS[step];
+  if(phase==='effect'){effT+=dt;const D=3.4,p=Math.min(1,effT/D),e=1-Math.pow(1-p,3);const st=ST[S.id];st.T=25+(S.t1-25)*e+(S.mode==='none'?Math.sin(t*9)*.08:0);st.th.userData.set(st.T);
+    const pos=arrowAt.clone();
+    if(S.id==='warm'){st.obj.userData.top.emissive.setRGB(.6*e,.22*e,0)}
+    if(S.id==='cold'){st.obj.userData.top.emissive.setRGB(.45*e,.6*e,.75*e)}
+    if(S.id==='ch4'){const f=st.obj.userData.flame;f.scale.set(1+Math.sin(t*30)*.08,1+Math.sin(t*23)*.15,1+Math.sin(t*27)*.08);st.obj.userData.light.intensity=1.6*Math.min(1,effT*3)}
+    if(S.id==='c2h2'){st.obj.userData.gas.material.opacity=.55*e}
+    if(S.id==='est'){const l=st.obj.userData.liq;l.rotation.y+=dt*4;l.material.color.setHSL(.14-.05*Math.sin(t*3),.75,.65)}
+    if(Math.random()<.7){if(S.mode==='out'){const a=Math.random()*P*2;emit(pos,new THREE.Vector3(Math.cos(a)*.18,.22+Math.random()*.2,Math.sin(a)*.18),Math.random()<.5?0xFF7A1A:0xFFC93C,.06,1.2)}
+      else if(S.mode==='in'){const a=Math.random()*P*2,r=.42;const p0=pos.clone().add(new THREE.Vector3(Math.cos(a)*r,.12+Math.random()*.15,Math.sin(a)*r));emit(p0,pos.clone().sub(p0).multiplyScalar(.9),Math.random()<.5?0xBDE8FF:0x5BB8FF,.05,1.1)}
+      else{emit(pos.clone().add(new THREE.Vector3((Math.random()-.5)*.08,-.02,(Math.random()-.5)*.08)),new THREE.Vector3(0,.12,0),0xFFFFFF,.025,.8)}}
+    if(p>=1&&phase==='effect')endEffect()}
+  if(S&&S.id==='ch4'&&ST.ch4.obj.userData.flame.visible){const f=ST.ch4.obj.userData.flame;f.scale.y=1+Math.sin(t*23)*.15}
+  /* arrows */
+  const showOut=arrowMode==='out'&&(phase==='effect'||phase==='ask'),showIn=arrowMode==='in'&&(phase==='effect'||phase==='ask');
+  arrowsOut.forEach((a,i)=>{a.visible=showOut;if(showOut){const ang=i/8*P*2,r=.16+((t*.25+i*.03)%.18);a.position.set(arrowAt.x+Math.cos(ang)*r,arrowAt.y+.02,arrowAt.z+Math.sin(ang)*r);a.rotation.set(0,-ang,0)}});
+  arrowsIn.forEach((a,i)=>{a.visible=showIn;if(showIn){const ang=i/8*P*2,r=.42-((t*.25+i*.03)%.2);a.position.set(arrowAt.x+Math.cos(ang)*r,arrowAt.y+.02,arrowAt.z+Math.sin(ang)*r);a.rotation.set(0,P-ang,0)}});
+  /* particles */
+  if(confetti>0){confetti-=dt;for(let k=0;k<3;k++)emit(new THREE.Vector3((Math.random()-.5)*3,3,FRONT+.4+Math.random()*.6),new THREE.Vector3((Math.random()-.5)*.3,-.7,0),[0xE8691E,0x1C7FC4,0x7A3FC4,0x2E9D47,0xFFC93C][Math.floor(Math.random()*5)],.07,3)}
+  parts.forEach(p=>{if(p.life>0){p.life-=dt;p.s.position.addScaledVector(p.v,dt);const k=p.life/p.max;p.s.material.opacity=Math.min(1,k*1.5);p.s.scale.setScalar(p.size*(1.4-k*.4));if(p.life<=0)p.s.visible=false}});
+  renderer.render(scene,camera);requestAnimationFrame(loop)}
+applyView();drawBoard();setGuide();loop();
+})();
+</script>
