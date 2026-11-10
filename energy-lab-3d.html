@@ -41,6 +41,7 @@ canvas#gl:active{cursor:grabbing}
       <div><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="9" width="30" height="20" rx="3" fill="#fff" stroke="#13232B" stroke-width="3"/><path d="M12 19h16" stroke="#E8691E" stroke-width="3"/></svg>أجيبي على اللوح</div>
     </div>
     <button id="go" type="button">ادخلي المختبر</button>
+    <p style="font-size:16px;font-weight:700">إعداد: مانوار الفضلي</p>
   </div>
 </div>
 
@@ -298,7 +299,7 @@ function ladder(S,X,Y){const x=bx,c=COL[S.type];const hi=Y+70,lo=Y+300,mid=Y+185
   if(S.type!==2){x.strokeStyle=c;x.lineWidth=10;x.beginPath();x.moveTo(X+760,yr);x.lineTo(X+760,yp+(S.type===0?-24:24));x.stroke();x.fillStyle=c;x.beginPath();const d=S.type===0?1:-1;x.moveTo(X+736,yp-d*34);x.lineTo(X+760,yp);x.lineTo(X+784,yp-d*34);x.fill()}
   x.font=`700 54px ${AF}`;x.fillStyle=c;x.textAlign='left';x.fillText(S.type===0?'ΔH < 0':S.type===1?'ΔH > 0':'ΔH = 0',X+790,(yr+yp)/2+18)}
 function drawBoard(){bBase();const S=STEPS[step];
-  if(phase==='intro'){title('مرحبًا بكِ في مختبر الطاقة!');para(bx,'خمس تجارب: اثنتان من حياتنا، وثلاث من الكتاب. راقبي ميزان الحرارة في كل تجربة، ثمّ أجيبي هنا على اللوح.',BWp/2,300,BWp-360,60,'#5B6E77')}
+  if(phase==='intro'){title('مرحبًا بكِ في مختبر الطاقة!');para(bx,'خمس تجارب: اثنتان من حياتنا، وثلاث من الكتاب. راقبي ميزان الحرارة في كل تجربة، ثمّ أجيبي هنا على اللوح.',BWp/2,300,BWp-360,60,'#5B6E77');para(bx,'إعداد: مانوار الفضلي',BWp/2,600,BWp-360,52,'#0E8F9E')}
   else if(phase==='approach'||phase==='effect'){title(`التجربة ${step+1}: ${S.name}`,COL[S.type]);
     para(bx,phase==='approach'?'المسي الأداة المضيئة على الطاولة، وراقبي ميزان الحرارة.':'راقبي ميزان الحرارة جيّدًا…',BWp/2,330,BWp-360,64,'#13232B');
     if(S.kind==='eq'){para(bx,'بعدها سنكتشف: أين نكتب الطاقة في المعادلة؟',BWp/2,470,BWp-360,52,'#5B6E77')}}
