@@ -88,7 +88,7 @@ const $=s=>document.querySelector(s),cv=$('#cv');
 if(!window.THREE){$('#err').hidden=false;$('#err').textContent='تعذّر تحميل محرك العرض الثلاثي الأبعاد. تأكد من اتصال الإنترنت ثم أعد فتح الصفحة.';$('#enter').hidden=true;return}
 const T3=THREE,V3=(x,y,z)=>new T3.Vector3(x,y,z);
 const Y0=.92,ZP=.3,BX=-.15,NOZ=1.15,PIVY=1.185,TUBE0=1.22,TUBE1=1.62,FUNY=1.70,RODZ=.45;
-const COL={A:0x3d9bff,B:0xf0aa20},CSS={A:'#3d9bff',B:'#f0aa20'},POLAR={A:0,B:1};
+const COL={A:0xf0aa20,B:0x3d9bff},CSS={A:'#f0aa20',B:'#3d9bff'},POLAR={A:0,B:1};
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,damp=(r,dt)=>1-Math.pow(r,dt);
 const S={PLACE:0,POUR:1,RUB:2,OPEN:3,NEAR:4,Q1:5,CLOSE:6,DIP:7,Q2:8,DRAIN:9,EMPTY:10,FINAL:11,END:12};
 

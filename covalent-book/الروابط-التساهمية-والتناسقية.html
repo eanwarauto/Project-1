@@ -720,7 +720,7 @@ function bindCOB(el){
 }
 /* النشاط العملي الثاني: التجربة الأولى انحراف السائل، والتجربة الثانية التوصيل الكهربائي */
 function labFrame(s,t){
-  const c=s.ctx,W=s.w,H=s.h,L=s.L,smp=L.sample,liq=smp==='A'?'#3f9cff':'#e9a92e',bx=W*.3,def=L.mode==='def';
+  const c=s.ctx,W=s.w,H=s.h,L=s.L,smp=L.sample,liq=smp==='A'?'#e9a92e':'#3f9cff',bx=W*.3,def=L.mode==='def';
   const bl=bx-56,br=bx+120,bt=H-96,bb=H-24,lvl=L.level[smp],surf=bb-4-lvl*(bb-bt-16);
   c.fillStyle='#cfdbe6';c.fillRect(0,H-22,W,22);
   c.direction='rtl';c.textAlign='center';
