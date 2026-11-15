@@ -282,8 +282,8 @@ system(){
 /* ---------- 5. reactions ---------- */
 react(){
   const R=[
-   {id:'naoh',name:'هيدروكسيد الصوديوم',f:'NaOH<sub>(s)</sub>',to:41,type:0,eq:'NaOH<sub>(s)</sub> + H<sub>2</sub>O<sub>(l)</sub> → محلول + حرارة'},
-   {id:'nh4',name:'نترات الأمونيوم',f:'NH<sub>4</sub>NO<sub>3(s)</sub>',to:12,type:1,eq:'NH<sub>4</sub>NO<sub>3(s)</sub> + H<sub>2</sub>O<sub>(l)</sub> + حرارة → محلول'},
+   {id:'naoh',name:'هيدروكسيد الصوديوم',f:'NaOH<sub>(s)</sub>',to:41,type:0,eq:'NaOH<sub>(s)</sub> + H<sub>2</sub>O<sub>(l)</sub> → <bdi>محلول</bdi> + <bdi>حرارة</bdi>'},
+   {id:'nh4',name:'نترات الأمونيوم',f:'NH<sub>4</sub>NO<sub>3(s)</sub>',to:12,type:1,eq:'NH<sub>4</sub>NO<sub>3(s)</sub> + H<sub>2</sub>O<sub>(l)</sub> + <bdi>حرارة</bdi> → <bdi>محلول</bdi>'},
    {id:'est',name:'حمض الأستيك + الإيثانول',f:'CH<sub>3</sub>COOH + C<sub>2</sub>H<sub>5</sub>OH',to:25,type:2,eq:'CH<sub>3</sub>COOH<sub>(l)</sub> + C<sub>2</sub>H<sub>5</sub>OH<sub>(l)</sub> ⇌ CH<sub>3</sub>COOC<sub>2</sub>H<sub>5(l)</sub> + H<sub>2</sub>O<sub>(l)</sub>'}];
   const TYPES=[['طارد للحرارة','hot','ΔH < 0','سالبة','يطرد النظام الحرارة إلى المحيط'],['ماصّ للحرارة','cold','ΔH > 0','موجبة','يمتصّ النظام الحرارة من المحيط'],['لاحراري','zero','ΔH = 0','صفر','لا يطرد ولا يمتصّ الحرارة']];
   $('bench').innerHTML=`<section class="scene">
@@ -317,7 +317,7 @@ react(){
     $('rArrows').innerHTML=h}
   function diagram(type){const [name,cls,dh,sign,dir]=TYPES[type];const up=type===1,flat=type===2;
     const yR=flat?110:up?150:70,yP=flat?110:up?70:150,c=type===0?'#E8691E':type===1?'#1C7FC4':'#7A3FC4';
-    return `<svg viewBox="0 0 520 210" role="img" aria-label="مخطط الطاقة" style="background:#F6FAFB;border-radius:12px">
+    return `<svg viewBox="0 0 520 210" role="img" aria-label="مخطط الطاقة" direction="ltr" style="background:#F6FAFB;border-radius:12px;direction:ltr">
       <line x1="470" y1="190" x2="470" y2="20" stroke="#13232B" stroke-width="2"/><text x="480" y="30" font-family="JetBrains Mono" font-size="16">H</text>
       <line x1="300" x2="440" y1="${yR}" y2="${yR}" stroke="#13232B" stroke-width="5"/><text x="370" y="${yR-10}" text-anchor="middle" font-family="Readex Pro" font-size="16">المتفاعلات</text>
       <line x1="60" x2="200" y1="${yP}" y2="${yP}" stroke="${c}" stroke-width="5"/><text x="130" y="${yP+(flat?-10:up?-10:26)}" text-anchor="middle" font-family="Readex Pro" font-size="16">النواتج</text>
