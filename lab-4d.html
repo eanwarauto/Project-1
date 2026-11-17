@@ -49,6 +49,10 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
 .mbar button[aria-pressed="true"]{background:var(--deep);color:#fff}
 .mbar input{flex:1;min-width:140px;accent-color:var(--hot)}
 .mbar .tl{font-weight:700;min-width:110px;text-align:center;font-variant-numeric:tabular-nums}
+.joy{position:fixed;left:calc(22px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;z-index:5;
+  background:rgba(19,35,43,.35);border:3px solid rgba(255,255,255,.85);display:grid;place-items:center;touch-action:none}
+.joy span{position:absolute;bottom:-28px;color:#fff;font-weight:700;font-size:15px;text-shadow:0 1px 3px #000}
+.knob{width:58px;height:58px;border-radius:50%;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none}
 @media (max-width:620px){.exps{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.toast,.goggles{transition:none}}
 </style>
@@ -58,6 +62,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
 <div class="stepbar" id="stepbar" dir="rtl" hidden></div>
 <div class="chip" id="chip" dir="rtl" hidden></div>
 <div class="toast off" id="toast" dir="rtl"></div>
+<div class="joy" id="joy" aria-label="تحرّكي في المختبر" role="application"><div class="knob" id="knob"></div><span>تحرّكي</span></div>
 
 <div class="micro" id="micro" dir="rtl" hidden>
   <div class="mtop"><h2 id="mTitle">داخل المحلول</h2><div class="tabs" id="mTabs"></div><button class="mbtn" id="mBack" type="button">العودة إلى المختبر</button></div>
@@ -74,12 +79,13 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
       <button class="exp" id="e1" type="button" style="--c:#E8691E">تحضير محلول<small>حساب المولالية · كربونات الصوديوم</small></button>
       <button class="exp" id="e2" type="button" style="--c:#1C7FC4">الإلكتروليتات<small>تصنيف المحاليل A ، B ، C ، D</small></button>
     </div>
-    <p style="font-size:15px">اسحبي بإصبعك للنظر حولك · المسي الأداة المضيئة · اضغطي مطوّلًا عند الإكمال إلى العلامة</p>
+    <p style="font-size:15px">اسحبي الأدوات بإصبعك لتنفّذي التجربة بيدكِ · اسحبي الشاشة للنظر حولك · استخدمي دائرة «تحرّكي» للمشي في المختبر وزيارة المرآة</p>
     <p class="credit">إعداد: م. انوار الفضلي</p>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
 <script>
 (async function(){
 const AF='"Readex Pro","Geeza Pro",Tahoma,Arial,sans-serif';
@@ -329,6 +335,10 @@ const E1={};
   const jl=textPlane([{t:'Na_{2}CO_{3}',chem:1,s:62},{t:'كربونات الصوديوم',s:34}],256,160,.07,.044,'#fff','#13232B','#E8691E');jl.position.set(0,.05,.0405);jar.add(jl);
   const sp=new THREE.Mesh(new THREE.BoxGeometry(.012,.003,.12),M(0xB0BEC5,{metalness:.8,roughness:.2}));sp.position.set(.06,.0015,.02);sp.rotation.y=.4;jar.add(sp);
   put('jar',jar,.92,-1.48,[.16,.14,.14]);
+  const spn=new THREE.Group();const sh=new THREE.Mesh(new THREE.BoxGeometry(.13,.004,.014),M(0xB0BEC5,{metalness:.8,roughness:.2}));sh.position.y=.01;spn.add(sh);
+  const sc=new THREE.Mesh(new THREE.SphereGeometry(.014,12,8,0,P*2,0,P/2),M(0xB0BEC5,{metalness:.8,roughness:.2}));sc.rotation.x=P;sc.position.set(-.07,.014,0);spn.add(sc);
+  const heap=new THREE.Mesh(new THREE.SphereGeometry(.011,10,8),M(0xFFFFFF,{roughness:.9}));heap.position.set(-.07,.016,0);heap.visible=false;spn.add(heap);spn.userData.heap=heap;
+  put('spn',spn,.78,-1.42,[.16,.05,.06]);
   /* wash bottle, rod */
   put('wb1',washBottle(),-.02,-1.5,[.1,.2,.1]);
   const rod=new THREE.Group();const rm=cyl(.004,.004,.24,glassMat(),10);rm.material.opacity=.6;rod.add(rm);rod.rotation.z=P/2;
@@ -349,7 +359,7 @@ const E1={};
   put('fn',fn,-.72,-1.22,[.12,.14,.12]);
   /* pour stream */
   const sm2=cyl(.004,.004,1,waterMat(0x9BD8F5,.8),8);sm2.visible=false;scene.add(sm2);E1.stream=sm2;
-  E1.objs=['bal','bk','jar','wb1','rod','fl','stp','fn'];
+  E1.objs=['bal','bk','jar','spn','wb1','rod','fl','stp','fn'];
 })();
 function streamBetween(a,b){const s=E1.stream;s.visible=true;const mid=a.clone().add(b).multiplyScalar(.5);s.position.copy(mid);const d=b.clone().sub(a);s.scale.y=d.length();s.quaternion.setFromUnitVectors(V(0,1,0),d.normalize())}
 
@@ -359,19 +369,16 @@ function streamBetween(a,b){const s=E1.stream;s.visible=true;const mid=a.clone()
 const E2={};const LET=['A','B','C','D'];
 const POOL={strong:[{n:'كلوريد الصوديوم',f:'NaCl'},{n:'حمض الهيدروكلوريك',f:'HCl'},{n:'هيدروكسيد الصوديوم',f:'NaOH'},{n:'نترات البوتاسيوم',f:'KNO_{3}'}],
   weak:[{n:'حمض الأسيتيك',f:'CH_{3}COOH'},{n:'محلول الأمونيا',f:'NH_{3}'}],non:[{n:'السكّر (السكروز)',f:'C_{12}H_{22}O_{11}'},{n:'الإيثانول',f:'C_{2}H_{5}OH'}]};
-const KIND={strong:{t:'إلكتروليتية قوية',read:'يضيء المصباح بشدّة',k:1,c:'#E8691E'},weak:{t:'إلكتروليتية ضعيفة',read:'يضيء المصباح بشكل خافت',k:.28,c:'#1C7FC4'},non:{t:'غير إلكتروليتية',read:'لا يضيء المصباح',k:0,c:'#7A3FC4'}};
+const KIND={strong:{t:'إلكتروليتية قوية',c:'#E8691E',v:()=>Math.round((7800+Math.random()*6400)/10)*10},weak:{t:'إلكتروليتية ضعيفة',c:'#1C7FC4',v:()=>Math.round(180+Math.random()*620)},non:{t:'غير إلكتروليتية',c:'#7A3FC4',v:()=>Math.round(1+Math.random()*9)}};
 (function buildE2(){const G=new THREE.Group();scene.add(G);E2.root=G;
   E2.bk=[];[.55,.25,-.05,-.35].forEach((x,i)=>{const b=beaker(.05,.1);b.userData.setLevel(.065);put('b'+i,b,x,-1.18,[.12,.13,.12]);
     const lb=textPlane([{t:LET[i],s:120}],160,160,.045,.045,'#fff','#13232B','#1C7FC4');lb.position.set(0,.05,.0515);b.add(lb);E2.bk.push(b)});
-  /* conductivity device: battery + bulb + electrodes */
-  const dev=new THREE.Group();const bat=new THREE.Mesh(new THREE.BoxGeometry(.12,.07,.08),M(0x263238));bat.position.y=.035;dev.add(bat);
-  const bl=textPlane([{t:'+  9V  −',s:60}],256,96,.1,.035,'#263238','#FFC93C');bl.position.set(0,.04,.0405);dev.add(bl);
-  const stand=cyl(.008,.008,.16,M(0x90A4AE,{metalness:.6}),10);stand.position.set(.09,.08,0);dev.add(stand);
-  const glassB=new THREE.Mesh(new THREE.SphereGeometry(.03,20,16),new THREE.MeshStandardMaterial({color:0xFFFFFF,transparent:true,opacity:.5,emissive:0x000000}));glassB.position.set(.09,.19,0);dev.add(glassB);
-  const base2=cyl(.016,.016,.02,M(0xB0BEC5,{metalness:.7}),14);base2.position.set(.09,.165,0);dev.add(base2);
-  const fil=new THREE.Mesh(new THREE.TorusGeometry(.009,.0015,6,16),new THREE.MeshBasicMaterial({color:0x5D4037}));fil.position.set(.09,.19,0);dev.add(fil);
-  const L=new THREE.PointLight(0xFFD86B,0,1.5);L.position.set(.09,.2,0);dev.add(L);
-  E2.bulb={glassB,fil,L,set(k){glassB.material.emissive.setRGB(k,k*.82,k*.35);glassB.material.opacity=.5+k*.4;fil.material.color.setRGB(.36+k*.64,.25+k*.7,.2+k*.3);L.intensity=k*1.8}};E2.bulb.set(0);
+  /* conductivity meter (digital reading) */
+  const dev=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(.22,.12,.12),M(0xF2C230,{roughness:.45}));body.position.y=.06;dev.add(body);
+  const scr=mkCanvas(420,170),sx=scr.getContext('2d');const st2=tex(scr);const sp2=new THREE.Mesh(new THREE.PlaneGeometry(.17,.069),new THREE.MeshBasicMaterial({map:st2}));sp2.position.set(0,.075,.0605);dev.add(sp2);
+  const nm=textPlane([{t:'جهاز قياس التوصيل الكهربائي',s:34}],420,60,.17,.024,'#F2C230','#13232B');nm.position.set(0,.022,.0605);dev.add(nm);
+  E2.meter={set(v){sx.fillStyle='#16352B';sx.fillRect(0,0,420,170);sx.fillStyle='#7CFFB2';sx.textAlign='right';sx.textBaseline='middle';
+    sx.font=`700 92px ${AF}`;sx.fillText(v===null?'– – –':String(Math.round(v)),300,82);sx.font=`700 34px ${AF}`;sx.fillStyle='#BDEFD3';sx.textAlign='left';sx.fillText('µS/cm',310,100);st2.needsUpdate=true}};E2.meter.set(null);
   put('dev',dev,.95,-1.45,[.24,.24,.14]);
   const el=new THREE.Group();const bar=new THREE.Mesh(new THREE.BoxGeometry(.08,.015,.02),M(0xFFC93C));bar.position.y=.16;el.add(bar);
   [-1,1].forEach(s=>{const r=cyl(.006,.006,.15,M(0x37474F,{roughness:.8}),10);r.position.set(s*.025,.08,0);el.add(r)});
@@ -399,7 +406,7 @@ const S1=[
  ['gog','ارتدي النظّارة الواقية قبل البدء','',0],
  ['bk','ضعي الكأس الزجاجية النظيفة على الميزان الإلكتروني','وضع الكأس على الميزان',1],
  ['bal','اضغطي زرّ «صفر» في الميزان لتصفير القراءة','تصفير الميزان',1],
- ['jar','أضيفي كربونات الصوديوم بالملعقة حتى تصبح القراءة 5.30 g','وزن 5.30 g',1],
+ ['spn','أضيفي كربونات الصوديوم بالملعقة حتى تصبح القراءة 5.30 g','وزن 5.30 g',1],
  ['wb1','أضيفي كمية من الماء المقطّر إلى الكأس','إضافة الماء المقطّر',2],
  ['rod','حرّكي المزيج بالساق الزجاجية حتى يذوب تمامًا','التحريك حتى الذوبان',2],
  ['fl','زني الدورق القياسي الجاف النظيف','وزن الدورق الجاف',3],
@@ -410,6 +417,10 @@ const S1=[
  ['stp','أغلقي الدورق بالسدادة ورجّيه جيّدًا','الإغلاق والرجّ',4],
  ['fl','زني الدورق القياسي بما يحتويه من المحلول','وزن الدورق بالمحلول',5]];
 let si=0;
+const CARRY1={1:{to:'pan',h:'اسحبي الكأس بإصبعك وضعيها على كفّة الميزان'},3:{to:'bk',h:'اسحبي الملعقة إلى الكأس التي على الميزان (كرّري حتى 5.30 g)'},4:{to:'bk',h:'اسحبي زجاجة الماء المقطّر إلى الكأس'},
+ 5:{to:'bk',h:'اسحبي الساق الزجاجية إلى الكأس'},6:{to:'pan',h:'اسحبي الدورق القياسي الجاف إلى الميزان'},7:{to:'fl',h:'اسحبي القمع إلى فوهة الدورق القياسي'},
+ 8:{to:'fl',h:'اسحبي الكأس إلى القمع لنقل المحلول إلى الدورق'},9:{to:'bk',h:'اسحبي زجاجة الماء المقطّر إلى الكأس لغسلها (مرّتان)'},11:{to:'fl',h:'اسحبي السدادة إلى فوهة الدورق'},12:{to:'pan',h:'اسحبي الدورق إلى الميزان'}};
+function carryTarget(){const c=CARRY1[si];if(!c)return null;return c.to==='pan'?OBJ.bal.position:OBJ[c.to].position}
 
 /* ---------- board ---------- */
 function bClear(){bx.fillStyle='#FDFEFE';bx.fillRect(0,0,BWp,BHp);hits=[]}
@@ -439,7 +450,7 @@ function drawB1(){bClear();bTitle('تحضير محلول وحساب المولا
 
 function drawB2(){bClear();bTitle('الإلكتروليتات: تصنيف المحاليل','#1C7FC4');
   const X0=60,X1=900,Y0=160,RH=118;bBox(X0,Y0,X1-X0,RH-10,'#1C7FC4');bTxt('المحلول',X1-150,Y0+70,44,'#fff');bTxt('قراءة الجهاز',X0+(X1-X0-300)/2,Y0+70,44,'#fff');
-  LET.forEach((L,i)=>{const y=Y0+(i+1)*RH;bBox(X0,y,X1-X0,RH-10,'#fff','#9FDDE6',3);bTxt(L,X1-150,y+72,56,'#13232B');const r=D2.read[i];if(r)bTxt(KIND[r].read,X0+(X1-X0-300)/2,y+70,38,KIND[r].c);
+  LET.forEach((L,i)=>{const y=Y0+(i+1)*RH;bBox(X0,y,X1-X0,RH-10,'#fff','#9FDDE6',3);bTxt(L,X1-150,y+72,56,'#13232B');const r=D2.read[i];if(r!==null)bLtr(r+' µS/cm',X0+(X1-X0-300)/2,y+72,46,'#13232B');
     if(D2.checked){const s=D2.map[i];bLtr(s.f,X1-150,y+105,26,'#5B6E77')}});
   const RX=960,RW=1030;
   if(phase==='classify'||phase==='done2'){bBox(RX,160,RW,720,'#F6F9FB','#1C7FC4',4);bTxt('النتائج والاستنتاج',RX+RW/2,225,48,'#1C7FC4');
@@ -448,9 +459,9 @@ function drawB2(){bClear();bTitle('الإلكتروليتات: تصنيف الم
     if(phase==='classify'){bBox(RX+RW/2-200,780,400,86,'#13232B');bTxt('تحقّقي',RX+RW/2,838,44,'#fff');hits.push({id:'check',x:RX+RW/2-200,y:780,w:400,h:86});if(qHint)para(bx,qHint,RX+RW/2,920,RW-60,32,'#C62828')}
     else{para(bx,'أحسنتِ! المسي اللوح للدخول إلى داخل المحاليل والتحكّم في الزمن',RX+RW/2,815,RW-60,36,'#1E9E57')}}
   else{bBox(RX,160,RW,720,'#FFF','#DCE6EA',3);bTxt('خطوات التجربة',RX+RW/2,230,48,'#13232B');
-    para(bx,'1. المسي قطبي الجهاز (الجرافيت) لترفعيهما.',RX+RW-30,320,RW-60,38,'#13232B',1.5,'right');
-    para(bx,'2. المسي الكأس الذي تريدين اختباره، وراقبي المصباح.',RX+RW-30,420,RW-60,38,'#13232B',1.5,'right');
-    para(bx,'3. اغسلي القطبين بالماء المقطّر قبل الانتقال إلى المحلول التالي.',RX+RW-30,520,RW-60,38,'#13232B',1.5,'right');
+    para(bx,'1. اسحبي قطبي جهاز التوصيل بإصبعك وضعيهما في أحد الكؤوس.',RX+RW-30,320,RW-60,38,'#13232B',1.5,'right');
+    para(bx,'2. سجّلي قراءة الجهاز: رقم كبير جدًا، أو رقم صغير، أو قريب من الصفر.',RX+RW-30,420,RW-60,38,'#13232B',1.5,'right');
+    para(bx,'3. اسحبي القطبين إلى كأس الغسيل لغسلهما بالماء المقطّر قبل المحلول التالي.',RX+RW-30,520,RW-60,38,'#13232B',1.5,'right');
     bTxt(`تمّ اختبار ${D2.tested} من 4`,RX+RW/2,720,46,'#1C7FC4')}
   bTxt('إعداد: م. انوار الفضلي',BWp/2,BHp-26,30,'#8FA3AD');btex.needsUpdate=true}
 function drawBoard(){EXP===1?drawB1():EXP===2?drawB2():(bClear(),bTitle('المختبر رباعي الأبعاد','#0E8F9E'),para(bx,'اختاري تجربة للبدء',BWp/2,330,1600,60,'#5B6E77'),btex.needsUpdate=true)}
@@ -467,7 +478,7 @@ let reach=null;function reachTo(w){const l=camera.worldToLocal(w.clone());if(l.l
 
 /* ---------- experiment 1 logic ---------- */
 function e1Next(){si++;if(si>=S1.length){startQuiz();return}e1Show()}
-function e1Show(){const s=S1[si];stepbar(`الخطوة ${si+1} من ${S1.length}`,s[1]);guide(s[0],{gog:'النظّارة الواقية',bk:'الكأس الزجاجية',bal:'زرّ التصفير',jar:'كربونات الصوديوم',wb1:'الماء المقطّر',rod:'الساق الزجاجية',fl:'الدورق القياسي',fn:'القمع',stp:'السدادة'}[s[0]]);drawB1();
+function e1Show(){const s=S1[si];stepbar(`الخطوة ${si+1} من ${S1.length}`,CARRY1[si]?CARRY1[si].h:s[1]);guide(s[0],{gog:'النظّارة الواقية',bk:'الكأس الزجاجية',bal:'زرّ التصفير',jar:'كربونات الصوديوم',spn:'الملعقة',wb1:'الماء المقطّر',rod:'الساق الزجاجية',fl:'الدورق القياسي',fn:'القمع',stp:'السدادة'}[s[0]]);drawB1();
   if(s[0]!=='gog')lookAt(objView(s[0]),.9)}
 function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();toast('ليست هذه الخطوة. المسي الأداة المضيئة.');return}
   sfx.tap();reachTo(objView(id,.05));const k=si;
@@ -477,7 +488,7 @@ function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();t
   if(k===1)chain([n=>tw3(bk,{pos:pan.clone().add(V(0,.12,0)),dur:.6,done:n}),n=>tw3(bk,{pos:pan,dur:.4,done:n}),n=>{sfx.beep();bal.userData.show(D1.beakerM);D1.onPan='bk';wait(.6,n)},n=>{free();e1Next()}]);
   else if(k===2){sfx.beep();bal.userData.show(0);toast('القراءة الآن 0.00 g');wait(.5,()=>{free();e1Next()})}
   else if(k===3){const rem=D1.target-D1.m;let add=rem>2?1.5+Math.random()*.4:rem>.35?rem*(.55+Math.random()*.2):rem;add=Math.round(add*100)/100;D1.m=Math.min(D1.target,Math.round((D1.m+add)*100)/100);
-    sfx.scoop();const pw=bk.userData.powder;pw.scale.setScalar(Math.max(.25,D1.m/D1.target));bal.userData.show(D1.m);
+    sfx.scoop();tw3(OBJ.spn,{pos:OBJ.spn.userData.home,dur:.5});const pw=bk.userData.powder;pw.scale.setScalar(Math.max(.25,D1.m/D1.target));bal.userData.show(D1.m);
     if(D1.m>=D1.target-.001){D1.m=D1.target;D1.done.m=1;toast('ممتاز! 5.30 g بالضبط');sfx.right();
       chain([n=>wait(.7,n),n=>tw3(bk,{pos:pan.clone().add(V(0,.12,0)),dur:.5,done:n}),n=>{bal.userData.show(0);tw3(bk,{pos:bk.userData.home,dur:.6,done:n})},n=>{free();e1Next()}])}
     else{toast(`القراءة ${fmt(D1.m)} g · أضيفي المزيد`);free()}}
@@ -485,9 +496,8 @@ function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();t
       n=>{sfx.squirt();streamBetween(bk.position.clone().add(V(.06,.25,0)),bk.position.clone().add(V(.01,.07,0)));wait(1.2,n,p=>bk.userData.setLevel(.06*p))},
       n=>{E1.stream.visible=false;tw3(wb,{rot:[0,0,0],dur:.3,done:n})},n=>tw3(wb,{pos:wb.userData.home,dur:.6,done:n}),n=>{free();e1Next()}])}
   else if(k===5){const rod=OBJ.rod,ri=E1.rodInner;chain([n=>tw3(rod,{pos:bk.position.clone().add(V(0,.13,0)),dur:.6,done:n}),n=>{ri.rotation.z=0;ri.position.y=0;tw3(rod,{pos:bk.position.clone().add(V(0,.11,0)),dur:.3,done:n})},
-      n=>{chip('⏩ الزمن مسرَّع: مرّت دقيقتان');let last=0;wait(4,n,p=>{const a=p*P*16;rod.position.x=bk.position.x+Math.cos(a)*.02;rod.position.z=bk.position.z+Math.sin(a)*.02;
-        bk.userData.powder.scale.setScalar(Math.max(.0001,1-p));simMin=p*2;setClock(simMin);if(Math.floor(p*16)!==last){last=Math.floor(p*16);sfx.clink()}})},
-      n=>{chip(null);D1.stirred=true;toast('ذابت كربونات الصوديوم تمامًا');tw3(rod,{pos:rod.userData.home,dur:.6,done:n})},n=>{ri.rotation.z=P/2;ri.position.y=.006;free();e1Next()}])}
+      n=>{phase='stir';stirP=0;stirLast=0;stirDone=()=>{phase='run';n()};stepbar('حرّكي','حرّكي إصبعك على الشاشة بشكل دائري لتحريك المحلول حتى يذوب');chip('⏩ الزمن مسرَّع ×60');busy=false},
+      n=>{busy=true;chip(null);D1.stirred=true;toast('ذابت كربونات الصوديوم تمامًا · مرّت دقيقتان');tw3(rod,{pos:rod.userData.home,dur:.6,done:n})},n=>{ri.rotation.z=P/2;ri.position.y=.006;free();e1Next()}])}
   else if(k===6){chain([n=>tw3(fl,{pos:pan.clone().add(V(0,.15,0)),dur:.7,done:n}),n=>tw3(fl,{pos:pan,dur:.4,done:n}),n=>{sfx.beep();bal.userData.show(D1.dry);D1.done.dry=1;drawB1();toast('كتلة الدورق الجاف 62.48 g');wait(1.3,n)},
       n=>{bal.userData.show(0);tw3(fl,{pos:fl.userData.home,dur:.7,done:n})},n=>{free();e1Next()}])}
   else if(k===7){const fn=OBJ.fn;chain([n=>tw3(fn,{pos:fl.position.clone().add(V(0,.3,0)),dur:.7,done:n}),n=>tw3(fn,{pos:fl.position.clone().add(V(0,.24,0)),dur:.3,done:n}),n=>{sfx.clink();free();e1Next()}])}
@@ -506,6 +516,10 @@ function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();t
   else if(k===12){D1.water=101.00+D1.fillErr;D1.full=Math.round((D1.dry+D1.m+D1.water)*100)/100;
     chain([n=>tw3(fl,{pos:pan.clone().add(V(0,.15,0)),dur:.7,done:n}),n=>tw3(fl,{pos:pan,dur:.4,done:n}),n=>{sfx.beep();bal.userData.show(D1.full);D1.done.full=1;drawB1();toast(`كتلة الدورق بالمحلول ${fmt(D1.full)} g`);wait(1.6,n)},n=>{free();e1Next()}])}
 }
+let stirP=0,stirLast=0,stirDone=null;
+function stirMove(d){const bk=OBJ.bk,rod=OBJ.rod;stirP=Math.min(1,stirP+d/2600);const a=stirP*P*16;rod.position.x=bk.position.x+Math.cos(a)*.022;rod.position.z=bk.position.z+Math.sin(a)*.022;
+  bk.userData.powder.scale.setScalar(Math.max(.0001,1-stirP));simMin=stirP*2;setClock(simMin);if(Math.floor(stirP*16)!==stirLast){stirLast=Math.floor(stirP*16);sfx.clink()}
+  if(stirP>=1&&stirDone){const f=stirDone;stirDone=null;f()}}
 /* fill to the mark (press-and-hold) */
 let filling=false;
 function startFill(){phase='fill';const fl=OBJ.fl;fl.userData.setFill(1,D1.neck);const wb=OBJ.wb1;tw3(wb,{pos:fl.position.clone().add(V(.07,.3,.02)),rot:[0,0,1.25],dur:.8});
@@ -529,30 +543,29 @@ function startQuiz(){stepbar('الخطوة الأخيرة','سجّلي النت�
 /* ---------- experiment 2 logic ---------- */
 function e2Setup(){const types=[['strong','strong','weak','non'],['strong','weak','weak','non'],['strong','weak','non','non']][Math.floor(Math.random()*3)];
   for(let i=types.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[types[i],types[j]]=[types[j],types[i]]}
-  const used={};D2.map=types.map(k=>{const pool=POOL[k].filter(s=>!used[s.f]);const s=pool[Math.floor(Math.random()*pool.length)];used[s.f]=1;return {...s,k}});
-  D2.read=[null,null,null,null];D2.tested=0;D2.assign={};D2.checked=false;D2.stage='pick';D2.dirty=false;E2.bulb.set(0);updateWire()}
+  const used={};D2.map=types.map(k=>{const pool=POOL[k].filter(s=>!used[s.f]);const s=pool[Math.floor(Math.random()*pool.length)];used[s.f]=1;return {...s,k,val:KIND[k].v()}});
+  const sv=D2.map.filter(s=>s.k==='strong');if(sv.length===2&&Math.abs(sv[0].val-sv[1].val)<1800)sv[1].val=sv[0].val>11000?sv[0].val-2600:sv[0].val+2600;
+  const wv=D2.map.filter(s=>s.k==='weak');if(wv.length===2&&Math.abs(wv[0].val-wv[1].val)<150)wv[1].val=wv[0].val>500?wv[0].val-260:wv[0].val+260;
+  D2.read=[null,null,null,null];D2.tested=0;D2.assign={};D2.checked=false;D2.stage='dip';E2.meter.set(null);updateWire()}
 function e2Show(){guide(null);if(!goggOn){stepbar('قبل البدء','ارتدي النظّارة الواقية');guide('gog','النظّارة الواقية');return}
-  if(D2.tested>=4&&D2.stage!=='rinse'){phase='classify';stepbar('الاستنتاج','صنّفي المحاليل على اللوح ثمّ المسي «تحقّقي»');drawB2();lookAt(boardView,1.1);return}
-  if(D2.stage==='pick'){stepbar(`المحلول ${D2.tested+1} من 4`,'المسي قطبي الجهاز لترفعيهما');guide('el','قطبا الجهاز');lookAt(objView('el'),.8)}
-  else if(D2.stage==='dip'){stepbar(`المحلول ${D2.tested+1} من 4`,'المسي الكأس الذي تريدين اختباره (A أو B أو C أو D)');guide(null);lookAt(V(.1,TOP+.1,-1.18),.8)}
-  else if(D2.stage==='rinse'){stepbar('تنظيف','اغسلي القطبين بالماء المقطّر');guide('wb2','الماء المقطّر');lookAt(objView('wb2'),.8)}
+  if(D2.tested>=4&&D2.stage==='dip'){phase='classify';stepbar('الاستنتاج','صنّفي المحاليل على اللوح ثمّ المسي «تحقّقي»');drawB2();lookAt(boardView,1.1);return}
+  if(D2.stage==='dip'){stepbar(`المحلول ${D2.tested+1} من 4`,'اسحبي القطبين بإصبعك وضعيهما في أحد الكؤوس A أو B أو C أو D');guide('el','اسحبي القطبين');lookAt(V(.2,TOP+.1,-1.18),.8)}
+  else if(D2.stage==='rinse'){stepbar('تنظيف','اسحبي القطبين إلى كأس الغسيل لغسلهما بالماء المقطّر');guide('el','إلى كأس الغسيل');lookAt(V(-.2,TOP+.1,-1.2),.8)}
   drawB2()}
 function e2Tap(id){if(busy)return;if(id==='gog'&&!goggOn){sfx.tap();wearGoggles(()=>e2Show());return}if(!goggOn){sfx.wrong();toast('ارتدي النظّارة الواقية أوّلًا');return}
-  const el=OBJ.el;
-  if(D2.stage==='pick'){if(id!=='el'){sfx.wrong();toast('المسي قطبي الجهاز أوّلًا');return}sfx.tap();reachTo(objView('el'));busy=true;
-    tw3(el,{pos:el.userData.rest.clone().add(V(-.25,.18,0)),dur:.7,done:()=>{busy=false;D2.stage='dip';e2Show()},upd:updateWire});return}
-  if(D2.stage==='dip'){const i=['b0','b1','b2','b3'].indexOf(id);if(i<0){sfx.wrong();toast('المسي أحد الكؤوس A أو B أو C أو D');return}
-    if(D2.read[i]){sfx.wrong();toast(`المحلول ${LET[i]} تمّ اختباره، اختاري كأسًا آخر`);return}
-    sfx.tap();reachTo(objView(id));busy=true;const b=OBJ[id];const above=b.position.clone().add(V(0,.2,0));
-    chain([n=>tw3(el,{pos:above,dur:.7,done:n,upd:updateWire}),n=>tw3(el,{pos:b.position.clone().add(V(0,.04,0)),dur:.5,done:n,upd:updateWire}),
-      n=>{const s=D2.map[i];const kd=KIND[s.k];sfx.clink();wait(1.2,n,p=>E2.bulb.set(kd.k*Math.min(1,p*2)));if(kd.k>0)sfx.buzz(kd.k);
-        if(s.k==='strong'||s.k==='weak')for(let j=0;j<(s.k==='strong'?18:5);j++)setTimeout(()=>emit(b.position.clone().add(V((Math.random()-.5)*.05,.03,(Math.random()-.5)*.05)),V(0,.08,0),0xFFFFFF,.012,1),j*60)},
-      n=>{const s=D2.map[i];D2.read[i]=s.k;D2.tested++;toast(`المحلول ${LET[i]}: ${KIND[s.k].read}`,2600);drawB2();wait(1.4,n)},
-      n=>{E2.bulb.set(0);tw3(el,{pos:above,dur:.5,done:n,upd:updateWire})},n=>{busy=false;D2.stage='rinse';e2Show()}]);return}
-  if(D2.stage==='rinse'){if(id!=='wb2'){sfx.wrong();toast('اغسلي القطبين بالماء المقطّر أوّلًا');return}sfx.tap();reachTo(objView('wb2'));busy=true;const wb=OBJ.wb2,ws=OBJ.waste;
-    chain([n=>tw3(el,{pos:ws.position.clone().add(V(0,.12,0)),dur:.7,done:n,upd:updateWire}),n=>tw3(wb,{pos:ws.position.clone().add(V(.1,.25,0)),rot:[0,0,1.1],dur:.6,done:n}),
+  toast(D2.stage==='rinse'?'اسحبي القطبين بإصبعك إلى كأس الغسيل':'اسحبي القطبين بإصبعك إلى أحد الكؤوس')}
+function e2Drop(target){const el=OBJ.el;
+  if(D2.stage==='dip'){const i=['b0','b1','b2','b3'].indexOf(target);if(i<0)return false;if(D2.read[i]!==null){toast(`المحلول ${LET[i]} تمّ اختباره، اختاري كأسًا آخر`);return false}
+    busy=true;const b=OBJ[target];const above=b.position.clone().add(V(0,.2,0));const s=D2.map[i];
+    chain([n=>tw3(el,{pos:above,dur:.3,done:n,upd:updateWire}),n=>tw3(el,{pos:b.position.clone().add(V(0,.04,0)),dur:.5,done:n,upd:updateWire}),
+      n=>{sfx.clink();chip('⏩ ننتظر حتى تستقرّ القراءة');wait(1.8,n,p=>{const e=1-Math.pow(1-p,3);E2.meter.set(s.val*e+(p<1?(Math.random()-.5)*s.val*.03:0));if(Math.random()<.15)sfx.tick()})},
+      n=>{chip(null);E2.meter.set(s.val);sfx.beep();D2.read[i]=s.val;D2.tested++;toast(`المحلول ${LET[i]}: قراءة الجهاز ${s.val} µS/cm`,2800);drawB2();wait(1.4,n)},
+      n=>tw3(el,{pos:above,dur:.5,done:n,upd:updateWire}),n=>{busy=false;D2.stage='rinse';e2Show()}]);return true}
+  if(D2.stage==='rinse'){if(target!=='waste')return false;busy=true;const wb=OBJ.wb2,ws=OBJ.waste;
+    chain([n=>tw3(el,{pos:ws.position.clone().add(V(0,.12,0)),dur:.4,done:n,upd:updateWire}),n=>tw3(wb,{pos:ws.position.clone().add(V(.1,.25,0)),rot:[0,0,1.1],dur:.6,done:n}),
       n=>{sfx.squirt();for(let j=0;j<16;j++)setTimeout(()=>emit(ws.position.clone().add(V(.04,.22,0)),V(-.12,-.2,0),0x8FD3F4,.015,.6),j*40);wait(1,n)},
-      n=>{tw3(wb,{pos:wb.userData.home,rot:[0,0,0],dur:.6});tw3(el,{pos:el.userData.rest,dur:.8,done:n,upd:updateWire})},n=>{busy=false;D2.stage=D2.tested>=4?'end':'pick';e2Show()}])}}
+      n=>{E2.meter.set(null);tw3(wb,{pos:wb.userData.home,rot:[0,0,0],dur:.6});tw3(el,{pos:el.userData.rest,dur:.8,done:n,upd:updateWire})},n=>{busy=false;D2.stage='dip';e2Show()}]);return true}
+  return false}
 function e2Board(h){if(phase!=='classify')return;if(h.id==='check'){const ok=LET.every((L,i)=>D2.assign[L]===D2.map[i].k);
     if(ok){sfx.right();D2.checked=true;phase='done2';qHint='';stepbar('','');drawB2();sfx.fan();confetti=3}else{sfx.wrong();qHint=LET.some(L=>!D2.assign[L])?'صنّفي كلّ المحاليل الأربعة أوّلًا.':'راجعي قراءة الجهاز في الجدول.';drawB2()}return}
   const [k,L]=h.id.split(':');D2.assign[L]=D2.assign[L]===k?undefined:k;sfx.tap();qHint='';drawB2()}
@@ -615,7 +628,7 @@ function stepMicro(dt,t){if(mPlay){mS+=dt*(mSlow?.035:.14);if(mS>1)mS=mMode==='m
       o.m.lookAt(ion.cur||ion.p0);if(!ion.isC)o.m.rotateY(P)})}
   else{mItems.forEach(o=>{if(o.kind==='ion2'){let x=o.x0+o.dir*o.sp*mS*6;x=((x+2.3)%4.6+4.6)%4.6-2.3;o.m.position.set(x,o.y+Math.sin(t*2+o.x0)*.05,o.z)}
     else{o.m.position.copy(o.p).add(V(Math.sin(t*1.5+o.ph)*.12,Math.cos(t*1.3+o.ph)*.12,Math.sin(t+o.ph)*.1));o.m.rotation.y=t*.8+o.ph}});
-    E2.bulb&&0}
+    0}
   const cx=Math.cos(mPitch)*Math.sin(mYaw)*mDist,cy=Math.sin(mPitch)*mDist,cz=Math.cos(mPitch)*Math.cos(mYaw)*mDist;mcam.position.set(cx,cy,cz);mcam.lookAt(0,0,0);
   mcam.aspect=innerWidth/innerHeight;mcam.fov=mcam.aspect<1?75:55;mcam.updateProjectionMatrix()}
 
@@ -623,16 +636,35 @@ function stepMicro(dt,t){if(mPlay){mS+=dt*(mSlow?.035:.14);if(mS>1)mS=mMode==='m
    INPUT
    ====================================================================== */
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let down=null,dragged=false;
-cv.addEventListener('pointerdown',e=>{audio();down={x:e.clientX,y:e.clientY,yaw,pitch,my:mYaw,mp:mPitch};dragged=false;cv.setPointerCapture(e.pointerId);
-  if(phase==='fill'&&!micro){filling=true}});
-cv.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(!dragged&&Math.hypot(dx,dy)>10&&!filling){dragged=true;camT=null}
+let grab=null;const gPlane=new THREE.Plane(V(0,1,0),0),gPt=new THREE.Vector3();
+function pickAt(cx,cy){ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
+  const all=ray.intersectObjects(pickables.filter(p=>p.userData.active&&p.parent.visible!==false));return all.find(h=>wants(h.object.userData.id))||all[0]}
+function canGrab(id){if(busy||phase!=='run'||!goggOn)return false;if(EXP===1)return !!CARRY1[si]&&S1[si][0]===id;if(EXP===2)return id==='el';return false}
+cv.addEventListener('pointerdown',e=>{lastPtr=[e.clientX,e.clientY];audio();down={x:e.clientX,y:e.clientY,yaw,pitch,my:mYaw,mp:mPitch,lx:e.clientX,ly:e.clientY};dragged=false;cv.setPointerCapture(e.pointerId);
+  if(phase==='fill'&&!micro){filling=true;return}
+  if(!micro&&phase==='run'){const h=pickAt(e.clientX,e.clientY);let gid=h&&canGrab(h.object.userData.id)?h.object.userData.id:null;
+    if(!gid){const cand=EXP===1?(S1[si]&&S1[si][0]):'el';if(cand&&canGrab(cand)){const v=objView(cand).project(camera);const sx=(v.x+1)/2*innerWidth,sy=(1-v.y)/2*innerHeight;if(v.z<1&&Math.hypot(sx-e.clientX,sy-e.clientY)<80)gid=cand}}
+    if(gid){const o=OBJ[gid];grab={id:gid,o,y:TOP+.2};guide(null);sfx.tap();tw3(o,{pos:o.position.clone().setY(grab.y),dur:.15,upd:updateWire})}}});
+cv.addEventListener('pointermove',e=>{lastPtr=[e.clientX,e.clientY];if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;
+  if(grab){ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(ndc,camera);gPlane.constant=-grab.y;if(ray.ray.intersectPlane(gPlane,gPt)){
+    grab.o.position.set(Math.max(-1.6,Math.min(1.6,gPt.x)),grab.y,Math.max(-1.66,Math.min(-1.0,gPt.z)));if(grab.id==='el')updateWire()}dragged=true;return}
+  if(phase==='stir'){const d=Math.hypot(e.clientX-down.lx,e.clientY-down.ly);down.lx=e.clientX;down.ly=e.clientY;stirMove(d);dragged=true;return}
+  if(!dragged&&Math.hypot(dx,dy)>10&&!filling){dragged=true;camT=null}
   if(dragged){if(micro){mYaw=down.my-dx*.006;mPitch=Math.max(-1.2,Math.min(1.2,down.mp+dy*.005))}else{yaw=down.yaw+dx*.0055;pitch=Math.max(-1.3,Math.min(.5,down.pitch+dy*.0045))}}});
-cv.addEventListener('pointerup',e=>{if(filling){filling=false;endFill();down=null;return}if(down&&!dragged&&!micro)tap(e.clientX,e.clientY);down=null});
-cv.addEventListener('pointercancel',()=>{down=null;if(filling){filling=false;endFill()}});
-function wants(id){if(EXP===1)return S1[si]&&S1[si][0]===id;if(EXP===2){if(!goggOn)return id==='gog';return D2.stage==='pick'?id==='el':D2.stage==='dip'?/^b[0-3]$/.test(id):D2.stage==='rinse'?id==='wb2':false}return false}
+function hdist(a,b){return Math.hypot(a.x-b.x,a.z-b.z)}
+let lastPtr=[0,0];
+function hitUnder(skip){const [cx,cy]=lastPtr;ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
+  return ray.intersectObjects(pickables.filter(p=>p.userData.active&&p.parent.visible!==false&&p.parent!==skip)).map(h=>h.object.userData.id)}
+function dropGrab(){const g=grab;grab=null;const o=g.o;let ok=false;const under=hitUnder(o);
+  if(EXP===1){const t=carryTarget();const to=CARRY1[si]&&CARRY1[si].to;const tid=to==='pan'?'bal':to;if(t&&(hdist(o.position,t)<.17||under.includes(tid))){ok=true;e1Tap(g.id)}}
+  else if(EXP===2){const cands=D2.stage==='rinse'?['waste']:['b0','b1','b2','b3'];const hitC=under.find(k=>cands.includes(k));const near=cands.map(k=>[k,hdist(o.position,OBJ[k].position)]).sort((a,b)=>a[1]-b[1])[0];const tgt=hitC||(near&&near[1]<.15?near[0]:null);if(tgt)ok=e2Drop(tgt)}
+  if(!ok){sfx.wrong();if(EXP===1)toast(CARRY1[si]?CARRY1[si].h:'ضعيها في المكان الصحيح');tw3(o,{pos:EXP===2&&g.id==='el'?o.userData.rest:o.userData.home,dur:.6,upd:updateWire,done:()=>{EXP===1?e1Show():e2Show()}})}}
+cv.addEventListener('pointerup',e=>{if(filling){filling=false;endFill();down=null;return}if(grab){dropGrab();down=null;return}if(down&&!dragged&&!micro)tap(e.clientX,e.clientY);down=null});
+cv.addEventListener('pointercancel',()=>{down=null;if(grab){dropGrab()}if(filling){filling=false;endFill()}});
+function wants(id){if(EXP===1)return S1[si]&&S1[si][0]===id;if(EXP===2){if(!goggOn)return id==='gog';return id==='el'}return false}
 function tap(cx,cy){if(phase==='menu')return;ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
   const hb=ray.intersectObject(board)[0];const all=ray.intersectObjects(pickables.filter(p=>p.userData.active&&p.parent.visible!==false));const hs=all.find(h=>wants(h.object.userData.id))||all[0];
-  if(hs&&(!hb||hs.distance<hb.distance)){const id=hs.object.userData.id;if(EXP===1&&phase==='run')e1Tap(id);else if(EXP===2&&phase==='run')e2Tap(id);else{sfx.tap();reachTo(hs.point)}return}
+  if(hs&&(!hb||hs.distance<hb.distance)){const id=hs.object.userData.id;if(EXP===1&&phase==='run'){if(CARRY1[si]&&S1[si][0]===id){toast(CARRY1[si].h);return}e1Tap(id)}else if(EXP===2&&phase==='run')e2Tap(id);else{sfx.tap();reachTo(hs.point)}return}
   if(hb){reachTo(hb.point);const px=hb.uv.x*BWp,py=(1-hb.uv.y)*BHp;const h=hits.find(r=>px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h);
     if(phase==='quiz'&&h&&quiz){sfx.tap();quiz.handle(h.id)}
     else if(phase==='classify'&&h)e2Board(h);
@@ -654,6 +686,25 @@ $('e1').onclick=()=>start(1);$('e2').onclick=()=>start(2);
 /* hold-to-fill tick */
 function stepFill(dt){if(phase==='fill'&&filling){const mk=OBJ.fl.userData.markH;D1.neck+=dt*(D1.neck<mk-.02?.02:.006);OBJ.fl.userData.setFill(1,D1.neck);if(Math.random()<dt*14)emit(OBJ.fl.position.clone().add(V(0,.31,0)),V(0,-.4,0),0x8FD3F4,.008,.25)}}
 
+/* joystick (walk) */
+const joy={on:false,x:0,y:0};(function(){const J=$('joy'),K=$('knob');let id=null,cx=0,cy=0;
+  J.addEventListener('pointerdown',e=>{e.stopPropagation();audio();id=e.pointerId;J.setPointerCapture(id);const r=J.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;joy.on=true;mv(e)});
+  const mv=e=>{if(e.pointerId!==id)return;let dx=e.clientX-cx,dy=e.clientY-cy;const R=48,L=Math.hypot(dx,dy);if(L>R){dx*=R/L;dy*=R/L}K.style.transform=`translate(${dx}px,${dy}px)`;joy.x=dx/R;joy.y=dy/R};
+  J.addEventListener('pointermove',mv);const up=e=>{if(e.pointerId!==id)return;id=null;joy.on=false;joy.x=joy.y=0;K.style.transform=''};J.addEventListener('pointerup',up);J.addEventListener('pointercancel',up)})();
+/* mirror on the back wall + full avatar (drawn only inside the mirror's own render) */
+(function mirror(){if(!THREE.Reflector)return;const mr=new THREE.Reflector(new THREE.PlaneGeometry(1.0,1.9),{textureWidth:640,textureHeight:1216,color:0xC8D3D8});
+  mr.position.set(-2.4,1.15,BACK-.02);mr.rotation.y=P;scene.add(mr);const fr=new THREE.Mesh(new THREE.BoxGeometry(1.1,2.0,.03),M(0x8FA3AD,{metalness:.5}));fr.position.set(-2.4,1.15,BACK-.005);scene.add(fr);
+  const lb=textPlane([{t:'المرآة: انظري إلى نفسكِ بالمعطف',s:44}],760,90,.9,.11,'#0E8F9E','#fff');lb.position.set(-2.4,2.25,BACK-.02);lb.rotation.y=P;scene.add(lb);
+  const AV=[];const add=(o,par)=>{par.add(o);AV.push(o);o.visible=false;return o};
+  add(new THREE.Mesh(new THREE.SphereGeometry(.125,24,18),M(0x1F2A44,{roughness:.8})),head);
+  const face=add(new THREE.Mesh(new THREE.SphereGeometry(.09,24,18),M(0xE8B98F,{roughness:.7})),head);face.scale.set(.95,1.15,.7);face.position.set(0,-.005,-.07);
+  const gg=new THREE.Group();[-1,1].forEach(s=>{const l=new THREE.Mesh(new THREE.TorusGeometry(.028,.007,8,20),M(0x1C7FC4));l.position.set(s*.04,.015,-.135);gg.add(l)});add(gg,head);
+  const dr=add(new THREE.Mesh(new THREE.CylinderGeometry(.13,.21,.3,24,1,true),M(0x1F2A44,{roughness:.85,side:THREE.DoubleSide})),player);dr.position.set(0,1.44,.17);
+  [-1,1].forEach(s=>{const leg=add(cyl(.06,.055,.8,M(0x24323A),14),player);leg.position.set(s*.09,.4,.18);const sh=add(new THREE.Mesh(new THREE.BoxGeometry(.1,.07,.22),M(0x13232B)),player);sh.position.set(s*.09,.035,.13);
+    const arm=add(cyl(.05,.045,.6,coatM,14),player);arm.position.set(s*.27,1.15,.17);arm.rotation.z=s*.12});
+  const cl=add(cyl(.25,.3,.5,coatM,26),player);cl.scale.z=.62;cl.position.set(0,.6,.2);
+  const ob=mr.onBeforeRender;mr.onBeforeRender=function(){AV.forEach(o=>o.visible=true);gg.visible=goggOn;ob.apply(this,arguments);AV.forEach(o=>o.visible=false)}})();
+
 /* ======================================================================
    LOOP
    ====================================================================== */
@@ -662,12 +713,14 @@ updateWire();showExp(0);guide(null);drawBoard();setClock(0);
 function loop(){const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;
   if(camT){camT.t+=dt;const k=Math.min(1,camT.t/camT.d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;yaw=camT.y0+(camT.y1-camT.y0)*e;pitch=camT.p0+(camT.p1-camT.p0)*e;if(k>=1)camT=null}
   if(fovT){fovT.t+=dt;const k=Math.min(1,fovT.t/fovT.d);camera.fov=fovT.f0+(fovT.f1-fovT.f0)*k;camera.updateProjectionMatrix();if(k>=1)fovT=null}
+  if(joy.on&&!micro){const s=1.3*dt,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
+    player.position.x=Math.max(-3.5,Math.min(3.5,player.position.x+(fx*-joy.y+rx*joy.x)*s));player.position.z=Math.max(-.55,Math.min(3.6,player.position.z+(fz*-joy.y+rz*joy.x)*s))}
   applyView();stepAnims(dt);stepFill(dt);
   const bob=Math.sin(t*1.6)*.006;LH.position.set(LREST.x,LREST.y+bob,LREST.z);
-  if(reach){reach.t+=dt;const p=Math.min(1,reach.t/reach.d),k=Math.sin(P*p);RH.position.copy(RREST).lerp(reach.to,k*.8);tmpQ.setFromUnitVectors(fwd,reach.to.clone().sub(RREST).normalize());RH.quaternion.copy(RQ).slerp(tmpQ,k*.7);RH.userData.fingers.forEach(f=>f.rotation.x=-k);if(p>=1)reach=null}
+  if(grab){const l=camera.worldToLocal(grab.o.position.clone().add(V(0,.03,0)));if(l.length()>.62)l.setLength(.62);RH.position.lerp(l,.35);RH.userData.fingers.forEach(f=>f.rotation.x=-.9)}
+  else if(reach){reach.t+=dt;const p=Math.min(1,reach.t/reach.d),k=Math.sin(P*p);RH.position.copy(RREST).lerp(reach.to,k*.8);tmpQ.setFromUnitVectors(fwd,reach.to.clone().sub(RREST).normalize());RH.quaternion.copy(RQ).slerp(tmpQ,k*.7);RH.userData.fingers.forEach(f=>f.rotation.x=-k);if(p>=1)reach=null}
   else{RH.position.set(RREST.x,RREST.y-bob,RREST.z);RH.quaternion.copy(RQ);RH.userData.fingers.forEach(f=>f.rotation.x=0)}
   if(ring.visible){const s=1+Math.sin(t*4)*.12;ring.scale.set(s,s,s);ring.material.opacity=.6+Math.sin(t*4)*.3;gLabel.position.y=TOP+.36+Math.sin(t*3)*.015}
-  if(EXP===2&&phase==='run'&&OBJ.el.visible){const b=E2.bulb;if(b.L.intensity>.5)b.L.intensity=1.6+Math.sin(t*40)*.15}
   if(confetti>0){confetti-=dt;for(let k=0;k<3;k++)emit(V((Math.random()-.5)*3,3,FRONT+.4+Math.random()*.6),V((Math.random()-.5)*.3,-.7,0),[0xE8691E,0x1C7FC4,0x7A3FC4,0x2E9D47,0xFFC93C][Math.floor(Math.random()*5)],.07,3)}
   parts.forEach(p=>{if(p.life>0){p.life-=dt;p.s.position.addScaledVector(p.v,dt);const k=p.life/p.max;p.s.material.opacity=Math.min(1,k*1.5);p.s.scale.setScalar(p.size*(1.4-k*.4));if(p.life<=0)p.s.visible=false}});
   if(micro){stepMicro(dt,t);renderer.render(MS,mcam)}else renderer.render(scene,camera);
