@@ -349,10 +349,11 @@ const E1={};
   const bk=beaker();put('bk',bk,.22,-1.17,[.13,.14,.13]);
   const pw=new THREE.Mesh(new THREE.ConeGeometry(.04,.025,20),M(0xFFFFFF,{roughness:.9}));pw.position.y=.014;pw.scale.setScalar(.0001);bk.add(pw);bk.userData.powder=pw;
   /* jar */
-  const jar=new THREE.Group();const jb=cyl(.04,.04,.1,M(0xFFFFFF,{roughness:.6}));jb.position.y=.05;jar.add(jb);const lid=cyl(.042,.042,.02,M(0xE8691E));lid.position.y=.11;jar.add(lid);
+  const jar=new THREE.Group();const jb=cyl(.04,.04,.1,M(0xFFFFFF,{roughness:.6}));jb.position.y=.05;jar.add(jb);const pwd=cyl(.036,.036,.004,M(0xFFFFFF,{roughness:.95}),20);pwd.position.y=.096;jar.add(pwd);
   const jl=textPlane([{t:'Na_{2}CO_{3}',chem:1,s:54},{t:'كربونات الصوديوم',s:30},{t:'106 g/mol',s:34}],256,200,.07,.055,'#fff','#13232B','#E8691E');jl.position.set(0,.05,.0405);jar.add(jl);
   const sp=new THREE.Mesh(new THREE.BoxGeometry(.012,.003,.12),M(0xB0BEC5,{metalness:.8,roughness:.2}));sp.position.set(.06,.0015,.02);sp.rotation.y=.4;jar.add(sp);
   put('jar',jar,.92,-1.48,[.16,.14,.14]);
+  const lidG=new THREE.Group();const lidM=cyl(.043,.043,.022,M(0xE8691E),24);lidM.position.y=.011;lidG.add(lidM);put('lid',lidG,.92,-1.48,[.11,.04,.11]);lidG.position.y=TOP+.1;lidG.userData.home=lidG.position.clone();
   const spn=new THREE.Group();const sh=new THREE.Mesh(new THREE.BoxGeometry(.13,.004,.014),M(0xB0BEC5,{metalness:.8,roughness:.2}));sh.position.y=.01;spn.add(sh);
   const sc=new THREE.Mesh(new THREE.SphereGeometry(.014,12,8,0,P*2,0,P/2),M(0xB0BEC5,{metalness:.8,roughness:.2}));sc.rotation.x=P;sc.position.set(-.07,.014,0);spn.add(sc);
   const heap=new THREE.Mesh(new THREE.SphereGeometry(.011,10,8),M(0xFFFFFF,{roughness:.9}));heap.position.set(-.07,.016,0);heap.visible=false;spn.add(heap);spn.userData.heap=heap;
@@ -377,7 +378,7 @@ const E1={};
   put('fn',fn,-.72,-1.22,[.12,.14,.12]);
   /* pour stream */
   const sm2=cyl(.004,.004,1,waterMat(0x9BD8F5,.8),8);sm2.visible=false;scene.add(sm2);E1.stream=sm2;
-  E1.objs=['bal','bk','jar','spn','wb1','rod','fl','stp','fn'];
+  E1.objs=['bal','bk','jar','lid','spn','wb1','rod','fl','stp','fn'];
 })();
 function streamBetween(a,b){const s=E1.stream;s.visible=true;const mid=a.clone().add(b).multiplyScalar(.5);s.position.copy(mid);const d=b.clone().sub(a);s.scale.y=d.length();s.quaternion.setFromUnitVectors(V(0,1,0),d.normalize())}
 
@@ -414,7 +415,7 @@ function updateWire(){const dev=OBJ.dev,el=OBJ.el;const a=new THREE.Vector3();de
    STATE / FLOW
    ====================================================================== */
 let EXP=0,phase='menu',cur=null,busy=false;
-const D1={m:0,target:5.30,Mw:106,dry:62.48,beakerM:48.36,rinse:0,neck:0,fillErr:0,stirred:false,done:{}};
+const D1={m:0,target:5.00,Mw:106,dry:62.48,beakerM:48.36,rinse:0,neck:0,fillErr:0,stirred:false,done:{}};
 const D2={map:[],read:[null,null,null,null],tested:0,holding:false,assign:{},checked:false};
 function showExp(n){E1.objs.forEach(k=>OBJ[k].visible=n===1);E2.objs.forEach(k=>OBJ[k].visible=n===2);if(E2.wire)E2.wire.visible=n===2;E1.stream.visible=false;
   pickables.forEach(p=>{const id=p.userData.id;p.userData.active=id==='gog'||(n===1?E1.objs.includes(id):E2.objs.includes(id))})}
@@ -424,7 +425,7 @@ const S1=[
  ['gog','ارتدِ النظّارة الواقية قبل البدء','',0],
  ['bk','ضع الكأس الزجاجية النظيفة على الميزان الإلكتروني','وضع الكأس على الميزان',1],
  ['bal','اضغط زرّ «صفر» في الميزان لتصفير القراءة','تصفير الميزان',1],
- ['spn','أضف كربونات الصوديوم بالملعقة حتى تصبح القراءة 5.30 g','وزن 5.30 g',1],
+ ['spn','أضف كربونات الصوديوم بالملعقة حتى تصبح القراءة 5.00 g','وزن 5.00 g',1],
  ['wb1','أضف كمية من الماء المقطّر إلى الكأس','إضافة الماء المقطّر',2],
  ['rod','حرّك المزيج بالساق الزجاجية حتى يذوب تمامًا','التحريك حتى الذوبان',2],
  ['fl','زن الدورق القياسي الجاف النظيف','وزن الدورق الجاف',3],
@@ -435,7 +436,7 @@ const S1=[
  ['stp','أغلق الدورق بالسدادة ورُجّه جيّدًا','الإغلاق والرجّ',4],
  ['fl','زن الدورق القياسي بما يحتويه من المحلول','وزن الدورق بالمحلول',5]];
 let si=0;
-const CARRY1={1:{to:'pan',h:'اسحب الكأس بإصبعك، وضعها على كفّة الميزان'},3:{to:'bk',h:'اسحب الملعقة إلى الكأس الموضوعة على الميزان (كرّر ذلك حتى 5.30 g)'},4:{to:'bk',h:'اسحب زجاجة الماء المقطّر إلى الكأس'},
+const CARRY1={1:{to:'pan',h:'اسحب الكأس بإصبعك، وضعها على كفّة الميزان'},3:{to:'bk',h:'اسحب الملعقة إلى الكأس الموضوعة على الميزان (كرّر ذلك حتى 5.00 g)'},4:{to:'bk',h:'اسحب زجاجة الماء المقطّر إلى الكأس'},
  5:{to:'bk',h:'اسحب الساق الزجاجية إلى الكأس'},6:{to:'pan',h:'اسحب الدورق القياسي الجاف إلى الميزان'},7:{to:'fl',h:'اسحب القمع إلى فوهة الدورق القياسي'},
  8:{to:'fl',h:'اسحب الكأس إلى القمع لنقل المحلول إلى الدورق'},9:{to:'bk',h:'اسحب زجاجة الماء المقطّر إلى الكأس لغسلها (مرّتان)'},11:{to:'fl',h:'اسحب السدادة إلى فوهة الدورق'},12:{to:'pan',h:'اسحب الدورق إلى الميزان'}};
 function carryTarget(){const c=CARRY1[si];if(!c)return null;return c.to==='pan'?OBJ.bal.position:OBJ[c.to].position}
@@ -497,7 +498,7 @@ let reach=null;function reachTo(w){const l=camera.worldToLocal(w.clone());if(l.l
 
 /* ---------- experiment 1 logic ---------- */
 function e1Next(){si++;if(si>=S1.length){startQuiz();return}e1Show()}
-function e1Show(){const s=S1[si];stepbar(`الخطوة ${si+1} من ${S1.length}`,CARRY1[si]?CARRY1[si].h:s[1]);guide(s[0],{gog:'النظّارة الواقية',bk:'الكأس الزجاجية',bal:'زرّ التصفير',jar:'كربونات الصوديوم',spn:'الملعقة',wb1:'الماء المقطّر',rod:'الساق الزجاجية',fl:'الدورق القياسي',fn:'القمع',stp:'السدادة'}[s[0]]);drawB1();
+function e1Show(){const s=S1[si];if(s&&e1Want()==='lid'){stepbar(`الخطوة ${si+1} من ${S1.length}`,D1.needClose?'أعد الغطاء إلى العلبة لإغلاقها':'افتح علبة كربونات الصوديوم: اسحب الغطاء وضعه على الطاولة');guide('lid','غطاء العلبة');drawB1();lookAt(objView('lid'),.9);return}stepbar(`الخطوة ${si+1} من ${S1.length}`,CARRY1[si]?CARRY1[si].h:s[1]);guide(s[0],{gog:'النظّارة الواقية',bk:'الكأس الزجاجية',bal:'زرّ التصفير',jar:'كربونات الصوديوم',lid:'غطاء العلبة',spn:'الملعقة',wb1:'الماء المقطّر',rod:'الساق الزجاجية',fl:'الدورق القياسي',fn:'القمع',stp:'السدادة'}[s[0]]);drawB1();
   if(s[0]!=='gog')lookAt(objView(s[0]),.9)}
 function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();toast('ليست هذه الخطوة الآن. المس الأداة المضيئة.');return}
   sfx.tap();reachTo(objView(id,.05));const k=si;
@@ -508,8 +509,8 @@ function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();t
   else if(k===2){sfx.beep();bal.userData.show(0);toast('القراءة الآن 0.00 g');wait(.5,()=>{free();e1Next()})}
   else if(k===3){const rem=D1.target-D1.m;let add=rem>2?1.5+Math.random()*.4:rem>.35?rem*(.55+Math.random()*.2):rem;add=Math.round(add*100)/100;D1.m=Math.min(D1.target,Math.round((D1.m+add)*100)/100);
     sfx.scoop();tw3(OBJ.spn,{pos:OBJ.spn.userData.home,dur:.5});const pw=bk.userData.powder;pw.scale.setScalar(Math.max(.25,D1.m/D1.target));bal.userData.show(D1.m);
-    if(D1.m>=D1.target-.001){D1.m=D1.target;D1.done.m=1;toast('ممتاز! 5.30 g بالضبط');sfx.right();
-      chain([n=>wait(.7,n),n=>tw3(bk,{pos:pan.clone().add(V(0,.12,0)),dur:.5,done:n}),n=>{bal.userData.show(0);tw3(bk,{pos:bk.userData.home,dur:.6,done:n})},n=>{free();e1Next()}])}
+    if(D1.m>=D1.target-.001){D1.m=D1.target;D1.done.m=1;toast('ممتاز! 5.00 g بالضبط');sfx.right();
+      chain([n=>wait(.7,n),n=>tw3(bk,{pos:pan.clone().add(V(0,.12,0)),dur:.5,done:n}),n=>{bal.userData.show(0);tw3(bk,{pos:bk.userData.home,dur:.6,done:n})},n=>{free();D1.needClose=1;e1Show()}])}
     else{toast(`القراءة ${fmt(D1.m)} g · أضف المزيد`);free()}}
   else if(k===4){const wb=OBJ.wb1;chain([n=>tw3(wb,{pos:bk.position.clone().add(V(.12,.16,0)),dur:.7,done:n}),n=>tw3(wb,{rot:[0,0,1.2],dur:.4,done:n}),
       n=>{sfx.squirt();streamBetween(bk.position.clone().add(V(.06,.25,0)),bk.position.clone().add(V(.01,.07,0)));wait(1.2,n,p=>bk.userData.setLevel(.06*p))},
@@ -658,11 +659,11 @@ const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let down=null,dragged=fa
 let grab=null;const gPlane=new THREE.Plane(V(0,1,0),0),gPt=new THREE.Vector3();
 function pickAt(cx,cy){ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
   const all=ray.intersectObjects(pickables.filter(p=>p.userData.active&&p.parent.visible!==false));return all.find(h=>wants(h.object.userData.id))||all[0]}
-function canGrab(id){if(busy||phase!=='run'||!goggOn)return false;if(EXP===1)return !!CARRY1[si]&&S1[si][0]===id;if(EXP===2)return id==='el';return false}
+function canGrab(id){if(busy||phase!=='run'||!goggOn)return false;if(EXP===1){const w=e1Want();return id===w&&(id==='lid'||!!CARRY1[si])}if(EXP===2)return id==='el';return false}
 cv.addEventListener('pointerdown',e=>{lastPtr=[e.clientX,e.clientY];audio();down={x:e.clientX,y:e.clientY,yaw,pitch,my:mYaw,mp:mPitch,lx:e.clientX,ly:e.clientY};dragged=false;cv.setPointerCapture(e.pointerId);
   if(phase==='fill'&&!micro){filling=true;return}
   if(!micro&&phase==='run'){const h=pickAt(e.clientX,e.clientY);let gid=h&&canGrab(h.object.userData.id)?h.object.userData.id:null;
-    if(!gid){const cand=EXP===1?(S1[si]&&S1[si][0]):'el';if(cand&&canGrab(cand)){const v=objView(cand).project(camera);const sx=(v.x+1)/2*innerWidth,sy=(1-v.y)/2*innerHeight;if(v.z<1&&Math.hypot(sx-e.clientX,sy-e.clientY)<80)gid=cand}}
+    if(!gid){const cand=EXP===1?e1Want():'el';if(cand&&canGrab(cand)){const v=objView(cand).project(camera);const sx=(v.x+1)/2*innerWidth,sy=(1-v.y)/2*innerHeight;if(v.z<1&&Math.hypot(sx-e.clientX,sy-e.clientY)<80)gid=cand}}
     if(gid){const o=OBJ[gid];grab={id:gid,o,y:TOP+.2};guide(null);sfx.tap();tw3(o,{pos:o.position.clone().setY(grab.y),dur:.15,upd:updateWire})}}});
 cv.addEventListener('pointermove',e=>{lastPtr=[e.clientX,e.clientY];if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;
   if(grab){ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(ndc,camera);gPlane.constant=-grab.y;if(ray.ray.intersectPlane(gPlane,gPt)){
@@ -674,17 +675,23 @@ function hdist(a,b){return Math.hypot(a.x-b.x,a.z-b.z)}
 let lastPtr=[0,0];
 function hitUnder(skip){const [cx,cy]=lastPtr;ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
   return ray.intersectObjects(pickables.filter(p=>p.userData.active&&p.parent.visible!==false&&p.parent!==skip)).map(h=>h.object.userData.id)}
+function lidSpot(){return OBJ.jar.position.clone().add(V(-.17,.022,.09))}
+function lidDrop(o){const jar=OBJ.jar;
+  if(!D1.lidOpen){if(hdist(o.position,jar.position)>.12){D1.lidOpen=1;sfx.clink();busy=true;tw3(o,{pos:lidSpot(),rot:[P,0,0],dur:.5,done:()=>{busy=false;toast('فُتحت العلبة، والآن أضف كربونات الصوديوم بالملعقة');e1Show()}});return true}return false}
+  if(D1.needClose&&(hdist(o.position,jar.position)<.22||scrDist('jar')<130)){busy=true;tw3(o,{pos:o.userData.home,rot:[0,0,0],dur:.5,done:()=>{sfx.clink();busy=false;D1.needClose=0;D1.lidOpen=0;toast('أُغلقت العلبة');e1Next()}});return true}
+  return false}
 function scrDist(id){const v=objView(id).project(camera);if(v.z>1)return 1e9;return Math.hypot((v.x+1)/2*innerWidth-lastPtr[0],(1-v.y)/2*innerHeight-lastPtr[1])}
 function dropGrab(){const g=grab;grab=null;const o=g.o;let ok=false;const under=hitUnder(o);
-  if(EXP===1){const t=carryTarget();const to=CARRY1[si]&&CARRY1[si].to;const tid=to==='pan'?'bal':to;if(t&&(hdist(o.position,t)<.22||under.includes(tid)||scrDist(tid)<130)){ok=true;e1Tap(g.id)}}
+  if(EXP===1&&g.id==='lid'){ok=lidDrop(o)}else if(EXP===1){const t=carryTarget();const to=CARRY1[si]&&CARRY1[si].to;const tid=to==='pan'?'bal':to;if(t&&(hdist(o.position,t)<.22||under.includes(tid)||scrDist(tid)<130)){ok=true;e1Tap(g.id)}}
   else if(EXP===2){const cands=D2.stage==='rinse'?['waste']:['b0','b1','b2','b3'];const hitC=under.find(k=>cands.includes(k));const near=cands.map(k=>[k,hdist(o.position,OBJ[k].position),scrDist(k)]).sort((a,b)=>a[2]-b[2])[0];const tgt=hitC||(near&&(near[2]<130||near[1]<.22)?near[0]:null);if(tgt)ok=e2Drop(tgt)}
-  if(!ok){sfx.wrong();if(EXP===1)toast(CARRY1[si]?CARRY1[si].h:'ضعها في المكان الصحيح');tw3(o,{pos:EXP===2&&g.id==='el'?o.userData.rest:o.userData.home,dur:.6,upd:updateWire,done:()=>{EXP===1?e1Show():e2Show()}})}}
+  if(!ok){sfx.wrong();if(EXP===1)toast(CARRY1[si]?CARRY1[si].h:'ضعها في المكان الصحيح');tw3(o,{pos:EXP===2&&g.id==='el'?o.userData.rest:g.id==='lid'&&D1.lidOpen?lidSpot():o.userData.home,dur:.6,upd:updateWire,done:()=>{EXP===1?e1Show():e2Show()}})}}
 cv.addEventListener('pointerup',e=>{if(filling){filling=false;endFill();down=null;return}if(grab){dropGrab();down=null;return}if(down&&!dragged&&!micro)tap(e.clientX,e.clientY);down=null});
 cv.addEventListener('pointercancel',()=>{down=null;if(grab){dropGrab()}if(filling){filling=false;endFill()}});
-function wants(id){if(EXP===1)return S1[si]&&S1[si][0]===id;if(EXP===2){if(!goggOn)return id==='gog';return id==='el'}return false}
+function e1Want(){if(si===3&&((!D1.lidOpen&&!D1.done.m)||D1.needClose))return 'lid';return S1[si]&&S1[si][0]}
+function wants(id){if(EXP===1)return e1Want()===id;if(EXP===2){if(!goggOn)return id==='gog';return id==='el'}return false}
 function tap(cx,cy){if(phase==='menu')return;ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
   const hb=ray.intersectObject(board)[0];const all=ray.intersectObjects(pickables.filter(p=>p.userData.active&&p.parent.visible!==false));const hs=all.find(h=>wants(h.object.userData.id))||all[0];
-  if(hs&&(!hb||hs.distance<hb.distance)){const id=hs.object.userData.id;if(EXP===1&&phase==='run'){if(CARRY1[si]&&S1[si][0]===id){toast(CARRY1[si].h);return}e1Tap(id)}else if(EXP===2&&phase==='run')e2Tap(id);else{sfx.tap();reachTo(hs.point)}return}
+  if(hs&&(!hb||hs.distance<hb.distance)){const id=hs.object.userData.id;if(EXP===1&&phase==='run'){if(id==='lid'&&e1Want()==='lid'){toast(D1.needClose?'اسحب الغطاء إلى العلبة لإغلاقها':'اسحب الغطاء بإصبعك بعيدًا عن العلبة لفتحها');return}if(CARRY1[si]&&S1[si][0]===id){toast(CARRY1[si].h);return}e1Tap(id)}else if(EXP===2&&phase==='run')e2Tap(id);else{sfx.tap();reachTo(hs.point)}return}
   if(hb){reachTo(hb.point);const px=hb.uv.x*BWp,py=(1-hb.uv.y)*BHp;const h=hits.find(r=>px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h);
     if(phase==='quiz'&&h&&quiz){sfx.tap();quiz.handle(h.id)}
     else if(phase==='classify'&&h)e2Board(h);
@@ -694,7 +701,7 @@ function tap(cx,cy){if(phase==='menu')return;ndc.set(cx/innerWidth*2-1,-(cy/inne
 /* ======================================================================
    START / MENU
    ====================================================================== */
-function resetE1(){Object.assign(D1,{m:0,rinse:0,neck:0,fillErr:0,stirred:false,done:{},q0:0,q1:0,q2:0,q3:0,onPan:null});
+function resetE1(){Object.assign(D1,{lidOpen:0,needClose:0,m:0,rinse:0,neck:0,fillErr:0,stirred:false,done:{},q0:0,q1:0,q2:0,q3:0,onPan:null});
   E1.objs.forEach(k=>{const o=OBJ[k];o.position.copy(o.userData.home);o.rotation.copy(o.userData.homeRot)});
   const stp=OBJ.stp;if(stp.parent!==scene){scene.add(stp)}stp.position.copy(stp.userData.home);OBJ.fl.rotation.set(0,0,0);
   OBJ.bk.userData.setLevel(0);OBJ.bk.userData.powder.scale.setScalar(.0001);OBJ.fl.userData.setFill(.0001,0);OBJ.bal.userData.show(0);E1.rodInner.rotation.z=P/2;E1.rodInner.position.y=.006;si=0;simMin=0;setClock(0)}
