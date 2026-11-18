@@ -80,7 +80,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
       <button class="exp" id="e2" type="button" style="--c:#1C7FC4">الإلكتروليتات<small>تصنيف المحاليل A ، B ، C ، D</small></button>
     </div>
     <p style="font-size:15px">اسحب الأدوات بإصبعك لتنفّذ التجربة بيدك · اسحب الشاشة للنظر حولك · استخدم دائرة «تحرّك» للمشي في المختبر</p>
-    <p class="credit">إعداد: م. انوار الفضلي</p>
+    <p class="credit">إعداد المعلمة: م. انوار الفضلي</p>
   </div>
 </div>
 
@@ -481,7 +481,7 @@ function drawB1(){bClear();bTitle('تحضير محلول وحساب المولا
     const curW=S1[si]?S1[si][3]:6;ws.forEach((t,i)=>{const y=160+i*112;const n=i+1;const st=n<curW?'done':n===curW?'cur':'next';
       bBox(RX,y,RW,98,st==='cur'?'#FFF4E6':st==='done'?'#EEF8F2':'#FFFFFF',st==='cur'?'#E8691E':st==='done'?'#1E9E57':'#DCE6EA',st==='cur'?7:3);
       bTxt((st==='done'?'✓ ':n+'. ')+t,RX+RW-24,y+62,36,st==='done'?'#1E9E57':'#13232B','right')})}
-  bTxt('إعداد: م. انوار الفضلي',BWp/2,BHp-26,30,'#8FA3AD');btex.needsUpdate=true}
+  bTxt('إعداد المعلمة: م. انوار الفضلي',BWp/2,BHp-26,30,'#8FA3AD');btex.needsUpdate=true}
 
 function drawB2(){bClear();bTitle('الإلكتروليتات: تصنيف المحاليل','#1C7FC4');
   const X0=60,X1=900,Y0=160,RH=118;bBox(X0,Y0,X1-X0,RH-10,'#1C7FC4');bTxt('المحلول',X1-150,Y0+70,44,'#fff');bTxt('قراءة الجهاز',X0+(X1-X0-300)/2,Y0+70,44,'#fff');
@@ -498,7 +498,7 @@ function drawB2(){bClear();bTitle('الإلكتروليتات: تصنيف الم
     para(bx,'2. سجّل قراءة الجهاز: رقم كبير جدًا، أو رقم صغير، أو رقم قريب من الصفر.',RX+RW-30,420,RW-60,38,'#13232B',1.5,'right');
     para(bx,'3. اسحب القطبين إلى كأس الغسيل لغسلهما بالماء المقطّر قبل المحلول التالي.',RX+RW-30,520,RW-60,38,'#13232B',1.5,'right');
     bTxt(`تمّ اختبار ${D2.tested} من 4`,RX+RW/2,720,46,'#1C7FC4')}
-  bTxt('إعداد: م. انوار الفضلي',BWp/2,BHp-26,30,'#8FA3AD');btex.needsUpdate=true}
+  bTxt('إعداد المعلمة: م. انوار الفضلي',BWp/2,BHp-26,30,'#8FA3AD');btex.needsUpdate=true}
 function drawBoard(){EXP===1?drawB1():EXP===2?drawB2():(bClear(),bTitle('المختبر رباعي الأبعاد','#0E8F9E'),para(bx,'اختيار تجربة للبدء',BWp/2,330,1600,60,'#5B6E77'),btex.needsUpdate=true)}
 
 /* ---------- camera helpers ---------- */
