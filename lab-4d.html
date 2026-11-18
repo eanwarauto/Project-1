@@ -350,7 +350,7 @@ const E1={};
   const pw=new THREE.Mesh(new THREE.ConeGeometry(.04,.025,20),M(0xFFFFFF,{roughness:.9}));pw.position.y=.014;pw.scale.setScalar(.0001);bk.add(pw);bk.userData.powder=pw;
   /* jar */
   const jar=new THREE.Group();const jb=cyl(.04,.04,.1,M(0xFFFFFF,{roughness:.6}));jb.position.y=.05;jar.add(jb);const lid=cyl(.042,.042,.02,M(0xE8691E));lid.position.y=.11;jar.add(lid);
-  const jl=textPlane([{t:'Na_{2}CO_{3}',chem:1,s:62},{t:'كربونات الصوديوم',s:34}],256,160,.07,.044,'#fff','#13232B','#E8691E');jl.position.set(0,.05,.0405);jar.add(jl);
+  const jl=textPlane([{t:'Na_{2}CO_{3}',chem:1,s:54},{t:'كربونات الصوديوم',s:30},{t:'106 g/mol',s:34}],256,200,.07,.055,'#fff','#13232B','#E8691E');jl.position.set(0,.05,.0405);jar.add(jl);
   const sp=new THREE.Mesh(new THREE.BoxGeometry(.012,.003,.12),M(0xB0BEC5,{metalness:.8,roughness:.2}));sp.position.set(.06,.0015,.02);sp.rotation.y=.4;jar.add(sp);
   put('jar',jar,.92,-1.48,[.16,.14,.14]);
   const spn=new THREE.Group();const sh=new THREE.Mesh(new THREE.BoxGeometry(.13,.004,.014),M(0xB0BEC5,{metalness:.8,roughness:.2}));sh.position.y=.01;spn.add(sh);
@@ -452,6 +452,7 @@ function drawB1(){bClear();bTitle('تحضير محلول وحساب المولا
   const rows=[['كتلة كربونات الصوديوم',D1.done.m?fmt(D1.m)+' g':''],['عدد مولات المذاب n',D1.q0?fmt(D1.n,4)+' mol':''],['كتلة الدورق القياسي الجاف',D1.done.dry?fmt(D1.dry)+' g':''],
     ['كتلة الدورق القياسي بالمحلول',D1.done.full?fmt(D1.full)+' g':''],['كتلة المحلول فقط',D1.q1?fmt(D1.sol)+' g':''],['كتلة المذيب فقط',D1.q2?fmt(D1.solv/1000,4)+' kg':''],['المولالية',D1.q3?fmt(D1.mol,3)+' mol/kg':'']];
   const X0=60,X1=1040,Y0=160,RH=104;rows.forEach(([a,v],i)=>{const y=Y0+i*RH;bBox(X0,y,X1-X0,RH-10,i%2?'#F4F9FB':'#FFFFFF','#9FDDE6',3);bTxt(a,X1-20,y+64,40,'#13232B','right');if(v)bLtr(v,X0+200,y+64,44,'#C62828')});
+  bBox(X0,Y0+7*RH,X1-X0,74,'#FFF8E1','#F2B705',4);bTxt('معطى: الكتلة المولية',X1-20,Y0+7*RH+50,38,'#13232B','right');bLtr('Na_{2}CO_{3} = 106 g/mol',X0+260,Y0+7*RH+50,40,'#C65A00');
   const RX=1100,RW=890;
   if(phase==='quiz'&&quiz){bBox(RX,160,RW,700,'#FFF8F0','#E8691E');bTxt('احسب:',RX+RW-30,230,46,'#E8691E','right');
     para(bx,quiz.q,RX+RW/2,300,RW-60,42,'#13232B');if(quiz.f)bLtr(quiz.f,RX+RW/2,400,40,'#5B6E77');
@@ -549,7 +550,7 @@ function endFill(){const mk=OBJ.fl.userData.markH,d=D1.neck-mk;if(Math.abs(d)<=.
 /* quiz */
 function startQuiz(){stepbar('الخطوة الأخيرة','سجّل النتائج واحسب المولالية على اللوح');guide(null);phase='quiz';
   D1.n=D1.m/D1.Mw;D1.sol=Math.round((D1.full-D1.dry)*100)/100;D1.solv=Math.round((D1.sol-D1.m)*100)/100;D1.mol=D1.n/(D1.solv/1000);
-  const Q=[{q:'عدد مولات المذاب n',f:'n = m ÷ Mwt',a:`${fmt(D1.n,4)} mol`,w:[`${fmt(D1.m*D1.Mw/100,2)} mol`,`${fmt(D1.n*10,3)} mol`],key:'q0'},
+  const Q=[{q:'عدد مولات المذاب n (الكتلة المولية معطاة)',f:'n = m ÷ Mwt     Mwt = 106 g/mol',a:`${fmt(D1.n,4)} mol`,w:[`${fmt(D1.m*D1.Mw/100,2)} mol`,`${fmt(D1.n*10,3)} mol`],key:'q0'},
     {q:'كتلة المحلول فقط = كتلة الدورق بالمحلول − كتلة الدورق الجاف',a:`${fmt(D1.sol)} g`,w:[`${fmt(D1.full)} g`,`${fmt(D1.solv)} g`],key:'q1'},
     {q:'كتلة المذيب فقط = كتلة المحلول − كتلة المذاب (بوحدة kg)',a:`${fmt(D1.solv/1000,4)} kg`,w:[`${fmt(D1.solv,2)} kg`,`${fmt(D1.sol/1000,4)} kg`],key:'q2'},
     {q:'المولالية = عدد مولات المذاب ÷ كتلة المذيب بوحدة kg',a:`${fmt(D1.mol,3)} mol/kg`,w:[`${fmt(D1.n/(D1.sol/1000),3)} mol/kg`,`${fmt(D1.mol*10,2)} mol/kg`],key:'q3'}];
