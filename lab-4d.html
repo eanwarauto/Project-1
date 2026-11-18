@@ -310,7 +310,7 @@ function put(id,g,x,z,hb){g.position.set(x,TOP,z);scene.add(g);OBJ[id]=g;g.userD
 (function goggles(){const g=new THREE.Group();const fr=M(0x1C7FC4);
   [-1,1].forEach(s=>{const l=new THREE.Mesh(new THREE.TorusGeometry(.032,.008,10,24),fr);l.position.x=s*.04;l.rotation.x=-P/2+.3;g.add(l);const gl=new THREE.Mesh(new THREE.CircleGeometry(.032,24),new THREE.MeshStandardMaterial({color:0xBFE6FF,transparent:true,opacity:.45}));gl.position.copy(l.position);gl.rotation.copy(l.rotation);g.add(gl)});
   const band=new THREE.Mesh(new THREE.TorusGeometry(.085,.006,8,30,P),M(0x13232B));band.rotation.x=-P/2+.3;band.position.z=-.01;band.rotation.z=P;g.add(band);g.position.y=.02;
-  const w=new THREE.Group();w.add(g);put('gog',w,1.42,-1.08,[.2,.08,.14])})();
+  const w=new THREE.Group();w.add(g);put('gog',w,-1.3,-1.08,[.2,.08,.14])})();
 function washBottle(){const g=new THREE.Group();const b=cyl(.034,.038,.13,M(0xF5FAFC,{transparent:true,opacity:.92}));b.position.y=.065;g.add(b);
   const cap=cyl(.02,.03,.03,M(0x1C7FC4));cap.position.y=.145;g.add(cap);const nz=cyl(.004,.006,.09,M(0x1C7FC4),10);nz.position.set(.025,.18,0);nz.rotation.z=-.9;g.add(nz);
   const lb=textPlane([{t:'ماء مقطّر'}],256,96,.06,.0225,'#fff','#1C7FC4');lb.position.set(0,.07,.0395);g.add(lb);return g}
@@ -402,8 +402,8 @@ const KIND={strong:{t:'إلكتروليتية قوية',c:'#E8691E',v:()=>Math.r
   [-1,1].forEach(s=>{const r=cyl(.006,.006,.15,M(0x37474F,{roughness:.8}),10);r.position.set(s*.025,.08,0);el.add(r)});
   put('el',el,.95,-1.18,[.1,.18,.06]);el.userData.rest=el.position.clone();
   E2.wire=null;
-  put('wb2',washBottle(),-.7,-1.48,[.1,.2,.1]);
-  const waste=beaker(.05,.09);waste.userData.setLevel(.02);const wl=textPlane([{t:'كأس الغسيل',s:56}],256,80,.07,.022,'#fff','#5B6E77');wl.position.set(0,.045,.0515);waste.add(wl);put('waste',waste,-.72,-1.2,[.12,.12,.12]);
+  put('wb2',washBottle(),1.45,-1.45,[.1,.2,.1]);
+  const waste=beaker(.05,.09);waste.userData.setLevel(.02);const wl=textPlane([{t:'كأس الغسيل',s:56}],256,80,.07,.022,'#fff','#5B6E77');wl.position.set(0,.045,.0515);waste.add(wl);put('waste',waste,1.28,-1.18,[.12,.12,.12]);
   E2.objs=['b0','b1','b2','b3','dev','el','wb2','waste'];
 })();
 function updateWire(){const dev=OBJ.dev,el=OBJ.el;const a=new THREE.Vector3();dev.localToWorld(a.set(-.05,.07,0));const b=new THREE.Vector3();el.localToWorld(b.set(0,.17,0));
@@ -569,7 +569,7 @@ function e2Setup(){const types=[['strong','strong','weak','non'],['strong','weak
 function e2Show(){guide(null);if(!goggOn){stepbar('قبل البدء','ارتدِ النظّارة الواقية');guide('gog','النظّارة الواقية');return}
   if(D2.tested>=4&&D2.stage==='dip'){phase='classify';stepbar('الاستنتاج','صنّف المحاليل على اللوح ثمّ المس «تحقّق»');drawB2();lookAt(boardView,1.1);return}
   if(D2.stage==='dip'){stepbar(`المحلول ${D2.tested+1} من 4`,'اسحب القطبين بإصبعك، وضعهما في أحد الكؤوس A أو B أو C أو D');guide('el','اسحب القطبين');lookAt(V(.2,TOP+.1,-1.18),.8)}
-  else if(D2.stage==='rinse'){stepbar('تنظيف','اسحب القطبين إلى كأس الغسيل لغسلهما بالماء المقطّر');guide('el','إلى كأس الغسيل');lookAt(V(-.2,TOP+.1,-1.2),.8)}
+  else if(D2.stage==='rinse'){stepbar('تنظيف','اسحب القطبين إلى كأس الغسيل لغسلهما بالماء المقطّر');guide('el','إلى كأس الغسيل');lookAt(V(1.1,TOP+.1,-1.2),.8)}
   drawB2()}
 function e2Tap(id){if(busy)return;if(id==='gog'&&!goggOn){sfx.tap();wearGoggles(()=>e2Show());return}if(!goggOn){sfx.wrong();toast('ارتدِ النظّارة الواقية أوّلًا');return}
   toast(D2.stage==='rinse'?'اسحب القطبين بإصبعك إلى كأس الغسيل':'اسحب القطبين بإصبعك إلى أحد الكؤوس')}
@@ -674,9 +674,10 @@ function hdist(a,b){return Math.hypot(a.x-b.x,a.z-b.z)}
 let lastPtr=[0,0];
 function hitUnder(skip){const [cx,cy]=lastPtr;ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
   return ray.intersectObjects(pickables.filter(p=>p.userData.active&&p.parent.visible!==false&&p.parent!==skip)).map(h=>h.object.userData.id)}
+function scrDist(id){const v=objView(id).project(camera);if(v.z>1)return 1e9;return Math.hypot((v.x+1)/2*innerWidth-lastPtr[0],(1-v.y)/2*innerHeight-lastPtr[1])}
 function dropGrab(){const g=grab;grab=null;const o=g.o;let ok=false;const under=hitUnder(o);
-  if(EXP===1){const t=carryTarget();const to=CARRY1[si]&&CARRY1[si].to;const tid=to==='pan'?'bal':to;if(t&&(hdist(o.position,t)<.17||under.includes(tid))){ok=true;e1Tap(g.id)}}
-  else if(EXP===2){const cands=D2.stage==='rinse'?['waste']:['b0','b1','b2','b3'];const hitC=under.find(k=>cands.includes(k));const near=cands.map(k=>[k,hdist(o.position,OBJ[k].position)]).sort((a,b)=>a[1]-b[1])[0];const tgt=hitC||(near&&near[1]<.15?near[0]:null);if(tgt)ok=e2Drop(tgt)}
+  if(EXP===1){const t=carryTarget();const to=CARRY1[si]&&CARRY1[si].to;const tid=to==='pan'?'bal':to;if(t&&(hdist(o.position,t)<.22||under.includes(tid)||scrDist(tid)<130)){ok=true;e1Tap(g.id)}}
+  else if(EXP===2){const cands=D2.stage==='rinse'?['waste']:['b0','b1','b2','b3'];const hitC=under.find(k=>cands.includes(k));const near=cands.map(k=>[k,hdist(o.position,OBJ[k].position),scrDist(k)]).sort((a,b)=>a[2]-b[2])[0];const tgt=hitC||(near&&(near[2]<130||near[1]<.22)?near[0]:null);if(tgt)ok=e2Drop(tgt)}
   if(!ok){sfx.wrong();if(EXP===1)toast(CARRY1[si]?CARRY1[si].h:'ضعها في المكان الصحيح');tw3(o,{pos:EXP===2&&g.id==='el'?o.userData.rest:o.userData.home,dur:.6,upd:updateWire,done:()=>{EXP===1?e1Show():e2Show()}})}}
 cv.addEventListener('pointerup',e=>{if(filling){filling=false;endFill();down=null;return}if(grab){dropGrab();down=null;return}if(down&&!dragged&&!micro)tap(e.clientX,e.clientY);down=null});
 cv.addEventListener('pointercancel',()=>{down=null;if(grab){dropGrab()}if(filling){filling=false;endFill()}});
