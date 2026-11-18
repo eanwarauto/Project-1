@@ -79,18 +79,17 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
       <button class="exp" id="e1" type="button" style="--c:#E8691E">تحضير محلول<small>حساب المولالية · كربونات الصوديوم</small></button>
       <button class="exp" id="e2" type="button" style="--c:#1C7FC4">الإلكتروليتات<small>تصنيف المحاليل A ، B ، C ، D</small></button>
     </div>
-    <p style="font-size:15px">اسحب الأدوات بإصبعك لتنفّذ التجربة بيدك · اسحب الشاشة للنظر حولك · استخدم دائرة «تحرّك» للمشي في المختبر والوصول إلى المرآة</p>
+    <p style="font-size:15px">اسحب الأدوات بإصبعك لتنفّذ التجربة بيدك · اسحب الشاشة للنظر حولك · استخدم دائرة «تحرّك» للمشي في المختبر</p>
     <p class="credit">إعداد: م. انوار الفضلي</p>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
 <script>
 (async function(){
 const AF='"Readex Pro","Geeza Pro",Tahoma,Arial,sans-serif';
 const COL=['#E8691E','#1C7FC4','#7A3FC4'];
-const TYPE=['طارد للحرارة','ماصّ للحرارة','لاحراري'];
+
 try{await Promise.race([document.fonts.load('700 40px "Readex Pro"'),new Promise(r=>setTimeout(r,2500))])}catch(e){}
 
 /* ================= renderer / scene ================= */
@@ -149,25 +148,44 @@ function flame(x,cx,cy,s){x.save();x.translate(cx,cy);x.scale(s,s);x.fillStyle='
   x.fillStyle='#FFF4C2';x.beginPath();x.moveTo(0,-80);x.bezierCurveTo(60,0,55,80,0,100);x.bezierCurveTo(-55,80,-60,0,0,-80);x.fill();x.restore()}
 function flake(x,cx,cy,r,col){x.save();x.translate(cx,cy);x.strokeStyle=col;x.lineWidth=r*.09;x.lineCap='round';for(let i=0;i<6;i++){x.rotate(Math.PI/3);x.beginPath();x.moveTo(0,0);x.lineTo(0,-r);x.moveTo(0,-r*.55);x.lineTo(r*.22,-r*.75);x.moveTo(0,-r*.55);x.lineTo(-r*.22,-r*.75);x.stroke()}x.restore()}
 const P=Math.PI;
-poster((x,w,h)=>{grad(x,w,h,'#FFB04A','#E2431B');flame(x,w/2,430,1.6);para(x,'طارد للحرارة',w/2,830,w-80,110,'#fff');x.font=`700 120px ${AF}`;x.textAlign='center';x.fillText('ΔH < 0',w/2,990);para(x,'النظام يطرد الحرارة إلى المحيط',w/2,1130,w-120,58,'#FFF2E2')},1024,1300,1.0,1.27,new THREE.Vector3(2.75,1.75,FRONT+.01),0);
-poster((x,w,h)=>{grad(x,w,h,'#7FD0FF','#1C6FB8');flake(x,w/2,420,260,'#fff');para(x,'ماصّ للحرارة',w/2,830,w-80,110,'#fff');x.font=`700 120px ${AF}`;x.textAlign='center';x.fillText('ΔH > 0',w/2,990);para(x,'النظام يمتصّ الحرارة من المحيط',w/2,1130,w-120,58,'#E6F4FF')},1024,1300,1.0,1.27,new THREE.Vector3(-2.75,1.75,FRONT+.01),0);
-poster((x,w,h)=>{grad(x,w,h,'#B892F0','#5B2CA8');x.strokeStyle='#fff';x.lineWidth=18;x.lineCap='round';x.beginPath();x.moveTo(w/2,180);x.lineTo(w/2,560);x.moveTo(w/2-260,300);x.lineTo(w/2+260,300);x.moveTo(w/2-160,580);x.lineTo(w/2+160,580);x.stroke();
-  [-260,260].forEach(d=>{x.beginPath();x.moveTo(w/2+d,300);x.lineTo(w/2+d-90,470);x.lineTo(w/2+d+90,470);x.closePath();x.stroke()});
-  para(x,'لاحراري',w/2,820,w-80,120,'#fff');x.font=`700 120px ${AF}`;x.textAlign='center';x.fillText('ΔH = 0',w/2,990);para(x,'لا يطرد ولا يمتصّ الحرارة',w/2,1130,w-120,58,'#F1E8FF')},1024,1300,1.0,1.27,new THREE.Vector3(-W+.01,1.75,-.6),P/2);
-poster((x,w,h)=>{x.fillStyle='#FFFDF5';x.fillRect(0,0,w,h);const g=x.createRadialGradient(260,300,30,260,300,220);g.addColorStop(0,'#FFF3A0');g.addColorStop(1,'#FFB200');x.fillStyle=g;x.beginPath();x.arc(260,300,170,0,7);x.fill();
-  x.strokeStyle='#E8691E';x.lineWidth=16;x.beginPath();x.moveTo(470,300);x.lineTo(640,300);x.stroke();x.beginPath();x.moveTo(640,300);x.lineTo(605,270);x.moveTo(640,300);x.lineTo(605,330);x.stroke();
-  x.fillStyle='#2E9D47';x.beginPath();x.ellipse(820,290,110,60,-.6,0,7);x.fill();x.strokeStyle='#1E6E31';x.lineWidth=10;x.beginPath();x.moveTo(740,360);x.lineTo(900,220);x.stroke();
-  para(x,'الشمس: المصدر المطلق للطاقة',w/2,640,w-100,70,'#13232B');para(x,'تخزّن النباتات طاقة الشمس، ثمّ تتحوّل عبر ملايين السنين إلى وقود أحفوري.',w/2,760,w-160,46,'#5B6E77','1.5','center','500')},1024,920,1.3,1.17,new THREE.Vector3(W-.01,1.8,-.4),-P/2);
-poster((x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);const g=x.createLinearGradient(120,0,w-120,0);g.addColorStop(0,'#E8491E');g.addColorStop(1,'#1C7FC4');x.fillStyle=g;rr(x,120,230,w-240,70,35);x.fill();
-  x.fillStyle='#1C7FC4';x.beginPath();x.moveTo(w-120,190);x.lineTo(w-30,265);x.lineTo(w-120,340);x.fill();
-  x.font=`700 70px ${AF}`;x.textAlign='center';x.fillStyle='#E8491E';x.fillText('أسخن',220,150);x.fillStyle='#1C7FC4';x.fillText('أبرد',w-220,150);
-  para(x,'تنتقل الحرارة دائمًا من الجسم الأسخن إلى الجسم الأبرد',w/2,470,w-120,62,'#13232B')},1024,640,1.4,.875,new THREE.Vector3(W-.01,1.85,1.5),-P/2);
+/* general-chemistry wall art */
+poster((x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);para(x,'رموز الأمان في المختبر',w/2,120,w-60,70,'#C62828');
+  const S=[['قابل للاشتعال','#E8691E','f'],['أكّال','#13232B','c'],['سام','#13232B','t'],['مهيّج','#13232B','!']];
+  S.forEach(([t,c,k],i)=>{const cx=w/4+(i%2)*w/2,cy=330+Math.floor(i/2)*470;x.save();x.translate(cx,cy);x.rotate(P/4);x.fillStyle='#fff';x.strokeStyle='#D32F2F';x.lineWidth=22;x.fillRect(-120,-120,240,240);x.strokeRect(-120,-120,240,240);x.restore();
+    x.fillStyle='#13232B';if(k==='f')flame(x,cx,cy+20,.42);else if(k==='c'){x.fillRect(cx-70,cy-40,50,14);x.fillRect(cx+20,cy-40,50,14);x.beginPath();x.arc(cx-45,cy,10,0,7);x.arc(cx+45,cy,10,0,7);x.fill();x.fillRect(cx-80,cy+40,160,18)}
+    else if(k==='t'){x.beginPath();x.arc(cx,cy-15,55,0,7);x.fill();x.fillStyle='#fff';x.beginPath();x.arc(cx-20,cy-20,14,0,7);x.arc(cx+20,cy-20,14,0,7);x.fill();x.fillStyle='#13232B';x.fillRect(cx-25,cy+30,50,30)}
+    else{x.font=`700 190px ${AF}`;x.textAlign='center';x.textBaseline='middle';x.fillText('!',cx,cy+10)}
+    para(x,t,cx,cy+215,w/2-40,50,'#13232B')})},1024,1300,1.0,1.27,new THREE.Vector3(2.75,1.75,FRONT+.01),0);
+poster((x,w,h)=>{grad(x,w,h,'#E3F2FD','#BBDEFB');para(x,'حالات المادة',w/2,120,w-60,80,'#0D47A1');
+  const st=[['صلب','#1C7FC4',0],['سائل','#0E8F9E',1],['غاز','#7A3FC4',2]];
+  st.forEach(([t,c,k],i)=>{const X=60+i*(w-120)/3,Y=220,BW2=(w-120)/3-30,BH2=760;x.fillStyle='#fff';rr(x,X,Y,BW2,BH2,30);x.fill();x.lineWidth=8;x.strokeStyle=c;x.stroke();x.fillStyle=c;
+    for(let n=0;n<16;n++){let px,py;if(k===0){px=X+50+(n%4)*55;py=Y+BH2-300+Math.floor(n/4)*55}else if(k===1){px=X+40+((n*53)%(BW2-80));py=Y+BH2-260+((n*71)%200)}else{px=X+30+((n*97)%(BW2-60));py=Y+60+((n*131)%(BH2-140))}
+      x.beginPath();x.arc(px,py,22,0,7);x.fill()}
+    para(x,t,X+BW2/2,Y+BH2+90,BW2,64,c)})},1024,1300,1.0,1.27,new THREE.Vector3(-2.75,1.75,FRONT+.01),0);
+poster((x,w,h)=>{grad(x,w,h,'#1B2A41','#0B1E2D');para(x,'تركيب الذرّة',w/2,120,w-60,84,'#fff');const cx=w/2,cy=640;
+  x.strokeStyle='rgba(255,255,255,.7)';x.lineWidth=6;[170,290,400].forEach(r=>{x.beginPath();x.arc(cx,cy,r,0,7);x.stroke()});
+  for(let i=0;i<6;i++){x.fillStyle=i%2?'#E8691E':'#90A4AE';x.beginPath();x.arc(cx+Math.cos(i)*34,cy+Math.sin(i*1.7)*34,40,0,7);x.fill()}
+  [[170,.3],[170,3.4],[290,1],[290,2.6],[290,4.2],[290,5.6],[400,.7],[400,3.9]].forEach(([r,a])=>{x.fillStyle='#4FC3F7';x.beginPath();x.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,22,0,7);x.fill()});
+  para(x,'نواة: بروتونات ونيوترونات · إلكترونات في مستويات الطاقة',w/2,1150,w-120,46,'#CFE8F5')},1024,1300,1.0,1.27,new THREE.Vector3(-W+.01,1.75,-.6),P/2);
+poster((x,w,h)=>{x.fillStyle='#FFFDF5';x.fillRect(0,0,w,h);para(x,'أدوات المختبر',w/2,110,w-60,72,'#13232B');x.lineWidth=10;x.strokeStyle='#0E8F9E';x.fillStyle='#BFE6F5';
+  const T=[['كأس زجاجية',170],['دورق مخروطي',420],['دورق قياسي',660],['مخبار مدرّج',880]];
+  x.beginPath();x.moveTo(110,300);x.lineTo(110,560);x.lineTo(230,560);x.lineTo(230,300);x.stroke();x.fillRect(116,450,108,104);
+  x.beginPath();x.moveTo(400,290);x.lineTo(400,370);x.lineTo(330,560);x.lineTo(510,560);x.lineTo(440,370);x.lineTo(440,290);x.stroke();
+  x.beginPath();x.moveTo(645,250);x.lineTo(645,430);x.stroke();x.beginPath();x.moveTo(675,250);x.lineTo(675,430);x.stroke();x.beginPath();x.arc(660,490,75,0,7);x.stroke();
+  x.beginPath();x.moveTo(850,260);x.lineTo(850,560);x.lineTo(910,560);x.lineTo(910,260);x.stroke();x.fillRect(856,420,48,134);
+  T.forEach(([t,X])=>para(x,t,X,660,230,40,'#13232B'));para(x,'اختر الأداة المناسبة لكل قياس',w/2,820,w-120,44,'#5B6E77')},1024,920,1.3,1.17,new THREE.Vector3(W-.01,1.8,-.4),-P/2);
+poster((x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);para(x,'مقياس الرقم الهيدروجيني pH',w/2,110,w-60,64,'#13232B');
+  const C=['#E53935','#F4511E','#FB8C00','#FFB300','#FDD835','#C0CA33','#7CB342','#43A047','#00897B','#039BE5','#1E88E5','#3949AB','#5E35B1','#6A1B9A','#4A148C'];
+  const bw=(w-80)/15;C.forEach((c,i)=>{x.fillStyle=c;x.fillRect(40+i*bw,200,bw,170);x.fillStyle='#13232B';x.font=`700 34px ${AF}`;x.textAlign='center';x.fillText(String(i),40+i*bw+bw/2,420)});
+  x.font=`700 46px ${AF}`;x.fillStyle='#E53935';x.textAlign='left';x.fillText('حمضي',50,520);x.fillStyle='#43A047';x.textAlign='center';x.fillText('متعادل',w/2,520);x.fillStyle='#4A148C';x.textAlign='right';x.fillText('قاعدي',w-50,520)},1024,640,1.4,.875,new THREE.Vector3(W-.01,1.85,1.5),-P/2);
+poster((x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);para(x,'الجدول الدوري للعناصر',w/2,70,w-60,52,'#13232B');
+  const cw=(w-60)/18,ch=64,G={1:[1,18],2:[1,2,13,14,15,16,17,18],3:[1,2,13,14,15,16,17,18]};const sy=['H','He','Li','Be','B','C','N','O','F','Ne','Na','Mg','Al','Si','P','S','Cl','Ar'];let k=0;
+  const cat=c=>c<=2?'#FF8A65':c>=13&&c<=16?'#AED581':c===17?'#FFF176':c===18?'#80DEEA':'#B0BEC5';
+  for(let r=1;r<=7;r++){const cols=G[r]||Array.from({length:18},(_,i)=>i+1);cols.forEach(c=>{if(r>5&&c===3)return;const X=30+(c-1)*cw,Y=100+(r-1)*ch;x.fillStyle=cat(c);x.fillRect(X+2,Y+2,cw-4,ch-4);
+    if(r<=3&&k<sy.length){x.fillStyle='#13232B';x.font=`700 28px ${AF}`;x.textAlign='center';x.textBaseline='middle';x.fillText(sy[k++],X+cw/2,Y+ch/2)}})}},1365,600,2.0,.88,new THREE.Vector3(0,1.9,BACK-.01),P);
+poster((x,w,h)=>{x.fillStyle='#0E8F9E';x.fillRect(0,0,w,h);x.font=`700 150px ${AF}`;x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';x.fillText('مختبر الكيمياء',w/2,h/2+10)},2048,300,2.2,.3,new THREE.Vector3(0,3.03,FRONT+.012),0);
 poster((x,w,h)=>{grad(x,w,h,'#2EBE6B','#14804A');x.fillStyle='#fff';rr(x,180,170,660,190,90);x.fill();x.fillStyle='#14804A';x.beginPath();x.arc(370,265,62,0,7);x.arc(650,265,62,0,7);x.fill();
   para(x,'السلامة أوّلًا',w/2,560,w-80,96,'#fff');para(x,'ارتدِ النظّارة والقفّازات والمعطف',w/2,690,w-120,56,'#E8FFF1')},1024,860,1.0,.84,new THREE.Vector3(-W+.01,1.8,1.6),P/2);
-poster((x,w,h)=>{x.fillStyle='#fff';x.fillRect(0,0,w,h);para(x,'التغيّر في الإنثالبي',w/2,150,w-80,80,'#0E8F9E');chemDraw(x,'',0,0,10,'#000');
-  const s='ΔH = ΔH_{(Products)} − ΔH_{(Reactants)}';const sz=96;const wd=chemW(x,s,sz);chemDraw(x,s,(w-wd)/2,340,sz,'#13232B');
-  para(x,'إنثالبي النواتج − إنثالبي المتفاعلات',w/2,500,w-120,60,'#5B6E77')},1365,600,2.0,.88,new THREE.Vector3(0,1.9,BACK-.01),P);
-poster((x,w,h)=>{x.fillStyle='#0E8F9E';x.fillRect(0,0,w,h);flame(x,150,h/2+30,.42);flake(x,w-150,h/2,80,'#fff');x.font=`700 150px ${AF}`;x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';x.fillText('الكيمياء الحرارية',w/2,h/2+10)},2048,300,2.2,.3,new THREE.Vector3(0,3.03,FRONT+.012),0);
 (function elements(){const E=[['H','#FF8A80'],['C','#90A4AE'],['O','#4FC3F7'],['N','#9575CD'],['Na','#FFB74D'],['Cl','#AED581'],['S','#FFF176'],['Al','#B0BEC5'],['Fe','#BCAAA4']];
   E.forEach(([s,c],i)=>poster((x,w,h)=>{x.fillStyle=c;x.fillRect(0,0,w,h);x.fillStyle='#13232B';x.font=`700 130px ${AF}`;x.textAlign='center';x.textBaseline='middle';x.fillText(s,w/2,h/2)},256,256,.28,.28,new THREE.Vector3(-W+.012,2.75,-1.9+i*.34),P/2))})();
 
@@ -691,19 +709,6 @@ const joy={on:false,x:0,y:0};(function(){const J=$('joy'),K=$('knob');let id=nul
   J.addEventListener('pointerdown',e=>{e.stopPropagation();audio();id=e.pointerId;J.setPointerCapture(id);const r=J.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;joy.on=true;mv(e)});
   const mv=e=>{if(e.pointerId!==id)return;let dx=e.clientX-cx,dy=e.clientY-cy;const R=48,L=Math.hypot(dx,dy);if(L>R){dx*=R/L;dy*=R/L}K.style.transform=`translate(${dx}px,${dy}px)`;joy.x=dx/R;joy.y=dy/R};
   J.addEventListener('pointermove',mv);const up=e=>{if(e.pointerId!==id)return;id=null;joy.on=false;joy.x=joy.y=0;K.style.transform=''};J.addEventListener('pointerup',up);J.addEventListener('pointercancel',up)})();
-/* mirror on the back wall + full avatar (drawn only inside the mirror's own render) */
-(function mirror(){if(!THREE.Reflector)return;const mr=new THREE.Reflector(new THREE.PlaneGeometry(1.0,1.9),{textureWidth:640,textureHeight:1216,color:0xC8D3D8});
-  mr.position.set(-2.4,1.15,BACK-.02);mr.rotation.y=P;scene.add(mr);const fr=new THREE.Mesh(new THREE.BoxGeometry(1.1,2.0,.03),M(0x8FA3AD,{metalness:.5}));fr.position.set(-2.4,1.15,BACK-.005);scene.add(fr);
-  const lb=textPlane([{t:'المرآة: شاهد نفسك بالمعطف',s:44}],760,90,.9,.11,'#0E8F9E','#fff');lb.position.set(-2.4,2.25,BACK-.02);lb.rotation.y=P;scene.add(lb);
-  const AV=[];const add=(o,par)=>{par.add(o);AV.push(o);o.visible=false;return o};
-  const hair=add(new THREE.Mesh(new THREE.SphereGeometry(.118,24,18,0,P*2,0,P*.55),M(0x2B1D14,{roughness:.9})),head);hair.position.y=.012;
-  const face=add(new THREE.Mesh(new THREE.SphereGeometry(.09,24,18),M(0xE8B98F,{roughness:.7})),head);face.scale.set(.95,1.15,.7);face.position.set(0,-.005,-.07);
-  const gg=new THREE.Group();[-1,1].forEach(s=>{const l=new THREE.Mesh(new THREE.TorusGeometry(.028,.007,8,20),M(0x1C7FC4));l.position.set(s*.04,.015,-.135);gg.add(l)});add(gg,head);
-  [-1,1].forEach(s=>{const leg=add(cyl(.06,.055,.8,M(0x24323A),14),player);leg.position.set(s*.09,.4,.18);const sh=add(new THREE.Mesh(new THREE.BoxGeometry(.1,.07,.22),M(0x13232B)),player);sh.position.set(s*.09,.035,.13);
-    const arm=add(cyl(.05,.045,.6,coatM,14),player);arm.position.set(s*.27,1.15,.17);arm.rotation.z=s*.12});
-  const cl=add(cyl(.25,.3,.5,coatM,26),player);cl.scale.z=.62;cl.position.set(0,.6,.2);
-  const ob=mr.onBeforeRender;mr.onBeforeRender=function(){AV.forEach(o=>o.visible=true);gg.visible=goggOn;ob.apply(this,arguments);AV.forEach(o=>o.visible=false)}})();
-
 /* ======================================================================
    LOOP
    ====================================================================== */
