@@ -388,7 +388,7 @@ function streamBetween(a,b){const s=E1.stream;s.visible=true;const mid=a.clone()
 const E2={};const LET=['A','B','C','D'];
 const POOL={strong:[{n:'كلوريد الصوديوم',f:'NaCl'},{n:'حمض الهيدروكلوريك',f:'HCl'},{n:'هيدروكسيد الصوديوم',f:'NaOH'},{n:'نترات البوتاسيوم',f:'KNO_{3}'}],
   weak:[{n:'حمض الأسيتيك',f:'CH_{3}COOH'},{n:'محلول الأمونيا',f:'NH_{3}'}],non:[{n:'السكّر (السكروز)',f:'C_{12}H_{22}O_{11}'},{n:'الإيثانول',f:'C_{2}H_{5}OH'}]};
-const KIND={strong:{t:'إلكتروليتية قوية',c:'#E8691E',v:()=>Math.round((7800+Math.random()*6400)/10)*10},weak:{t:'إلكتروليتية ضعيفة',c:'#1C7FC4',v:()=>Math.round(180+Math.random()*620)},non:{t:'غير إلكتروليتية',c:'#7A3FC4',v:()=>Math.round(1+Math.random()*9)}};
+const KIND={strong:{t:'إلكتروليتية قوية',c:'#E8691E',v:()=>Math.round((120+Math.random()*120)*10)/10},weak:{t:'إلكتروليتية ضعيفة',c:'#1C7FC4',v:()=>Math.round((6+Math.random()*24)*10)/10},non:{t:'غير إلكتروليتية',c:'#7A3FC4',v:()=>Math.round(Math.random()*4)/10}};
 (function buildE2(){const G=new THREE.Group();scene.add(G);E2.root=G;
   E2.bk=[];[.55,.25,-.05,-.35].forEach((x,i)=>{const b=beaker(.05,.1);b.userData.setLevel(.065);put('b'+i,b,x,-1.18,[.12,.13,.12]);
     const lb=textPlane([{t:LET[i],s:120}],160,160,.045,.045,'#fff','#13232B','#1C7FC4');lb.position.set(0,.05,.0515);b.add(lb);E2.bk.push(b)});
@@ -397,7 +397,7 @@ const KIND={strong:{t:'إلكتروليتية قوية',c:'#E8691E',v:()=>Math.r
   const scr=mkCanvas(420,170),sx=scr.getContext('2d');const st2=tex(scr);const sp2=new THREE.Mesh(new THREE.PlaneGeometry(.17,.069),new THREE.MeshBasicMaterial({map:st2}));sp2.position.set(0,.075,.0605);dev.add(sp2);
   const nm=textPlane([{t:'جهاز قياس التوصيل الكهربائي',s:34}],420,60,.17,.024,'#F2C230','#13232B');nm.position.set(0,.022,.0605);dev.add(nm);
   E2.meter={set(v){sx.fillStyle='#16352B';sx.fillRect(0,0,420,170);sx.fillStyle='#7CFFB2';sx.textAlign='right';sx.textBaseline='middle';
-    sx.font=`700 92px ${AF}`;sx.fillText(v===null?'– – –':String(Math.round(v)),300,82);sx.font=`700 34px ${AF}`;sx.fillStyle='#BDEFD3';sx.textAlign='left';sx.fillText('µS/cm',310,100);st2.needsUpdate=true}};E2.meter.set(null);
+    sx.font=`700 92px ${AF}`;sx.fillText(v===null?'– – –':v.toFixed(1),300,82);sx.font=`700 34px ${AF}`;sx.fillStyle='#BDEFD3';sx.textAlign='left';sx.fillText('mA',318,100);st2.needsUpdate=true}};E2.meter.set(null);
   put('dev',dev,.95,-1.45,[.24,.24,.14]);
   const el=new THREE.Group();const bar=new THREE.Mesh(new THREE.BoxGeometry(.08,.015,.02),M(0xFFC93C));bar.position.y=.16;el.add(bar);
   [-1,1].forEach(s=>{const r=cyl(.006,.006,.15,M(0x37474F,{roughness:.8}),10);r.position.set(s*.025,.08,0);el.add(r)});
@@ -470,7 +470,7 @@ function drawB1(){bClear();bTitle('تحضير محلول وحساب المولا
 
 function drawB2(){bClear();bTitle('الإلكتروليتات: تصنيف المحاليل','#1C7FC4');
   const X0=60,X1=900,Y0=160,RH=118;bBox(X0,Y0,X1-X0,RH-10,'#1C7FC4');bTxt('المحلول',X1-150,Y0+70,44,'#fff');bTxt('قراءة الجهاز',X0+(X1-X0-300)/2,Y0+70,44,'#fff');
-  LET.forEach((L,i)=>{const y=Y0+(i+1)*RH;bBox(X0,y,X1-X0,RH-10,'#fff','#9FDDE6',3);bTxt(L,X1-150,y+72,56,'#13232B');const r=D2.read[i];if(r!==null)bLtr(r+' µS/cm',X0+(X1-X0-300)/2,y+72,46,'#13232B');
+  LET.forEach((L,i)=>{const y=Y0+(i+1)*RH;bBox(X0,y,X1-X0,RH-10,'#fff','#9FDDE6',3);bTxt(L,X1-150,y+72,56,'#13232B');const r=D2.read[i];if(r!==null)bLtr(r.toFixed(1)+' mA',X0+(X1-X0-300)/2,y+72,46,'#13232B');
     if(D2.checked){const s=D2.map[i];bLtr(s.f,X1-150,y+105,26,'#5B6E77')}});
   const RX=960,RW=1030;
   if(phase==='classify'||phase==='done2'){bBox(RX,160,RW,720,'#F6F9FB','#1C7FC4',4);bTxt('النتائج والاستنتاج',RX+RW/2,225,48,'#1C7FC4');
@@ -544,7 +544,7 @@ function stirMove(d){const bk=OBJ.bk,rod=OBJ.rod;stirP=Math.min(1,stirP+d/2600);
 let filling=false;
 function startFill(){phase='fill';const fl=OBJ.fl;fl.userData.setFill(1,D1.neck);const wb=OBJ.wb1;tw3(wb,{pos:fl.position.clone().add(V(.07,.3,.02)),rot:[0,0,1.25],dur:.8});
   setTimeout(()=>{lookAt(objView('fl',.24),1);zoomFov(26,1)},300);guide('wb1','اضغط مطوّلًا');toast('اضغط مطوّلًا على الشاشة لإضافة الماء قطرة قطرة، وارفع إصبعك عند العلامة البيضاء',5200)}
-function endFill(){const mk=OBJ.fl.userData.markH,d=D1.neck-mk;if(Math.abs(d)<=.007){D1.fillErr=Math.round(d*800)/100;sfx.right();toast('ممتاز! أسفل التقعّر عند العلامة تمامًا');
+function endFill(){const mk=OBJ.fl.userData.markH,d=D1.neck-mk;if(Math.abs(d)<=.007){D1.fillErr=0;sfx.right();toast('ممتاز! أسفل التقعّر عند العلامة تمامًا');
     phase='run';zoomFov(baseFov(),.8);tw3(OBJ.wb1,{pos:OBJ.wb1.userData.home,rot:[0,0,0],dur:.7});setTimeout(e1Next,600)}
   else if(d>.007){sfx.wrong();toast('تمّ تجاوز العلامة! في المختبر الحقيقي تُعاد التجربة، وسنعيد المحاولة الآن.',3800);D1.neck=mk-.03;OBJ.fl.userData.setFill(1,D1.neck)}
   else toast('لم يصل الماء إلى العلامة بعد، تابع الضغط',1800)}
@@ -564,8 +564,8 @@ function startQuiz(){stepbar('الخطوة الأخيرة','سجّل النتا�
 function e2Setup(){const types=[['strong','strong','weak','non'],['strong','weak','weak','non'],['strong','weak','non','non']][Math.floor(Math.random()*3)];
   for(let i=types.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[types[i],types[j]]=[types[j],types[i]]}
   const used={};D2.map=types.map(k=>{const pool=POOL[k].filter(s=>!used[s.f]);const s=pool[Math.floor(Math.random()*pool.length)];used[s.f]=1;return {...s,k,val:KIND[k].v()}});
-  const sv=D2.map.filter(s=>s.k==='strong');if(sv.length===2&&Math.abs(sv[0].val-sv[1].val)<1800)sv[1].val=sv[0].val>11000?sv[0].val-2600:sv[0].val+2600;
-  const wv=D2.map.filter(s=>s.k==='weak');if(wv.length===2&&Math.abs(wv[0].val-wv[1].val)<150)wv[1].val=wv[0].val>500?wv[0].val-260:wv[0].val+260;
+  const sv=D2.map.filter(s=>s.k==='strong');if(sv.length===2&&Math.abs(sv[0].val-sv[1].val)<25)sv[1].val=Math.round((sv[0].val>180?sv[0].val-38.6:sv[0].val+38.6)*10)/10;
+  const wv=D2.map.filter(s=>s.k==='weak');if(wv.length===2&&Math.abs(wv[0].val-wv[1].val)<6)wv[1].val=Math.round((wv[0].val>18?wv[0].val-9.4:wv[0].val+9.4)*10)/10;
   D2.read=[null,null,null,null];D2.tested=0;D2.assign={};D2.checked=false;D2.stage='dip';E2.meter.set(null);updateWire()}
 function e2Show(){guide(null);if(!goggOn){stepbar('قبل البدء','ارتدِ النظّارة الواقية');guide('gog','النظّارة الواقية');return}
   if(D2.tested>=4&&D2.stage==='dip'){phase='classify';stepbar('الاستنتاج','صنّف المحاليل على اللوح ثمّ المس «تحقّق»');drawB2();lookAt(boardView,1.1);return}
@@ -579,7 +579,7 @@ function e2Drop(target){const el=OBJ.el;
     busy=true;const b=OBJ[target];const above=b.position.clone().add(V(0,.2,0));const s=D2.map[i];
     chain([n=>tw3(el,{pos:above,dur:.3,done:n,upd:updateWire}),n=>tw3(el,{pos:b.position.clone().add(V(0,.04,0)),dur:.5,done:n,upd:updateWire}),
       n=>{sfx.clink();chip('⏩ ننتظر حتى تستقرّ القراءة');wait(1.8,n,p=>{const e=1-Math.pow(1-p,3);E2.meter.set(s.val*e+(p<1?(Math.random()-.5)*s.val*.03:0));if(Math.random()<.15)sfx.tick()})},
-      n=>{chip(null);E2.meter.set(s.val);sfx.beep();D2.read[i]=s.val;D2.tested++;toast(`المحلول ${LET[i]}: قراءة الجهاز ${s.val} µS/cm`,2800);drawB2();wait(1.4,n)},
+      n=>{chip(null);E2.meter.set(s.val);sfx.beep();D2.read[i]=s.val;D2.tested++;toast(`المحلول ${LET[i]}: قراءة الجهاز ${s.val.toFixed(1)} mA`,2800);drawB2();wait(1.4,n)},
       n=>tw3(el,{pos:above,dur:.5,done:n,upd:updateWire}),n=>{busy=false;D2.stage='rinse';e2Show()}]);return true}
   if(D2.stage==='rinse'){if(target!=='waste')return false;busy=true;const wb=OBJ.wb2,ws=OBJ.waste;
     chain([n=>tw3(el,{pos:ws.position.clone().add(V(0,.12,0)),dur:.4,done:n,upd:updateWire}),n=>tw3(wb,{pos:ws.position.clone().add(V(.1,.25,0)),rot:[0,0,1.1],dur:.6,done:n}),
