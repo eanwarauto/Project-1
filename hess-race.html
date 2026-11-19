@@ -1,0 +1,197 @@
+<title>تحدّي هس للمجموعات</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@500;700&display=swap">
+<style>
+/* Layout: four group "benches" in a 2×2 grid on one touch screen (or one bench full-screen per iPad); each bench: target, three equation rows with an operation slot, operation tiles, then a big «اجمع». Single bright look for projectors. */
+:root{
+  --bg:#E9EFF2; --panel:#FFFFFF; --ink:#13232B; --muted:#5B6E77; --line:#C9D7DD;
+  --g1:#E8691E; --g2:#0E8F9E; --g3:#7A3FC4; --g4:#2E9D47; --ok:#1E9E57; --bad:#C62828; --gold:#F2B705; --cold:#1C7FC4;
+  --display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic","Readex Pro",Tahoma,sans-serif;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;
+  padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));overflow:hidden}
+.app{height:100%;display:flex;flex-direction:column;gap:8px;padding-block:8px;box-sizing:border-box}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:clamp(20px,2.4vw,32px);margin:0}
+h1 span{color:var(--g1)}
+.clock{font-family:var(--display);font-weight:700;font-size:clamp(18px,2.2vw,30px);background:var(--panel);border-radius:12px;padding:2px 14px;font-variant-numeric:tabular-nums;margin-inline-start:auto;direction:ltr}
+button{font-family:var(--display);font-weight:700;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--g1);outline-offset:2px}
+.hbtn{font-size:15px;border:2px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:10px;padding:5px 12px}
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
+.grid.solo{grid-template-columns:1fr;grid-template-rows:1fr}
+.bench{container-type:size;background:var(--panel);border:4px solid var(--c);border-radius:18px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.in{position:absolute;inset:0;padding:1.6cqh 2cqw;display:flex;flex-direction:column;gap:1.6cqh}
+.bh{display:flex;align-items:center;gap:2cqw}
+.bh .nm{background:var(--c);color:#fff;border-radius:999px;padding:.4cqh 3cqw;font-family:var(--display);font-weight:700;font-size:clamp(12px,4.2cqh,30px)}
+.bh .tp{font-weight:700;color:var(--muted);font-size:clamp(11px,3.6cqh,24px)}
+.bh .tm{margin-inline-start:auto;font-family:var(--display);font-weight:700;font-size:clamp(12px,4cqh,28px);direction:ltr;font-variant-numeric:tabular-nums}
+.eq{direction:ltr;unicode-bidi:isolate;display:inline-block;font-family:var(--body);font-weight:700;white-space:nowrap}
+.eq sub{font-size:.6em}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;font-size:.62em;line-height:1;text-align:center;margin:0 1px}
+.fr i{font-style:normal;padding:0 1px}.fr i:first-child{border-bottom:2px solid currentColor}
+.goal{background:#FFF8E1;border:3px solid var(--gold);border-radius:12px;padding:.6cqh 2cqw;text-align:center;font-size:clamp(12px,5.2cqh,34px)}
+.rows{flex:1;min-height:0;display:grid;grid-auto-rows:1fr;gap:1.2cqh}
+.r{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2cqw;align-items:center;border:2px solid var(--line);border-radius:12px;padding:0 2cqw;cursor:pointer;background:#fff;min-height:0}
+.r.sel{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent)}
+.r .no{width:5.5cqh;height:5.5cqh;min-width:18px;min-height:18px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:clamp(10px,3.4cqh,22px)}
+.r .tx{min-width:0;overflow:hidden;display:grid;gap:.2cqh}
+.r .tx .eq{font-size:clamp(10px,4.1cqh,27px)}
+.r .tx .d{font-size:clamp(10px,3.7cqh,24px);color:var(--cold)}
+.slot{min-width:11cqw;height:9cqh;min-height:28px;border:3px dashed var(--c);border-radius:10px;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:clamp(12px,5cqh,32px);color:var(--c);direction:ltr;background:#fff}
+.slot.on{border-style:solid;background:var(--c);color:#fff}
+.tiles{display:flex;gap:1.4cqw;justify-content:center;flex-wrap:wrap}
+.tiles button{min-width:10cqw;height:9cqh;min-height:30px;border-radius:10px;border:3px solid var(--ink);background:#fff;color:var(--ink);font-size:clamp(12px,4.8cqh,30px);direction:ltr;padding:0 1.4cqw}
+.tiles button.rv{border-color:var(--cold);color:var(--cold)}
+.go{height:10cqh;min-height:32px;border-radius:12px;border:0;background:var(--ink);color:#fff;font-size:clamp(13px,5cqh,32px)}
+.msg{font-weight:700;text-align:center;font-size:clamp(11px,3.6cqh,24px);min-height:4cqh}
+.msg.no{color:var(--bad)}.msg.ok{color:var(--ok)}
+.shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+/* overlays inside a bench */
+.ov{position:absolute;inset:0;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4cqh;padding:3cqh 4cqw;text-align:center}
+.ov .sum{font-size:clamp(11px,4.4cqh,28px);max-width:100%;overflow:hidden}
+.ov .ch{display:flex;gap:2cqw;flex-wrap:wrap;justify-content:center}
+.ov .ch button{font-size:clamp(13px,5.4cqh,34px);border:3px solid var(--c);background:#fff;color:var(--ink);border-radius:12px;padding:1cqh 3cqw;direction:ltr}
+.ov .ch button.bad{border-color:var(--bad);background:#FDECEC}
+.ov .big{font-family:var(--display);font-weight:700;font-size:clamp(18px,9cqh,64px);color:var(--c)}
+.ov .t{font-weight:700;font-size:clamp(12px,4.4cqh,28px)}
+.medal{font-size:clamp(28px,16cqh,110px);line-height:1}
+/* start / end screens */
+.cover{position:fixed;inset:0;background:rgba(19,35,43,.78);display:grid;place-items:center;z-index:10;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.card{background:#fff;border-radius:22px;padding:24px;width:min(720px,100%);box-sizing:border-box;display:grid;gap:14px;text-align:center;max-height:100%;overflow:auto}
+.card h2{margin:0;font-family:var(--display);font-size:clamp(24px,3.6vw,38px)}
+.card p{margin:0;color:var(--muted);font-size:18px;line-height:1.7}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-weight:700;font-size:16px}
+.how div{background:#F1F6F8;border-radius:14px;padding:10px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modes button{font-size:19px;border-radius:14px;border:3px solid var(--ink);background:#fff;color:var(--ink);padding:12px}
+.modes button.p{background:var(--ink);color:#fff}
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pick button{font-size:18px;border-radius:12px;border:3px solid var(--c);background:#fff;color:var(--c);padding:10px 4px}
+.count{font-family:var(--display);font-weight:700;font-size:min(30vw,220px);color:#fff}
+.rank{display:grid;gap:8px;text-align:start}
+.rank div{display:flex;gap:12px;align-items:center;background:#F1F6F8;border-radius:12px;padding:8px 14px;font-weight:700;font-size:20px}
+.rank b{font-family:var(--display);width:28px}.rank i{width:16px;height:16px;border-radius:50%;flex:none}
+.rank span{margin-inline-start:auto;direction:ltr;font-variant-numeric:tabular-nums}
+canvas#fx{position:fixed;inset:0;pointer-events:none;width:100%;height:100%;z-index:20}
+@media (max-width:620px){.how,.modes{grid-template-columns:1fr}.pick{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+
+<div class="app" dir="rtl">
+  <header>
+    <h1>تحدّي <span>هس</span> للمجموعات</h1>
+    <span style="color:var(--muted);font-weight:700;font-size:14px">إعداد المعلمة: م.انوار الفضلي</span>
+    <button type="button" class="hbtn" id="restart">بدء جديد</button>
+    <div class="clock" id="clock">00:00</div>
+  </header>
+  <main class="grid" id="grid"></main>
+</div>
+
+<div class="cover" id="cover" dir="rtl">
+  <div class="card">
+    <h2>تحدّي قانون هس</h2>
+    <p>لكل مجموعة معادلة هدف وثلاث معادلات. حوّلوا المعادلات باللمس، ثمّ اجمعوا. أسرع مجموعة تصل إلى ΔH الصحيحة تفوز.</p>
+    <div class="how"><div>1. المس المعادلة</div><div>2. المس العملية: <span class="eq">×(−1)</span> أو <span class="eq">×2</span> أو <span class="eq">×½</span>…</div><div>3. المس «اجمع» واختر ΔH الصحيحة</div></div>
+    <div class="modes"><button type="button" class="p" id="mAll">شاشة واحدة: 4 مجموعات</button><button type="button" id="mOne">آيباد لكل مجموعة</button></div>
+    <div class="pick" id="pick" hidden></div>
+  </div>
+</div>
+<canvas id="fx"></canvas>
+
+<script>
+const $=id=>document.getElementById(id);
+/* ---------- chemistry rendering ---------- */
+function frac(c){for(const d of [1,2,3,4]){const n=Math.round(c*d);if(Math.abs(n/d-c)<1e-9){if(d===1)return String(n);return `<span class="fr"><i>${n}</i><i>${d}</i></span>`}}return String(+c.toFixed(2))}
+const formula=f=>f.replace(/([A-Za-z)])(\d+)/g,'$1<sub>$2</sub>');
+const term=([c,f,s])=>(Math.abs(c-1)<1e-9?'':frac(c))+formula(f)+`<sub>(${s})</sub>`;
+const eqHTML=(r,p)=>`<span class="eq">${r.map(term).join(' + ')} → ${p.map(term).join(' + ')}</span>`;
+function num(v){v=Math.round(v*100)/100;if(Object.is(v,-0))v=0;return (v>0?'+':v<0?'−':'')+Math.abs(v)}
+const key=(f,s)=>f+'|'+s;
+
+/* ---------- puzzles (each needs ×2, ×½ and ×(−1); each has one solution) ---------- */
+const PUZ=[
+ {name:'تكوين الإيثاين',t:[[[2,'C','s'],[1,'H2','g']],[[1,'C2H2','g']]],g:[
+   [[[1,'C','s'],[1,'O2','g']],[[1,'CO2','g']],-393.5],[[[2,'H2','g'],[1,'O2','g']],[[2,'H2O','l']],-571.6],[[[1,'C2H2','g'],[2.5,'O2','g']],[[2,'CO2','g'],[1,'H2O','l']],-1299.6]]},
+ {name:'تكوين الميثان',t:[[[1,'C','s'],[2,'H2','g']],[[1,'CH4','g']]],g:[
+   [[[2,'C','s'],[2,'O2','g']],[[2,'CO2','g']],-787.0],[[[1,'H2','g'],[.5,'O2','g']],[[1,'H2O','l']],-285.8],[[[1,'CH4','g'],[2,'O2','g']],[[1,'CO2','g'],[2,'H2O','l']],-890.3]]},
+ {name:'تكوين الإيثانول',t:[[[2,'C','s'],[3,'H2','g'],[.5,'O2','g']],[[1,'C2H5OH','l']]],g:[
+   [[[1,'C','s'],[1,'O2','g']],[[1,'CO2','g']],-393.5],[[[6,'H2','g'],[3,'O2','g']],[[6,'H2O','l']],-1714.8],[[[1,'C2H5OH','l'],[3,'O2','g']],[[2,'CO2','g'],[3,'H2O','l']],-1366.8]]},
+ {name:'تكوين الإيثان',t:[[[2,'C','s'],[3,'H2','g']],[[1,'C2H6','g']]],g:[
+   [[[1,'C','s'],[1,'O2','g']],[[1,'CO2','g']],-393.5],[[[6,'H2','g'],[3,'O2','g']],[[6,'H2O','l']],-1714.8],[[[1,'C2H6','g'],[3.5,'O2','g']],[[2,'CO2','g'],[3,'H2O','l']],-1559.8]]}];
+const GROUPS=[{n:'المجموعة 1',c:'var(--g1)',h:'#E8691E'},{n:'المجموعة 2',c:'var(--g2)',h:'#0E8F9E'},{n:'المجموعة 3',c:'var(--g3)',h:'#7A3FC4'},{n:'المجموعة 4',c:'var(--g4)',h:'#2E9D47'}];
+const OPS=[[-1,'×(−1)','rv'],[1,'×1',''],[2,'×2',''],[3,'×3',''],[.5,'×½','']];
+const opLabel=m=>m===null?'؟':m===-1?'×(−1)':m===.5?'×½':'×'+m;
+
+let MODE='all',SOLO=0,t0=0,tick=null,running=false;const S=[];
+function fmtT(ms){const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+
+function build(){const grid=$('grid');const list=MODE==='all'?[0,1,2,3]:[SOLO];grid.className='grid'+(MODE==='all'?'':' solo');
+  grid.innerHTML=list.map(i=>`<section class="bench" id="b${i}" style="--c:${GROUPS[i].c}" aria-label="${GROUPS[i].n}"><div class="in" id="in${i}"></div></section>`).join('');
+  list.forEach(i=>{S[i]={ops:[null,null,null],sel:0,done:false,time:0,tries:0};draw(i)})}
+function cardEq(g,m){const mm=m===null?1:m;const rev=mm<0,a=Math.abs(mm);const [r,p,d]=g;
+  const R=(rev?p:r).map(([c,f,s])=>[c*a,f,s]),P=(rev?r:p).map(([c,f,s])=>[c*a,f,s]);return {r:R,p:P,dH:d*mm}}
+function draw(i){const P=PUZ[i],s=S[i];const el=$('in'+i);
+  el.innerHTML=`<div class="bh"><span class="nm">${GROUPS[i].n}</span><span class="tp">${P.name}</span><span class="tm" id="tm${i}">${s.done?fmtT(s.time):''}</span></div>
+   <div class="goal"><span class="eq">${eqHTML(P.t[0],P.t[1])}&emsp;&emsp;ΔH° = ?</span></div>
+   <div class="rows">${P.g.map((g,k)=>{const e=cardEq(g,s.ops[k]);return `<div class="r ${s.sel===k?'sel':''}" data-k="${k}" role="button" tabindex="0" aria-label="المعادلة ${k+1}">
+     <div class="no">${k+1}</div><div class="tx">${eqHTML(e.r,e.p)}<span class="eq d">ΔH° = ${num(e.dH)} kJ</span></div><div class="slot ${s.ops[k]!==null?'on':''}">${opLabel(s.ops[k])}</div></div>`}).join('')}</div>
+   <div class="tiles">${OPS.map(([m,l,c])=>`<button type="button" class="${c}" data-m="${m}">${l}</button>`).join('')}</div>
+   <button type="button" class="go" id="go${i}">اجمع</button><div class="msg" id="msg${i}"></div>`;
+  el.querySelectorAll('.r').forEach(r=>r.onclick=()=>{if(!running||s.done)return;s.sel=+r.dataset.k;draw(i)});
+  el.querySelectorAll('.tiles button').forEach(b=>b.onclick=()=>{if(!running||s.done)return;s.ops[s.sel]=+b.dataset.m;s.sel=Math.min(2,s.sel+1);beep(700,.05);draw(i)});
+  $('go'+i).onclick=()=>check(i)}
+function check(i){if(!running)return;const P=PUZ[i],s=S[i];const m=$('msg'+i);
+  if(s.ops.some(o=>o===null)){m.className='msg no';m.textContent='اختاروا عملية لكل معادلة أولًا.';shake(i);return}
+  const net=new Map();let dH=0;const parts=[];
+  P.g.forEach((g,k)=>{const e=cardEq(g,s.ops[k]);dH+=e.dH;parts.push(e.dH);e.r.forEach(([c,f,x])=>net.set(key(f,x),(net.get(key(f,x))||0)-c));e.p.forEach(([c,f,x])=>net.set(key(f,x),(net.get(key(f,x))||0)+c))});
+  const tn=new Map();P.t[0].forEach(([c,f,x])=>tn.set(key(f,x),-c));P.t[1].forEach(([c,f,x])=>tn.set(key(f,x),c));
+  const ks=new Set([...tn.keys(),...[...net.keys()].filter(k=>Math.abs(net.get(k))>1e-9)]);let ok=true;ks.forEach(k=>{if(Math.abs((net.get(k)||0)-(tn.get(k)||0))>1e-9)ok=false});
+  if(!ok){s.tries++;m.className='msg no';m.textContent='المعادلة الناتجة لا تطابق الهدف. راجعوا العمليات.';shake(i);beep(180,.25,'square');return}
+  beep(880,.12);askSum(i,parts,dH)}
+function askSum(i,parts,dH){const el=$('in'+i);const right=Math.round(dH*100)/100;
+  const wrong=[Math.round(-dH*100)/100,Math.round((parts[0]+parts[1]-parts[2])*100)/100].filter(v=>Math.abs(v-right)>.01);
+  const opts=[right,...wrong.slice(0,2)];for(let a=opts.length-1;a>0;a--){const b=Math.floor(Math.random()*(a+1));[opts[a],opts[b]]=[opts[b],opts[a]]}
+  const ov=document.createElement('div');ov.className='ov';
+  ov.innerHTML=`<div class="t">صحيح! الآن اجمعوا قيم ΔH:</div><div class="sum"><span class="eq">ΔH° = ${parts.map(v=>'('+num(v)+')').join(' + ')} = ?</span></div>
+   <div class="ch">${opts.map(v=>`<button type="button" data-v="${v}">${num(v)} kJ</button>`).join('')}</div>`;
+  el.appendChild(ov);
+  ov.querySelectorAll('button').forEach(b=>b.onclick=()=>{if(Math.abs(+b.dataset.v-right)>.01){b.classList.add('bad');beep(180,.25,'square');return}finish(i,right,ov)})}
+function finish(i,v,ov){const s=S[i];s.done=true;s.time=Date.now()-t0;const place=S.filter(x=>x&&x.done).length;s.place=place;
+  ov.innerHTML=`<div class="medal">${['🥇','🥈','🥉','🏅'][place-1]||'🏅'}</div><div class="big">المركز ${place}</div><div class="sum"><span class="eq">ΔH° = ${num(v)} kJ</span></div><div class="t"><span class="eq">${fmtT(s.time)}</span></div>`;
+  fanfare();confetti(GROUPS[i].h);
+  const act=MODE==='all'?[0,1,2,3]:[SOLO];if(act.every(k=>S[k].done))setTimeout(endAll,1600)}
+function endAll(){running=false;clearInterval(tick);if(MODE!=='all')return;
+  const order=[0,1,2,3].sort((a,b)=>S[a].time-S[b].time);
+  $('cover').hidden=false;$('cover').querySelector('.card').innerHTML=`<h2>النتائج</h2><div class="rank">${order.map((k,n)=>`<div><b>${n+1}</b><i style="background:${GROUPS[k].c}"></i>${GROUPS[k].n}<span>${fmtT(S[k].time)}</span></div>`).join('')}</div>
+   <div class="modes"><button type="button" class="p" id="again">تحدٍّ جديد</button><button type="button" id="close">عرض اللوحات</button></div>`;
+  $('again').onclick=()=>location.reload();$('close').onclick=()=>{$('cover').hidden=true}}
+function shake(i){const b=$('b'+i);b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}
+
+/* ---------- start ---------- */
+function start(){build();$('cover').hidden=false;const c=$('cover');c.querySelector('.card').hidden=true;
+  const n=document.createElement('div');n.className='count';c.appendChild(n);let k=3;audio();
+  const step=()=>{if(k>0){n.textContent=k;beep(520,.15);k--;setTimeout(step,800)}else{n.remove();c.hidden=true;c.querySelector('.card').hidden=false;beep(1040,.3);t0=Date.now();running=true;
+    tick=setInterval(()=>{$('clock').textContent=fmtT(Date.now()-t0)},250)}};step()}
+$('mAll').onclick=()=>{MODE='all';start()};
+$('mOne').onclick=()=>{$('pick').hidden=false;$('pick').innerHTML=GROUPS.map((g,i)=>`<button type="button" data-i="${i}" style="--c:${g.c}">${g.n}</button>`).join('');
+  $('pick').querySelectorAll('button').forEach(b=>b.onclick=()=>{MODE='one';SOLO=+b.dataset.i;start()})};
+$('restart').onclick=()=>location.reload();
+
+/* ---------- sound + confetti ---------- */
+let AC=null;function audio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function beep(f,d,t='sine'){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(.12,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+d)}
+function fanfare(){[523,659,784,1046].forEach((f,k)=>setTimeout(()=>beep(f,.25,'triangle'),k*120))}
+function confetti(col){const c=$('fx'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const P=Array.from({length:90},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.3,v:2+Math.random()*4,s:5+Math.random()*7,a:Math.random()*6,c:Math.random()<.6?col:'#F2B705'}));
+  let f=0;(function d(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.y+=p.v;p.a+=.1;x.fillStyle=p.c;x.save();x.translate(p.x+Math.sin(p.a)*8,p.y);x.rotate(p.a);x.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);x.restore()});if(++f<160)requestAnimationFrame(d);else x.clearRect(0,0,c.width,c.height)})()}
+
+build();
+</script>
