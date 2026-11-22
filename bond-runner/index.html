@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>عدّاء الروابط</title>
+<title>العب بذكاء</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Noto+Kufi+Arabic:wght@400;700;800&display=swap">
@@ -88,7 +88,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
 <div class="swipe" id="swipe" hidden>👆 يمين ويسار: غيّري المسار · ⬆ لفوق: اقفزي · ⬇ لتحت: انزلقي</div>
 
 <div class="menu" id="start">
-  <div class="top"><h1 class="title">عدّاء الروابط</h1><div class="tag">الكيمياء · الصف العاشر</div></div>
+  <div class="top"><h1 class="title">العب بذكاء</h1><div class="tag">الكيمياء · الصف العاشر</div></div>
   <div class="lessons" id="lessons">
     <button class="lesson" data-l="ion" aria-pressed="true">الرابطة الأيونية<small>3 جولات · 15 سؤالًا</small></button>
     <button class="lesson" data-l="cov" aria-pressed="false">الرابطة التساهمية<small>3 جولات · 15 سؤالًا</small></button>
@@ -177,7 +177,7 @@ function music(on){clearInterval(musicT);if(!on)return;let i=0;musicT=setInterva
 const cv=$('#gl'),R=new T3.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(1.6,devicePixelRatio||1));R.outputEncoding=T3.sRGBEncoding;
 const scene=new T3.Scene();scene.background=new T3.Color(0xcfe9ff);scene.fog=new T3.Fog(0xcfe9ff,30,78);
 const cam=new T3.PerspectiveCamera(62,1,.1,120);
-function fit(){const w=innerWidth,h=innerHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.fov=w<h?78:62;cam.updateProjectionMatrix()}
+function fit(){const w=innerWidth,h=innerHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.fov=w<h?72:62;cam.updateProjectionMatrix()}
 addEventListener('resize',fit);fit();
 scene.add(new T3.HemisphereLight(0xffffff,0xb8a6e8,.85));const sun=new T3.DirectionalLight(0xfff3dc,.55);sun.position.set(-4,8,4);scene.add(sun);
 const mat=(c,r=.6,m=0,o={})=>new T3.MeshStandardMaterial({color:c,roughness:r,metalness:m,...o});
@@ -264,8 +264,10 @@ function showBest(){const b=best(G.lesson);$('#best').textContent=b?`🏆 أفض
 function hud(){$('#hearts').textContent='❤️'.repeat(G.hearts)+'🤍'.repeat(3-G.hearts);$('#score').textContent=G.score;$('#prog').textContent=`الجولة ${G.round+1} · سؤال ${Math.min(G.qi,RQ)} / ${RQ}`}
 let toastT=null;function toast(h,col){const t=$('#toast');t.innerHTML=h;t.style.color=col||'#fff';t.classList.add('on');TM.forEach(x=>{if(x.fn&&x.isToast)x.dead=1});{const o={fn:()=>t.classList.remove('on'),t:1.3,isToast:1};TM.push(o)}}
 function clearWorld(){objs.forEach(o=>scene.remove(o.g));objs.length=0;if(G.gate){scene.remove(G.gate.g);G.gate=null}}
-function startRound(){clearWorld();G.qi=0;G.speed=SPEEDS[G.round];G.dist=0;G.spawnZ=-22;G.nextQ=55;G.q=null;G.lane=1;G.x=0;G.y=0;G.vy=0;G.inv=0;G.slide=0;G.hold=0;TM.length=0;G.wrongR=[];hud();
-  $('#between').hidden=true;$('#hud').hidden=false;$('#qbox').hidden=true;G.mode='count';
+const GAP=()=>Math.max(9,15-G.round*2);
+function fillRows(from){let z=from;for(;z>-62;z-=GAP())spawnRow(z);G.rowZ=z+GAP()}
+function startRound(){clearWorld();G.qi=0;G.speed=SPEEDS[G.round];G.dist=0;G.nextQ=62;G.q=null;G.lane=1;G.x=0;G.y=0;G.vy=0;G.inv=0;G.slide=0;G.hold=0;TM.length=0;G.wrongR=[];hud();
+  $('#between').hidden=true;$('#hud').hidden=false;$('#qbox').hidden=true;G.mode='count';fillRows(-20);
   const cd=document.createElement('div');cd.className='cd';document.body.appendChild(cd);['3','2','1','انطلقي!'].forEach((t,i)=>later(()=>{cd.innerHTML=`<span${i===3?' style="font-size:.45em"':''}>${t}</span>`;i<3?SFX.beep():SFX.go()},i*.7));
   later(()=>{cd.remove();G.mode='run';if(G.round===0){$('#swipe').hidden=false;$('#swipe').style.opacity=1;later(()=>$('#swipe').style.opacity=0,5)}},2.8)}
 function spawnRow(z){
@@ -281,7 +283,7 @@ function askQ(){const pool=QB[G.lesson],idx=G.order[G.round*RQ+G.qi],raw=pool[id
 function judge(){const gt=G.gate,lane=G.lane,o=gt.opts[lane];
   if(o.ok){G.score+=50;G.right++;SFX.right();toast('✓ إجابة صحيحة!<small>+50</small>','#4ade80');burst(V3(G.x,1.2,0),0x7cff9a,26)}
   else{G.hearts--;SFX.wrong();const r=gt.opts.find(x=>x.ok).t;G.wrong.push([plain(G.q.raw[0]),r]);toast(`✗ الإجابة: ${r}`,'#fca5a5');flash();hud()}
-  later(()=>{scene.remove(gt.g)},.6);G.gate=null;G.q=null;G.spawnZ=-30;$('#qbox').hidden=true;G.nextQ=G.dist+58;hud();
+  later(()=>{scene.remove(gt.g)},.6);G.gate=null;G.q=null;$('#qbox').hidden=true;G.nextQ=G.dist+58;if(G.mode==='run'&&G.qi<RQ)fillRows(-24);hud();
   if(G.hearts<=0){later(gameOver,.9);G.mode='end';return}
   if(G.qi>=RQ){G.mode='end';later(roundEnd,1.2)}}
 function flash(){const f=$('#flash');f.classList.add('on');later(()=>f.classList.remove('on'),.26)}
@@ -328,7 +330,7 @@ function frame(dt){G.t+=dt;const t=G.t;
   const held=G.hold>0;
   if(running){let dz=held?0:G.speed*dt;G.dist+=dz;floorT.offset.y+=dz/10;sideT.offset.y+=dz/(160/60);
     deco.forEach(d=>{d.position.z+=dz;if(d.position.z>14)d.position.z-=144});
-    G.spawnZ+=dz;if(!G.q&&G.dist<G.nextQ-12&&G.spawnZ>-60){spawnRow(-62);G.spawnZ-=Math.max(9,15-G.round*2)}
+    G.rowZ+=dz;if(!G.q&&G.dist<G.nextQ-12&&G.rowZ>-62+GAP()){spawnRow(-62);G.rowZ=-62}
     if(!G.gate&&G.dist>=G.nextQ&&G.qi<RQ){objs.filter(o=>o.z<-20).forEach(o=>{scene.remove(o.g);o.dead=1});askQ()}
     if(G.gate&&!G.gate.held&&G.gate.z+dz>=-STOPD){dz=-STOPD-G.gate.z;G.gate.held=1;G.hold=HOLD;$('#chips').classList.add('hold');toast('⏸ قرّري الآن!','#ffe066')}
     if(G.gate){G.gate.z+=dz;G.gate.g.position.z=G.gate.z;G.gate.opts.forEach((o,i)=>{const f=G.gate.g.userData['f'+i];f.material.opacity=.14+.08*Math.sin(t*6+i)});if(G.gate.z>=0)judge()}
@@ -351,9 +353,9 @@ function frame(dt){G.t+=dt;const t=G.t;
   const blink=(t%3.5)<.12;[H['p-1'],H.p1].forEach(p=>p.scale.y=blink?.15:1);
   // الكاميرا: أمام الشخصية في البداية، ثم تلف خلفها
   if(G.mode==='intro')G.cam=Math.min(1,G.cam+dt/1.4);else if(G.mode!=='menu')G.cam=1;
-  const e=G.cam<.5?2*G.cam*G.cam:1-Math.pow(-2*G.cam+2,2)/2,a=Math.PI*(1-e),r=lerp(3.6,6.4,e),h=lerp(1.5,3.6,e);
+  const port=cam.aspect<1,e=G.cam<.5?2*G.cam*G.cam:1-Math.pow(-2*G.cam+2,2)/2,a=Math.PI*(1-e),r=lerp(3.6,port?5:6.4,e),h=lerp(1.5,port?3.1:3.6,e);
   if(G.mode==='menu'){cam.position.set(Math.sin(t*.3)*.7,1.2,-4);cam.lookAt(0,.42,0)}
-  else{cam.position.set(G.x*.55*e+Math.sin(a)*r,h,Math.cos(a)*r);cam.lookAt(G.x*.6*e,lerp(.95,1.1,e),lerp(0,-7,e))}
+  else{cam.position.set(G.x*.55*e+Math.sin(a)*r,h,Math.cos(a)*r);cam.lookAt(G.x*.6*e,lerp(.95,port?.35:1.1,e),lerp(0,port?-6:-7,e))}
   parts.forEach(p=>{p.l-=dt;p.v.y-=9*dt;p.m.position.addScaledVector(p.v,dt);p.m.scale.setScalar(Math.max(.01,p.l));if(p.l<=0){scene.remove(p.m)}});for(let i=parts.length-1;i>=0;i--)if(parts[i].l<=0)parts.splice(i,1);
   R.render(scene,cam)}
 let manual=false;function loop(){const dt=Math.min(.05,clock.getDelta());if(!manual)frame(dt);requestAnimationFrame(loop)}
