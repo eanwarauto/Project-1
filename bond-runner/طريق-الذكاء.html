@@ -63,7 +63,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
 .best{font-weight:800;color:var(--ink);background:#ffffffe6;border-radius:999px;padding:3px 14px;font-size:15px}
 .best:empty{display:none}
 .who{display:flex;align-items:center;gap:10px;background:#ffffffe6;border-radius:18px;padding:6px 8px 6px 14px;box-shadow:0 6px 18px #1f164030;font-weight:800;font-size:clamp(15px,2vw,20px)}
-.who input{font:800 clamp(17px,2.3vw,22px) var(--body);color:var(--ink);border:3px solid #d9cff7;border-radius:14px;padding:6px 12px;width:min(320px,52vw);background:#fff;text-align:center}
+.who input{font:800 clamp(22px,3.2vw,30px) var(--body);color:var(--ink);border:3px solid #d9cff7;border-radius:16px;padding:10px 14px;width:min(420px,72vw);background:#fff;text-align:center}
 .who input:focus{outline:none;border-color:var(--grape)}
 .who.need{animation:shake .4s}
 .who.need input{border-color:var(--bad)}
@@ -114,12 +114,12 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
     <button class="lesson" data-l="ion" aria-pressed="true">الرابطة الأيونية<small>3 جولات · 15 سؤالًا</small></button>
     <button class="lesson" data-l="cov" aria-pressed="false">الرابطة التساهمية<small>3 جولات · 15 سؤالًا</small></button>
   </div>
-  <label class="who" for="sname"><span>اكتبي اسمك</span><input id="sname" maxlength="30" autocomplete="off" placeholder="الاسم الثلاثي"></label>
   <div class="best" id="best"></div>
   <button class="go" id="go">ابدئي الجري 🏃‍♀️</button>
 </div>
 <div class="credit" id="credit">إعداد: المعلمة م.انوار الفضلي</div>
 
+<div class="menu center" id="namebox" hidden><form class="card" id="nameform"><h2>✍️ ما اسمكِ؟</h2><p style="margin:0;font-weight:700">اكتبي اسمكِ ليظهر في بطاقة نتيجتكِ</p><label class="who" for="sname"><input id="sname" maxlength="30" autocomplete="off" enterkeyhint="go" placeholder="الاسم الثلاثي"></label><div class="row"><button class="go" type="submit">ابدئي 🏃‍♀️</button><button class="ghost" type="button" id="nameback">رجوع</button></div></form></div>
 <div class="menu center" id="between" hidden><div class="card" id="bcard"></div></div>
 
 <script>/**
@@ -315,7 +315,7 @@ function askQ(){const pool=QB[G.lesson],idx=G.order[G.round*RQ+G.qi],raw=pool[id
   G.q={raw,opts};G.qi++;hud();SFX.q();
   $('#qtext').innerHTML=fmt(raw[0]);$('#chips').innerHTML=opts.map((o,i)=>`<div class="chip" style="--c:${LCOL[i]}"><small>${LSYM[i]} ${['المسار الأيسر','المسار الأوسط','المسار الأيمن'][i]}</small>${ans(o.t)}</div>`).join('');
   $('#qbox').hidden=false;const qt=$('#qtext');qt.style.animation='none';qt.offsetWidth;qt.style.animation='';
-  const g=mkGate(opts),z=-(G.speed*8+STOPD);g.position.z=z;scene.add(g);G.gate={g,z,opts}}
+  const g=mkGate(opts),z=-(G.speed*7+STOPD);g.position.z=z;scene.add(g);G.gate={g,z,opts}}
 function judge(){const gt=G.gate,lane=G.lane,o=gt.opts[lane];
   if(o.ok){G.score+=50;G.right++;SFX.right();toast('✓ إجابة صحيحة!<small>+50</small>','#4ade80');burst(V3(G.x,1.2,0),0x7cff9a,26)}
   else{G.hearts--;SFX.wrong();const r=gt.opts.find(x=>x.ok).t;G.wrong.push([fmt(G.q.raw[0]),r]);toast(`✗ الإجابة: ${ans(r)}`,'#fca5a5');flash();hud()}
@@ -353,12 +353,14 @@ let sw=null;
 cv.addEventListener('pointerdown',e=>{audio();sw={x:e.clientX,y:e.clientY,t:performance.now(),done:false}});
 cv.addEventListener('pointermove',e=>{if(!sw||sw.done)return;const dx=e.clientX-sw.x,dy=e.clientY-sw.y;if(Math.max(Math.abs(dx),Math.abs(dy))>34){sw.done=true;if(Math.abs(dx)>Math.abs(dy))move(dx>0?1:-1);else if(dy<0)jump();else slide()}});
 cv.addEventListener('pointerup',e=>{if(sw&&!sw.done&&performance.now()-sw.t<250){const w=innerWidth;if(e.clientX<w*.33)move(-1);else if(e.clientX>w*.67)move(1);else jump()}sw=null});
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'){if(e.key==='Enter')$('#go').click();return}if(e.key==='ArrowLeft')move(-1);else if(e.key==='ArrowRight')move(1);else if(e.key==='ArrowUp'||e.key===' '){e.preventDefault();jump()}else if(e.key==='ArrowDown'){e.preventDefault();slide()}});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowLeft')move(-1);else if(e.key==='ArrowRight')move(1);else if(e.key==='ArrowUp'||e.key===' '){e.preventDefault();jump()}else if(e.key==='ArrowDown'){e.preventDefault();slide()}});
 $('#lessons').onclick=e=>{const b=e.target.closest('.lesson');if(!b)return;G.lesson=b.dataset.l;document.querySelectorAll('.lesson').forEach(x=>x.setAttribute('aria-pressed',x===b));showBest();audio();SFX.lane()};
 try{$('#sname').value=localStorage.getItem('runner-name')||''}catch(e){}
 $('#sname').addEventListener('input',()=>$('.who').classList.remove('need'));
-$('#go').onclick=()=>{const nm=$('#sname').value.trim();if(nm.length<2){const w=$('.who');w.classList.remove('need');w.offsetWidth;w.classList.add('need');$('#sname').focus();audio();SFX.wrong();return}
-  G.name=nm;try{localStorage.setItem('runner-name',nm)}catch(e){};$('#sname').blur();audio();music(true);$('#start').hidden=true;$('#credit').hidden=true;G.mode='intro';G.cam=0;later(newGame,1.5)};
+$('#go').onclick=()=>{audio();SFX.lane();$('#start').hidden=true;$('#namebox').hidden=false;setTimeout(()=>$('#sname').focus(),60)};
+$('#nameback').onclick=()=>{$('#namebox').hidden=true;$('#start').hidden=false};
+$('#nameform').onsubmit=e=>{e.preventDefault();const nm=$('#sname').value.trim();if(nm.length<2){const w=$('.who');w.classList.remove('need');w.offsetWidth;w.classList.add('need');$('#sname').focus();SFX.wrong();return}
+  G.name=nm;try{localStorage.setItem('runner-name',nm)}catch(e){};$('#sname').blur();$('#namebox').hidden=true;music(true);$('#start').hidden=true;$('#credit').hidden=true;G.mode='intro';G.cam=0;later(newGame,1.5)};
 $('#pause').onclick=()=>{G.paused=!G.paused;$('#pause').textContent=G.paused?'▶':'⏸';if(G.paused)card(`<h2>استراحة ☕</h2><div class="row"><button class="go" id="res">أكملي</button><button class="ghost" id="mute">${mute?'🔇 الصوت مغلق':'🔊 الصوت يعمل'}</button><button class="ghost" id="home">القائمة</button></div>`),$('#res').onclick=()=>$('#pause').click(),$('#mute').onclick=e=>{mute=!mute;e.target.textContent=mute?'🔇 الصوت مغلق':'🔊 الصوت يعمل'},$('#home').onclick=()=>{G.paused=false;$('#pause').textContent='⏸';toMenu()};else $('#between').hidden=true};
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='run'&&!G.paused)$('#pause').click()});
 
