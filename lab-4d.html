@@ -430,7 +430,7 @@ function updateWire(){const dev=OBJ.dev,el=OBJ.el;const a=new THREE.Vector3();de
    STATE / FLOW
    ====================================================================== */
 let EXP=0,phase='menu',cur=null,busy=false;
-const D1={m:0,target:5.00,Mw:106,dry:62.48,beakerM:48.36,rinse:0,neck:0,fillErr:0,stirred:false,done:{}};
+const D1={m:0,target:5.00,Mw:106,dry:126.00,beakerM:48.36,rinse:0,neck:0,fillErr:0,stirred:false,done:{}};
 const D2={map:[],read:[null,null,null,null],tested:0,holding:false,assign:{},checked:false};
 function showExp(n){E1.objs.forEach(k=>OBJ[k].visible=n===1);E2.objs.forEach(k=>OBJ[k].visible=n===2);if(E2.wire)E2.wire.visible=n===2;E1.stream.visible=false;
   pickables.forEach(p=>{const id=p.userData.id;p.userData.active=id==='gog'||(n===1?E1.objs.includes(id):E2.objs.includes(id))})}
@@ -465,7 +465,7 @@ function bLtr(t,X,Y,size,col){const w=chemW(bx,t,size);chemDraw(bx,t,X-w/2,Y,siz
 function fmt(v,d=2){return v.toFixed(d)}
 let quiz=null,qHint='';
 function drawB1(){bClear();bTitle('تحضير محلول وحساب المولالية','#E8691E');
-  const rows=[['كتلة كربونات الصوديوم',D1.done.m?fmt(D1.m)+' g':''],['عدد مولات المذاب n',D1.q0?fmt(D1.n,4)+' mol':''],['كتلة الدورق القياسي الجاف',D1.done.dry?fmt(D1.dry)+' g':''],
+  const rows=[['كتلة كربونات الصوديوم',D1.done.m?fmt(D1.m)+' g':''],['عدد مولات المذاب n',D1.q0?fmt(D1.n,2)+' mol':''],['كتلة الدورق القياسي الجاف',D1.done.dry?fmt(D1.dry)+' g':''],
     ['كتلة الدورق القياسي بالمحلول',D1.done.full?fmt(D1.full)+' g':''],['كتلة المحلول فقط',D1.q1?fmt(D1.sol)+' g':''],['كتلة المذيب فقط',D1.q2?fmt(D1.solv/1000,4)+' kg':''],['المولالية',D1.q3?fmt(D1.mol,3)+' mol/kg':'']];
   const X0=60,X1=1040,Y0=160,RH=104;rows.forEach(([a,v],i)=>{const y=Y0+i*RH;bBox(X0,y,X1-X0,RH-10,i%2?'#F4F9FB':'#FFFFFF','#9FDDE6',3);bTxt(a,X1-20,y+64,40,'#13232B','right');if(v)bLtr(v,X0+200,y+64,44,'#C62828')});
   bBox(X0,Y0+7*RH,X1-X0,74,'#FFF8E1','#F2B705',4);bTxt('معطى: الكتلة المولية',X1-20,Y0+7*RH+50,38,'#13232B','right');bLtr('Na_{2}CO_{3} = 106 g/mol',X0+260,Y0+7*RH+50,40,'#C65A00');
@@ -475,7 +475,7 @@ function drawB1(){bClear();bTitle('تحضير محلول وحساب المولا
     quiz.opts.forEach((o,k)=>{const y=450+k*120;bBox(RX+60,y,RW-120,100,'#fff','#0E8F9E');bLtr(o,RX+RW/2,y+66,46,'#13232B');hits.push({id:k,x:RX+60,y,w:RW-120,h:100})});
     if(qHint)para(bx,qHint,RX+RW/2,830,RW-60,34,'#C62828')}
   else if(phase==='done1'){bBox(RX,160,RW,700,'#F0FAF4','#1E9E57');bTxt('النتيجة',RX+RW/2,240,56,'#1E9E57');
-    bLtr('m = n ÷ kg_{solvent}',RX+RW/2,340,48,'#13232B');bLtr(`= ${fmt(D1.n,4)} ÷ ${fmt(D1.solv/1000,4)}`,RX+RW/2,420,46,'#13232B');bLtr(`= ${fmt(D1.mol,3)} mol/kg`,RX+RW/2,500,58,'#C62828');
+    bLtr('m = n ÷ kg_{solvent}',RX+RW/2,340,48,'#13232B');bLtr(`= ${fmt(D1.n,2)} ÷ ${fmt(D1.solv/1000,4)}`,RX+RW/2,420,46,'#13232B');bLtr(`= ${fmt(D1.mol,3)} mol/kg`,RX+RW/2,500,58,'#C62828');
     para(bx,'المس اللوح للدخول إلى داخل المحلول والتحكّم في الزمن',RX+RW/2,620,RW-80,40,'#7A3FC4');para(bx,'وبعد العودة إلى المختبر، المس اللوح لاختيار تجربة أخرى',RX+RW/2,760,RW-80,32,'#5B6E77')}
   else{const ws=['زن كربونات الصوديوم وضعها في كأس نظيفة','أضف الماء المقطّر وحرّك حتى تمام الذوبان','زن دورقًا قياسيًا جافًا ونظيفًا','انقل المحلول واغسل الكأس وأكمل حتى العلامة','زن الدورق القياسي بما يحتويه من المحلول','سجّل النتائج واحسب المولالية'];
     const curW=S1[si]?S1[si][3]:6;ws.forEach((t,i)=>{const y=160+i*112;const n=i+1;const st=n<curW?'done':n===curW?'cur':'next';
@@ -533,7 +533,7 @@ function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();t
   else if(k===5){const rod=OBJ.rod,ri=E1.rodInner;chain([n=>tw3(rod,{pos:bk.position.clone().add(V(0,.13,0)),dur:.6,done:n}),n=>{ri.rotation.z=0;ri.position.y=0;tw3(rod,{pos:bk.position.clone().add(V(0,.11,0)),dur:.3,done:n})},
       n=>{phase='stir';stirP=0;stirLast=0;stirDone=()=>{phase='run';n()};stepbar('التحريك','حرّك إصبعك على الشاشة حركة دائرية لتحريك المحلول حتى يذوب');chip('⏩ الزمن مسرَّع ×60');busy=false},
       n=>{busy=true;chip(null);D1.stirred=true;toast('ذابت كربونات الصوديوم تمامًا · مرّت دقيقتان');tw3(rod,{pos:rod.userData.home,dur:.6,done:n})},n=>{ri.rotation.z=P/2;ri.position.y=.006;free();e1Next()}])}
-  else if(k===6){chain([n=>tw3(fl,{pos:pan.clone().add(V(0,.15,0)),dur:.7,done:n}),n=>tw3(fl,{pos:pan,dur:.4,done:n}),n=>{sfx.beep();bal.userData.show(D1.dry);D1.done.dry=1;drawB1();toast('كتلة الدورق الجاف 62.48 g');wait(1.3,n)},
+  else if(k===6){chain([n=>tw3(fl,{pos:pan.clone().add(V(0,.15,0)),dur:.7,done:n}),n=>tw3(fl,{pos:pan,dur:.4,done:n}),n=>{sfx.beep();bal.userData.show(D1.dry);D1.done.dry=1;drawB1();toast(`كتلة الدورق الجاف ${fmt(D1.dry)} g`);wait(1.3,n)},
       n=>{bal.userData.show(0);tw3(fl,{pos:fl.userData.home,dur:.7,done:n})},n=>{free();e1Next()}])}
   else if(k===7){const fn=OBJ.fn;chain([n=>tw3(fn,{pos:fl.position.clone().add(V(0,.3,0)),dur:.7,done:n}),n=>tw3(fn,{pos:fl.position.clone().add(V(0,.24,0)),dur:.3,done:n}),n=>{sfx.clink();free();e1Next()}])}
   else if(k===8){const top=fl.position.clone().add(V(0,.36,0));chain([n=>tw3(bk,{pos:top.clone().add(V(.1,.03,0)),dur:.8,done:n}),n=>tw3(bk,{rot:[0,0,1.5],dur:.5,done:n}),
@@ -548,7 +548,7 @@ function e1Tap(id){const s=S1[si];if(!s||busy)return;if(id!==s[0]){sfx.wrong();t
   else if(k===11){const stp=OBJ.stp;chain([n=>tw3(stp,{pos:fl.position.clone().add(V(0,.3,0)),dur:.7,done:n}),n=>tw3(stp,{pos:fl.position.clone().add(V(0,.272,0)),dur:.3,done:n}),
       n=>{sfx.clink();fl.add(stp);stp.position.set(0,.272,0);tw3(fl,{pos:fl.position.clone().add(V(0,.22,0)),dur:.5,done:n})},
       n=>wait(2.2,n,p=>{fl.rotation.z=Math.sin(p*P*3)*2.6*Math.sin(p*P)}),n=>{fl.rotation.z=0;tw3(fl,{pos:fl.userData.home,dur:.5,done:n})},n=>{toast('تمّ رجّ الدورق جيّدًا');free();e1Next()}])}
-  else if(k===12){D1.water=101.00+D1.fillErr;D1.full=Math.round((D1.dry+D1.m+D1.water)*100)/100;
+  else if(k===12){D1.full=300.00;D1.water=Math.round((D1.full-D1.dry-D1.m)*100)/100;
     chain([n=>tw3(fl,{pos:pan.clone().add(V(0,.15,0)),dur:.7,done:n}),n=>tw3(fl,{pos:pan,dur:.4,done:n}),n=>{sfx.beep();bal.userData.show(D1.full);D1.done.full=1;drawB1();toast(`كتلة الدورق بالمحلول ${fmt(D1.full)} g`);wait(1.6,n)},n=>{free();e1Next()}])}
 }
 let stirP=0,stirLast=0,stirDone=null;
@@ -565,8 +565,8 @@ function endFill(){const mk=OBJ.fl.userData.markH,d=D1.neck-mk;if(Math.abs(d)<=.
   else toast('لم يصل الماء إلى العلامة بعد، تابع الضغط',1800)}
 /* quiz */
 function startQuiz(){stepbar('الخطوة الأخيرة','سجّل النتائج واحسب المولالية على اللوح');guide(null);phase='quiz';
-  D1.n=D1.m/D1.Mw;D1.sol=Math.round((D1.full-D1.dry)*100)/100;D1.solv=Math.round((D1.sol-D1.m)*100)/100;D1.mol=D1.n/(D1.solv/1000);
-  const Q=[{q:'عدد مولات المذاب n (الكتلة المولية معطاة)',f:'n = m ÷ Mwt     Mwt = 106 g/mol',a:`${fmt(D1.n,4)} mol`,w:[`${fmt(D1.m*D1.Mw/100,2)} mol`,`${fmt(D1.n*10,3)} mol`],key:'q0'},
+  D1.n=Math.round(D1.m/D1.Mw*100)/100;D1.sol=Math.round((D1.full-D1.dry)*100)/100;D1.solv=Math.round((D1.sol-D1.m)*100)/100;D1.mol=D1.n/(D1.solv/1000);
+  const Q=[{q:'عدد مولات المذاب n (الكتلة المولية معطاة)',f:'n = m_{s} ÷ Mwt     Mwt = 106 g/mol',a:`${fmt(D1.n,2)} mol`,w:[`${fmt(D1.m*D1.Mw/100,2)} mol`,`${fmt(D1.n*10,1)} mol`],key:'q0'},
     {q:'كتلة المحلول فقط = كتلة الدورق بالمحلول − كتلة الدورق الجاف',a:`${fmt(D1.sol)} g`,w:[`${fmt(D1.full)} g`,`${fmt(D1.solv)} g`],key:'q1'},
     {q:'كتلة المذيب فقط = كتلة المحلول − كتلة المذاب (بوحدة kg)',a:`${fmt(D1.solv/1000,4)} kg`,w:[`${fmt(D1.solv,2)} kg`,`${fmt(D1.sol/1000,4)} kg`],key:'q2'},
     {q:'المولالية = عدد مولات المذاب ÷ كتلة المذيب بوحدة kg',a:`${fmt(D1.mol,3)} mol/kg`,w:[`${fmt(D1.n/(D1.sol/1000),3)} mol/kg`,`${fmt(D1.mol*10,2)} mol/kg`],key:'q3'}];
