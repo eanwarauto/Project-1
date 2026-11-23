@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>طريق الذكاء</title>
+<title>تحدي الذكاء</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Noto+Kufi+Arabic:wght@400;700;800&display=swap">
@@ -109,7 +109,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
 <div class="swipe" id="swipe" hidden>👆 يمين ويسار: غيّري المسار · ⬆ لفوق: اقفزي · ⬇ لتحت: انزلقي</div>
 
 <div class="menu" id="start">
-  <div class="top"><h1 class="title">طريق الذكاء</h1><div class="tag">الكيمياء · الصف العاشر</div></div>
+  <div class="top"><h1 class="title">تحدي الذكاء</h1><div class="tag">الكيمياء · الصف العاشر</div></div>
   <div class="lessons" id="lessons">
     <button class="lesson" data-l="ion" aria-pressed="true">الرابطة الأيونية<small>3 جولات · 15 سؤالًا</small></button>
     <button class="lesson" data-l="cov" aria-pressed="false">الرابطة التساهمية<small>3 جولات · 15 سؤالًا</small></button>
@@ -337,7 +337,7 @@ function roundEnd(){G.mode='pause2';const last=G.round===ROUNDS-1;SFX.win();burs
    <p style="margin:0;font-weight:800">الجولة ${G.round+2} أسرع… استعدي! 🚀</p><p style="margin:0;font-weight:700;font-size:15px">${G.round===0?'🧱 في الجولة القادمة تظهر رفوف عالية: لا يمكن القفز فوقها، غيّري المسار يمينًا أو يسارًا.':'⬆ القفز فوق الكتب والدوارق · ⬇ الانزلاق تحت الأقواس · ⬅➡ تجنّب الرفوف'}</p><button class="go" id="next">الجولة ${G.round+2}</button>`),$('#next').onclick=()=>{G.round++;startRound()}}
 const LNAME={ion:'الرابطة الأيونية',cov:'الرابطة التساهمية'};
 function cert(){const d=new Date(),p=n=>String(n).padStart(2,'0');const nm=(G.name||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  return `<div class="cert"><div class="nm">${nm}</div><div class="ls">طريق الذكاء · ${LNAME[G.lesson]}</div><div class="sc">${G.score} نقطة</div><div class="ls">إجابات صحيحة: ${G.right} / ${RQ*ROUNDS}</div><div class="dt">${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}</div></div><p class="snap">📸 صوّري الشاشة وأرسليها لمعلمتك</p>`}
+  return `<div class="cert"><div class="nm">${nm}</div><div class="ls">تحدي الذكاء · ${LNAME[G.lesson]}</div><div class="sc">${G.score} نقطة</div><div class="ls">إجابات صحيحة: ${G.right} / ${RQ*ROUNDS}</div><div class="dt">${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}</div></div><p class="snap">📸 صوّري الشاشة وأرسليها لمعلمتك</p>`}
 function review(){return G.wrong.length?`<div class="review"><p style="font-weight:800">راجعي هذه الأسئلة:</p>${G.wrong.map(([q,a])=>`<p>${q} <b>${ans(a)}</b></p>`).join('')}</div>`:''}
 function gameOver(){SFX.over();setBest(G.lesson,G.score);card(`<h2>انتهت القلوب 💔</h2>${cert()}<p style="margin:0;font-weight:800">وصلتِ إلى الجولة ${G.round+1}</p>${review()}
   <div class="row"><button class="go" id="retry">أعيدي الجولة ${G.round+1}</button><button class="ghost" id="home">القائمة</button></div>`);
