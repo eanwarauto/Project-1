@@ -10,8 +10,8 @@ const DIR = __dirname;
   await p.clock.install({ time: new Date('2026-11-24T10:00:00') });
   await p.addInitScript(() => {
     const now = Date.now();
-    const s = {v:2,res:{wood:2,stone:7,fruit:6,coin:0},level:0,pos:[14,12],stall:0,mute:false,trees:Array(14).fill(0),rocks:Array(8).fill(0),
-      plots:[now - 999999,null,null,null,null,null,null,null],stats:{ok:0,total:0,by:{1:[0,0],2:[0,0],3:[0,0],4:[0,0]}},lessons:[1,2,3,4],deck:[],lastQ:-1,seenHelp:false,won:false};
+    const s = {v:3,res:{wood:2,stone:7,fruit:0,egg:0,milk:0,coin:0},level:0,pos:[14,12],stall:{fruit:0,egg:0,milk:0},mute:false,trees:Array(14).fill(0),rocks:Array(8).fill(0),
+      hens:[0,0,0],cows:[0,0],barnClean:0,decks:{1:[],2:[]},plots:[now - 999999,now - 999999,null,null,null,null,null,null],stats:{ok:0,total:0,by:{1:[0,0],2:[0,0],3:[0,0],4:[0,0]}},lessons:[1,2,3,4],lastQ:-1,seenHelp:false,won:false};
     localStorage.setItem('chem-village-v1', JSON.stringify(s));
     window.__log = [];
     document.addEventListener('chem-sfx', e => window.__log.push([performance.now(), e.detail]));
@@ -54,27 +54,33 @@ const DIR = __dirname;
   const go = async pts => { for (const [x, y] of pts) { await tapTile(x, y); await shots(3); await untilIdle(); } };
   const answer = async good => {   await p.click(good ? '.opt[data-i="0"]' : '.opt:not([data-i="0"])'); };
 
-  await cap('لعبة بناء قرية بأسئلة الوحدة الأولى'); await shots(80);
-  await p.click('[data-close]'); await shots(10);
-  await cap('الحركة بالنقر على الخريطة'); await tapTile(17, 13); await shots(4); await untilIdle(); await shots(8);
-  await tapTile(13, 12); await shots(4); await untilIdle(); await shots(6);
-  await cap('النقر على الشجرة لقطع الحطب'); await tapTile(11, 5); await untilSheet(); await shots(10);
-  await cap('قبل كل مورد سؤال علمي'); await shots(80);
-  await answer(true); await cap('الإجابة الصحيحة تمنح المورد كاملًا'); await shots(70);
-  await p.click('#contBtn'); await shots(50);
-  await cap('النقر على الصخرة لتكسير الحجارة'); await tapTile(16, 16); await untilSheet(); await shots(75);
-  await answer(false); await cap('الإجابة الخاطئة تعرض الإجابة الصحيحة'); await shots(85);
-  await p.click('#contBtn'); await shots(45);
-  await cap('حصاد الثمار من الحقل'); await go([[11,12],[7,13]]); await tapTile(4, 14); await untilSheet(); await shots(70);
-  await answer(true); await shots(45); await p.click('#contBtn'); await shots(35);
-  await cap('عرض الثمار في بسطة السوق'); await go([[11,12],[15,12],[19,12]]); await tapTile(21, 14); await untilSheet(); await shots(30);
-  await p.click('#putAll'); await shots(25); await p.click('[data-close]'); await shots(10);
-  await tapTile(20, 12); await shots(3);
-  await cap('أهل القرية يشترون الثمار بالعملات'); await shots(170);
-  await cap('البناء يبدأ بالبيت الحجري'); await p.click('#stageBtn'); await shots(60);
-  await p.click('#doBuild'); await shots(70); await answer(true); await shots(45);
+  const tapAnimal = async kind => {
+    const [sx, sy] = await p.evaluate(kind => { const r = document.getElementById('cv').getBoundingClientRect(); const a = window.__cv.animals().filter(a => a[0] === kind)[0]; const [x, y] = window.__cv.tile(a[1], a[2] + (kind === 'cow' ? -.05 : .1)); return [x + r.left, y + r.top]; }, kind);
+    await p.mouse.click(sx, sy);
+  };
+  const qa = async (good, pre, post, capAfter) => { await untilSheet(); await shots(pre); await answer(good); if (capAfter) await cap(capAfter); await shots(post); await p.click('#contBtn'); };
+
+  await cap('مزرعة تُبنى بأسئلة الوحدة الأولى'); await shots(75);
+  await p.click('[data-close]'); await shots(8);
+  await cap('الحركة بالنقر على الخريطة'); await tapTile(17, 13); await shots(4); await untilIdle(); await shots(6);
+  await tapTile(13, 12); await shots(4); await untilIdle(); await shots(4);
+  await cap('النقر على الشجرة لقطع الحطب'); await tapTile(11, 5); await untilSheet(); await shots(8);
+  await cap('قبل كل مورد سؤال علمي'); await shots(45);
+  await cap('الأسئلة تبدأ سهلة ثم تتدرج'); await shots(40);
+  await answer(true); await cap('الإجابة الصحيحة تمنح المورد كاملًا'); await shots(55); await p.click('#contBtn'); await shots(45);
+  await cap('تكسير الحجارة من الصخور'); await tapTile(16, 16); await qa(false, 60, 75, 'الإجابة الخاطئة تعرض الإجابة الصحيحة'); await shots(40);
+  await cap('حصاد المحاصيل من الحقل'); await go([[12,13],[7,13]]); await tapTile(6, 14); await qa(true, 55, 40); await shots(30);
+  await cap('تنظيف الحظيرة يمنح عملات'); await go([[5,17]]); await tapTile(3, 19); await qa(true, 55, 45); await shots(40);
+  await cap('جمع البيض من الدجاج'); await tapAnimal('hen'); await qa(true, 50, 40); await shots(30);
+  await cap('حلب البقرة'); await tapAnimal('cow'); await qa(true, 50, 40); await shots(35);
+  await cap('عرض المنتجات في بسطة السوق'); await go([[9,17],[12,13],[16,12],[20,12]]); await tapTile(21, 14); await untilSheet(); await shots(35);
+  await p.click('#putAll'); await shots(25); await p.click('[data-close]'); await shots(8);
+  await tapTile(19, 12); await shots(3);
+  await cap('أهل القرية يشترون المنتجات بالعملات'); await shots(165);
+  await cap('البناء يبدأ بالبيت الحجري'); await p.click('#stageBtn'); await shots(55);
+  await p.click('#doBuild'); await shots(60); await answer(true); await shots(40);
   await p.click('#contBtn'); await shots(80);
-  await cap('وصولًا إلى قصر العلماء'); await p.click('#stageBtn'); await shots(90);
+  await cap('وصولًا إلى قصر العلماء'); await p.click('#stageBtn'); await shots(85);
   ff.stdin.end(); await new Promise(r => ff.on('close', r));
   const log = await p.evaluate(() => window.__log);
   fs.writeFileSync(DIR + '/sfx.json', JSON.stringify({ frames: frame, events: log.map(([t, k]) => [(t - T0) / 1000, k]) }));

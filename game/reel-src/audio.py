@@ -50,6 +50,10 @@ def sfx(at, k):
     elif k == 'bad': tone(at,240,.3,'sawtooth',.06,150)
     elif k == 'build': [noise(at,.07,.35,1800,delay=dd) for dd in (0,.15,.3)]; [tone(at,f,.24,'triangle',.13,None,.5+i*.12) for i,f in enumerate([523,659,784,1046])]
     elif k == 'tap': tone(at,620,.05,'sine',.06)
+    elif k == 'cluck': tone(at,900,.06,'square',.04,600); tone(at,1000,.07,'square',.04,650,.11); tone(at,820,.06,'square',.035,560,.22)
+    elif k == 'moo': tone(at,170,.7,'sawtooth',.045,115); tone(at,85,.7,'sine',.09,60)
+    elif k == 'sweep': [noise(at,.16,.28,3000,'highpass',d) for d in (0,.2,.4)]
+    elif k == 'rooster': tone(at,520,.18,'sawtooth',.035,700); tone(at,700,.22,'sawtooth',.035,900,.2); tone(at,900,.5,'sawtooth',.03,620,.44)
     elif k == 'bird': b = 2200 + rng.random()*800; tone(at,b,.08,'sine',.025,b*1.3); tone(at,b*1.1,.08,'sine',.025,b*1.4,.12)
 
 for at, k in d['events']:

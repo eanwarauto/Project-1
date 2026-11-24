@@ -1536,7 +1536,7 @@ requestAnimationFrame(t => { last = t; loop(t); });
 if (!state.seenHelp) openHelp(true);
 if (location.hash === '#reel'){
   document.getElementById('app').classList.add('reel');
-  window.__cv = {tile:(x,y) => [(x + .5)*TS - Math.round(cam.x), (y + .5)*TS - Math.round(cam.y)], walking:() => player.path.length > 0};
+  window.__cv = {tile:(x,y) => [(x + .5)*TS - Math.round(cam.x), (y + .5)*TS - Math.round(cam.y)], walking:() => player.path.length > 0, animals:() => ANIMALS.map(a => [a.k, a.x, a.y])};
 }
 })();
 </script>
