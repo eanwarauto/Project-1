@@ -361,8 +361,11 @@ const OBJ = new Map();
 TREES.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'tree', i}));
 ROCKS.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'rock', i}));
 PLOTS.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'plot', i}));
-HENS.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'hen', i}));
-COWS.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'cow', i}));
+const DECOR = new Map([['12,15','windmill'],['7,15','scarecrow'],['13,19','hay'],['13,20','hay'],['17,9','well'],['18,14','tractor'],['19,14','tractor-b']]);
+const CROP = ['tomato','corn','pumpkin','wheat'];
+const ANIMALS = [...HENS.map(([x,y],i) => ({k:'hen', i, x, y, tx:x, ty:y, face:1, wait:0, moving:false})),
+                 ...COWS.map(([x,y],i) => ({k:'cow', i, x, y, tx:x, ty:y, face:1, wait:0, moving:false}))];
+const animal = o => ANIMALS.find(a => a.k === o.k && a.i === o.i);
 const inRect = (x,y,r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
 const isWater = (x,y) => ((x + .5 - 26) / 3.3) ** 2 + ((y + .5 - 4.5) / 2.4) ** 2 < 1;
 function objAt(x,y){
@@ -374,7 +377,7 @@ function objAt(x,y){
 function blocked(x,y){
   if (x < 1 || y < 1 || x > MW - 2 || y > MH - 2) return true;
   if (isWater(x,y)) return true;
-  return objAt(x,y) !== null;
+  return objAt(x,y) !== null || DECOR.has(x+','+y);
 }
 function footprint(o){
   if (o.k === 'house' || o.k === 'market' || o.k === 'barn'){
@@ -382,6 +385,7 @@ function footprint(o){
     for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) out.push([x,y]);
     return out;
   }
+  if (o.k === 'hen' || o.k === 'cow'){ const a = animal(o); return [[Math.round(a.x), Math.round(a.y)]]; }
   return [LIST[o.k][o.i]];
 }
 
@@ -466,6 +470,19 @@ function buildGround(){
     if (PATH.has(x+','+(y+1))) c.fillRect(x*s + s*.08, y*s + s*.7, s*.84, s*.32);
     for (let p = 0; p < 3; p++) ell(c, x*s + s*(.2 + .6*hash(x+p,y)), y*s + s*(.25 + .5*hash(x,y+p)), s*.04, s*.03, '#c9ad72');
   });
+  // tilled field around the crop beds
+  c.fillStyle = '#b98a5b'; rr(c, 3.7*s, 13.7*s, 7.6*s, 3.6*s, s*.25); c.fill();
+  c.strokeStyle = 'rgba(120,80,45,.35)'; c.lineWidth = Math.max(1, s*.04);
+  for (let k = 0; k < 14; k++){ const yy = 13.9*s + k*s*.25; c.beginPath(); c.moveTo(3.9*s, yy); c.lineTo(11.1*s, yy); c.stroke(); }
+  c.fillStyle = '#8a5a32';
+  for (let k = 0; k <= 8; k++){ if (k === 3 || k === 4) continue; c.fillRect(3.6*s + k*s*.96, 13.5*s, s*.07, s*.28); }
+  for (let k = 0; k <= 4; k++){ c.fillRect(3.55*s, 13.6*s + k*s*.9, s*.07, s*.28); }
+  c.fillStyle = '#a0703f'; c.fillRect(3.6*s, 13.58*s, 2.9*s, s*.05); c.fillRect(7.45*s, 13.58*s, 4.3*s, s*.05); c.fillRect(3.58*s, 13.6*s, s*.05, 3.7*s);
+  // flower beds beside the house path
+  [[12.2,10.3],[15.3,10.3]].forEach(([fx,fy]) => {
+    c.fillStyle = '#7c4f30'; rr(c, fx*s, fy*s, s*.9, s*.5, s*.12); c.fill();
+    for (let k = 0; k < 6; k++) ell(c, fx*s + s*(.15 + (k%3)*.3), fy*s + s*(.15 + ((k/3)|0)*.22), s*.07, s*.07, ['#f59ac0','#ffd84a','#ffffff','#e0473c'][k % 4]);
+  });
   // pond
   ell(c, 26*s, 4.5*s, 3.3*s + s*.22, 2.4*s + s*.22, '#d9c78f');
   ell(c, 26*s, 4.5*s, 3.3*s, 2.4*s, '#59a9d4');
@@ -542,17 +559,98 @@ function drawPlot(i, now){
       ctx.strokeStyle = '#3f8f3a'; ctx.lineWidth = Math.max(1.5, s*.04); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy - h); ctx.stroke();
       ell(ctx, sx - s*.05, sy - h, s*(.04 + .05*p), s*(.025 + .03*p), '#5fb04f');
       ell(ctx, sx + s*.05, sy - h + s*.02, s*(.04 + .05*p), s*(.025 + .03*p), '#5fb04f');
-    } else {
-      ell(ctx, sx, sy - s*.12, s*.14, s*.13, '#3f8f3a');
-      ell(ctx, sx - s*.03, sy - s*.17, s*.07, s*.06, '#5fb04f');
-      ell(ctx, sx + s*.05, sy - s*.08, s*.065, s*.065, '#e0473c');
-      ell(ctx, sx - s*.06, sy - s*.04, s*.055, s*.055, '#e0473c');
-      ell(ctx, sx + s*.03, sy - s*.1, s*.02, s*.02, '#ffb3ab');
-    }
+    } else drawCrop(CROP[i % CROP.length], sx, sy, s, now, k, px, py);
   }
   if (p < 1){
     ctx.fillStyle = 'rgba(0,0,0,.35)'; rr(ctx, px + s*.15, py - s*.08, s*.7, s*.1, s*.05); ctx.fill();
     ctx.fillStyle = '#9be36f'; rr(ctx, px + s*.15, py - s*.08, s*.7*p, s*.1, s*.05); ctx.fill();
+  }
+}
+function drawCrop(type, sx, sy, s, now, k, px, py){
+  const sway = RM ? 0 : Math.sin(now/600 + k + sx*.01) * s*.03;
+  if (type === 'tomato'){
+    ell(ctx, sx, sy - s*.12, s*.14, s*.13, '#3f8f3a'); ell(ctx, sx - s*.03, sy - s*.17, s*.07, s*.06, '#5fb04f');
+    ell(ctx, sx + s*.05, sy - s*.08, s*.065, s*.065, '#e0473c'); ell(ctx, sx - s*.06, sy - s*.04, s*.055, s*.055, '#e0473c');
+    ell(ctx, sx + s*.03, sy - s*.1, s*.02, s*.02, '#ffb3ab');
+  } else if (type === 'corn'){
+    ctx.strokeStyle = '#4f9a3c'; ctx.lineWidth = Math.max(1.5, s*.045);
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sway, sy - s*.5); ctx.stroke();
+    ctx.strokeStyle = '#6fbf4f'; ctx.lineWidth = Math.max(1, s*.03);
+    ctx.beginPath(); ctx.moveTo(sx, sy - s*.18); ctx.quadraticCurveTo(sx - s*.14, sy - s*.25, sx - s*.18, sy - s*.12); ctx.moveTo(sx, sy - s*.3); ctx.quadraticCurveTo(sx + s*.14, sy - s*.38, sx + s*.18, sy - s*.26); ctx.stroke();
+    ell(ctx, sx + s*.05, sy - s*.3, s*.04, s*.09, '#f2c94c'); ell(ctx, sx + s*.07, sy - s*.25, s*.03, s*.07, '#7cb342');
+    ctx.strokeStyle = '#d9b44a'; ctx.beginPath(); ctx.moveTo(sx + sway, sy - s*.5); ctx.lineTo(sx + sway - s*.04, sy - s*.6); ctx.moveTo(sx + sway, sy - s*.5); ctx.lineTo(sx + sway + s*.04, sy - s*.6); ctx.stroke();
+  } else if (type === 'pumpkin'){
+    if (k !== 1) { ell(ctx, sx, sy - s*.05, s*.1, s*.06, '#4f9a3c'); return; }
+    ell(ctx, sx, sy - s*.08, s*.24, s*.16, '#e8862e');
+    ctx.strokeStyle = '#c96a1b'; ctx.lineWidth = Math.max(1, s*.025);
+    [-.12, 0, .12].forEach(d => { ctx.beginPath(); ctx.ellipse(sx + d*s, sy - s*.08, s*.07, s*.15, 0, 0, Math.PI*2); ctx.stroke(); });
+    ctx.fillStyle = '#5a7f2c'; ctx.fillRect(sx - s*.02, sy - s*.28, s*.04, s*.07);
+    ell(ctx, sx - s*.2, sy - s*.2, s*.08, s*.05, '#4f9a3c'); ell(ctx, sx + s*.2, sy - s*.18, s*.07, s*.05, '#4f9a3c');
+  } else {
+    ctx.strokeStyle = '#c9a23a'; ctx.lineWidth = Math.max(1, s*.025);
+    for (let j = -2; j <= 2; j++){
+      const bx = sx + j*s*.045, tip = sway * (1 + Math.abs(j)*.2);
+      ctx.beginPath(); ctx.moveTo(bx, sy); ctx.lineTo(bx + tip, sy - s*.4); ctx.stroke();
+      for (let g = 0; g < 4; g++) ell(ctx, bx + tip - s*.012 + (g % 2)*s*.024, sy - s*.4 - g*s*.035, s*.018, s*.028, '#e6c15a');
+    }
+  }
+}
+function flipDraw(face, cx, f){ if (face >= 0){ f(); return; } ctx.save(); ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); f(); ctx.restore(); }
+function drawDecor(k, x, y, now){
+  const s = TS, cx = (x + .5)*s, by = (y + .9)*s, c = ctx;
+  if (k === 'windmill'){
+    ell(c, cx, by, s*.45, s*.12, 'rgba(0,0,0,.18)');
+    poly(c, [[cx - s*.32, by],[cx + s*.32, by],[cx + s*.18, by - s*1.7],[cx - s*.18, by - s*1.7]], '#efe6d6', '#c9bba1', Math.max(1, s*.03));
+    c.fillStyle = '#8a5a32'; rr(c, cx - s*.1, by - s*.4, s*.2, s*.4, s*.08); c.fill();
+    window_(c, cx - s*.07, by - s*1.1, s*.14, s*.16, '#8a5a32');
+    poly(c, [[cx - s*.26, by - s*1.68],[cx + s*.26, by - s*1.68],[cx, by - s*2.05]], '#b8402f', '#963326', Math.max(1, s*.03));
+    const hx = cx, hy = by - s*1.72, a0 = RM ? .4 : now / 900;
+    for (let b = 0; b < 4; b++){
+      const a = a0 + b*Math.PI/2;
+      c.save(); c.translate(hx, hy); c.rotate(a);
+      c.fillStyle = '#8a5a32'; c.fillRect(-s*.025, 0, s*.05, s*.95);
+      c.fillStyle = 'rgba(250,246,236,.95)'; c.fillRect(s*.03, s*.2, s*.17, s*.72);
+      c.strokeStyle = '#a58a63'; c.lineWidth = 1; c.strokeRect(s*.03, s*.2, s*.17, s*.72);
+      for (let r = 1; r < 4; r++){ c.beginPath(); c.moveTo(s*.03, s*(.2 + r*.18)); c.lineTo(s*.2, s*(.2 + r*.18)); c.stroke(); }
+      c.restore();
+    }
+    ell(c, hx, hy, s*.07, s*.07, '#5a3a1e');
+  } else if (k === 'scarecrow'){
+    ell(c, cx, by, s*.25, s*.07, 'rgba(0,0,0,.15)');
+    c.fillStyle = '#8a5a32'; c.fillRect(cx - s*.03, by - s*.95, s*.06, s*.95); c.fillRect(cx - s*.38, by - s*.7, s*.76, s*.05);
+    c.fillStyle = '#c0503f'; rr(c, cx - s*.2, by - s*.75, s*.4, s*.42, s*.06); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1;
+    for (let j = 1; j < 4; j++){ c.beginPath(); c.moveTo(cx - s*.2 + j*s*.1, by - s*.75); c.lineTo(cx - s*.2 + j*s*.1, by - s*.33); c.moveTo(cx - s*.2, by - s*.75 + j*s*.1); c.lineTo(cx + s*.2, by - s*.75 + j*s*.1); c.stroke(); }
+    c.strokeStyle = '#e6c15a'; c.lineWidth = Math.max(1, s*.03);
+    [[-.38,-.68],[.38,-.68],[-.08,-.33],[.08,-.33]].forEach(([dx,dy]) => { c.beginPath(); c.moveTo(cx + dx*s, by + dy*s); c.lineTo(cx + dx*s*1.1, by + dy*s + s*.1); c.stroke(); });
+    ell(c, cx, by - s*.88, s*.14, s*.14, '#e8d3a8');
+    ell(c, cx - s*.05, by - s*.9, s*.02, s*.02, '#3b2a1e'); ell(c, cx + s*.05, by - s*.9, s*.02, s*.02, '#3b2a1e');
+    ell(c, cx, by - s*1.0, s*.26, s*.06, '#d9b44a'); poly(c, [[cx - s*.13, by - s*1.0],[cx + s*.13, by - s*1.0],[cx + s*.09, by - s*1.15],[cx - s*.09, by - s*1.15]], '#e6c15a');
+  } else if (k === 'hay'){
+    ell(c, cx, by, s*.42, s*.1, 'rgba(0,0,0,.15)');
+    c.fillStyle = '#e6c15a'; c.beginPath(); c.moveTo(cx - s*.42, by); c.quadraticCurveTo(cx - s*.4, by - s*.75, cx, by - s*.78); c.quadraticCurveTo(cx + s*.4, by - s*.75, cx + s*.42, by); c.closePath(); c.fill();
+    c.strokeStyle = '#c49b35'; c.lineWidth = Math.max(1, s*.025);
+    for (let j = 0; j < 7; j++){ const a = cx - s*.3 + j*s*.1; c.beginPath(); c.moveTo(a, by - s*.05); c.lineTo(a + s*.04, by - s*(.35 + hash(j,y)*.3)); c.stroke(); }
+  } else if (k === 'well'){
+    ell(c, cx, by, s*.42, s*.12, 'rgba(0,0,0,.18)');
+    c.fillStyle = '#9aa0a7'; c.fillRect(cx - s*.34, by - s*.38, s*.68, s*.36); ell(c, cx, by - s*.02, s*.34, s*.1, '#9aa0a7');
+    c.strokeStyle = '#7a8088'; c.lineWidth = 1; for (let j = 1; j < 3; j++){ c.beginPath(); c.moveTo(cx - s*.34, by - s*.38 + j*s*.12); c.lineTo(cx + s*.34, by - s*.38 + j*s*.12); c.stroke(); }
+    ell(c, cx, by - s*.38, s*.34, s*.1, '#b8bcc2'); ell(c, cx, by - s*.38, s*.26, s*.07, '#3b6f99');
+    c.fillStyle = '#8a5a32'; c.fillRect(cx - s*.32, by - s*1.05, s*.06, s*.7); c.fillRect(cx + s*.26, by - s*1.05, s*.06, s*.7); c.fillRect(cx - s*.3, by - s*.82, s*.6, s*.04);
+    poly(c, [[cx - s*.46, by - s*.98],[cx + s*.46, by - s*.98],[cx, by - s*1.35]], '#8a4b2a', '#5c2c16', Math.max(1, s*.03));
+    c.strokeStyle = '#5a3a1e'; c.beginPath(); c.moveTo(cx, by - s*.8); c.lineTo(cx, by - s*.6); c.stroke();
+    c.fillStyle = '#8a5a32'; c.fillRect(cx - s*.07, by - s*.62, s*.14, s*.12);
+  } else if (k === 'tractor-b'){ return;
+  } else if (k === 'tractor'){
+    const x0 = x*s, base = (y + .92)*s;
+    ell(c, x0 + s, base, s*.9, s*.14, 'rgba(0,0,0,.18)');
+    c.fillStyle = '#c8443b'; rr(c, x0 + s*.35, base - s*.62, s*1.25, s*.36, s*.06); c.fill();
+    c.fillStyle = '#a8352e'; rr(c, x0 + s*1.0, base - s*.62, s*.6, s*.12, s*.04); c.fill();
+    c.fillStyle = '#c8443b'; c.fillRect(x0 + s*.4, base - s*1.08, s*.55, s*.48);
+    c.fillStyle = '#bfe3f5'; c.fillRect(x0 + s*.47, base - s*1.0, s*.41, s*.28);
+    c.fillStyle = '#3b3b3b'; c.fillRect(x0 + s*.35, base - s*1.12, s*.65, s*.06); c.fillRect(x0 + s*1.42, base - s*.95, s*.06, s*.34);
+    ell(c, x0 + s*.62, base - s*.3, s*.32, s*.32, '#2b2b2b'); ell(c, x0 + s*.62, base - s*.3, s*.15, s*.15, '#e6c15a');
+    ell(c, x0 + s*1.45, base - s*.17, s*.18, s*.18, '#2b2b2b'); ell(c, x0 + s*1.45, base - s*.17, s*.08, s*.08, '#e6c15a');
   }
 }
 function c_fence(px, py, s){
@@ -782,12 +880,14 @@ function drawPerson(p, look, now, isPlayer){
   } else {
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(cx - s*.21, by - s*.36 - bob, s*.42, s*.05);
   }
+  const hatY = by - s*.92 - bob;
   const hy2 = by - s*.78 - bob;
   ell(ctx, cx, hy2, s*.19, s*.19, look.skin);
   ctx.fillStyle = look.hair; ctx.beginPath(); ctx.arc(cx, hy2 - s*.01, s*.2, Math.PI*1.05, Math.PI*1.95); ctx.closePath(); ctx.fill();
   ctx.fillRect(cx - s*.2, hy2 - s*.06, s*.05, s*.12); ctx.fillRect(cx + s*.15, hy2 - s*.06, s*.05, s*.12);
   ell(ctx, cx + p.face*s*.07 - s*.04, hy2 + s*.03, s*.022, s*.026, '#2a2233');
   ell(ctx, cx + p.face*s*.07 + s*.05, hy2 + s*.03, s*.022, s*.026, '#2a2233');
+  if (!isPlayer){ ell(ctx, cx, hatY + s*.02, s*.3, s*.07, '#e2c07a'); poly(ctx, [[cx - s*.15, hatY + s*.02],[cx + s*.15, hatY + s*.02],[cx + s*.11, hatY - s*.12],[cx - s*.11, hatY - s*.12]], '#e8c983'); ctx.fillStyle = look.coat; ctx.fillRect(cx - s*.15, hatY - s*.02, s*.3, s*.04); }
 }
 function drawTool(cx, by, s, face, sw, now){
   const k = (now - sw.t) / 650;
@@ -841,6 +941,27 @@ function updateNPCs(dt, now){
   }
 }
 function stallTotal(){ return PRODUCTS.reduce((a,k) => a + state.stall[k], 0); }
+const PEN = {x0:5.2, x1:10.8, y0:18, y1:20.2};
+function updateAnimals(dt, now){
+  for (const a of ANIMALS){
+    const held = (player.pending && player.pending.k === a.k && player.pending.i === a.i) || !ov.hidden;
+    if (held){ a.moving = false; continue; }
+    const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
+    if (d > .02){
+      const sp = (a.k === 'hen' ? 1.1 : .35) * dt;
+      a.moving = true; if (Math.abs(dx) > .01) a.face = dx > 0 ? 1 : -1;
+      if (d <= sp){ a.x = a.tx; a.y = a.ty; } else { a.x += dx/d*sp; a.y += dy/d*sp; }
+    } else {
+      a.moving = false;
+      if (now > a.wait){
+        const r = a.k === 'hen' ? 1.6 : 1.2;
+        a.tx = Math.max(PEN.x0, Math.min(PEN.x1, a.x + (Math.random()*2 - 1)*r));
+        a.ty = Math.max(PEN.y0, Math.min(PEN.y1, a.y + (Math.random()*2 - 1)*r*.6));
+        a.wait = now + (a.k === 'hen' ? 1200 + Math.random()*2500 : 3000 + Math.random()*5000);
+      }
+    }
+  }
+}
 function arriveNPC(n, now){
   if (n.mode === 'shop'){
     n.face = n.x < MARKET.x + 1 ? 1 : -1;
@@ -856,6 +977,33 @@ function arriveNPC(n, now){
     n.mode = 'idle'; n.slot = null; n.wait = now + 1500; n.cool = now + 6000;
   } else n.mode = 'idle';
 }
+function drawAmbient(now){
+  const s = TS, T = RM ? 0 : now / 1000;
+  // ducks on the pond
+  for (let d = 0; d < 3; d++){
+    const a = T*.25 + d*2.1, x = 26*s + Math.cos(a)*1.9*s, y = 4.6*s + Math.sin(a)*1.2*s, f = -Math.sin(a) > 0 ? 1 : -1;
+    ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; ell(ctx, x, y + s*.06, s*.24, s*.07); ctx.stroke();
+    flipDraw(f, x, () => {
+      ell(ctx, x, y, s*.17, s*.1, d === 2 ? '#ffffff' : '#9c7a55');
+      ell(ctx, x + s*.13, y - s*.1, s*.07, s*.07, d === 2 ? '#ffffff' : '#2f7a3a');
+      poly(ctx, [[x + s*.18, y - s*.11],[x + s*.27, y - s*.08],[x + s*.18, y - s*.06]], '#f2a13a');
+      ell(ctx, x + s*.14, y - s*.12, s*.015, s*.015, '#111');
+      ell(ctx, x - s*.03, y - s*.02, s*.08, s*.05, d === 2 ? '#eeeeee' : '#7d5f40');
+    });
+  }
+  // butterflies
+  for (let b = 0; b < 4; b++){
+    const bx = (5 + b*6 + Math.sin(T*.4 + b)*2.5)*s, byy = (9 + (b%2)*4 + Math.cos(T*.55 + b*1.3)*1.5)*s, w = Math.abs(Math.sin(T*12 + b))*s*.07 + s*.02;
+    const col = ['#ffd84a','#f59ac0','#ffffff','#9fd3ff'][b];
+    ell(ctx, bx - w*.6, byy, w, s*.05, col); ell(ctx, bx + w*.6, byy, w, s*.05, col); ell(ctx, bx, byy, s*.012, s*.035, '#3b2a1e');
+  }
+  // drifting cloud shadows
+  ctx.fillStyle = 'rgba(20,40,30,.045)';
+  for (let k = 0; k < 3; k++){
+    const W = (MW + 8)*s, x = ((T*s*.35 + k*W/3) % W) - 4*s, y = (4 + k*7)*s;
+    ell(ctx, x, y, s*2.6, s*1.1); ctx.fill(); ell(ctx, x + s*1.6, y + s*.3, s*1.8, s*.9); ctx.fill();
+  }
+}
 function drawBubbles(now){
   NPCS.forEach(n => {
     if (!n.bubble || now - n.bubble.t > 1700) return;
@@ -869,7 +1017,7 @@ function drawBubbles(now){
 }
 
 /* ---------------- sound ---------------- */
-let AC = null, NOISE = null, birdAt = 0;
+let AC = null, NOISE = null, birdAt = 0, farmAt = 20000;
 function audio(){
   if (state.mute) return null;
   if (!AC){ try { AC = new (window.AudioContext || window.webkitAudioContext)(); birdAt = performance.now() + 5000; } catch (e) { return null; } }
@@ -905,6 +1053,7 @@ const SFX = {
   tap(){ tone(620,.05,'sine',.06); },
   cluck(){ tone(900,.06,'square',.04,600); tone(1000,.07,'square',.04,650,.11); tone(820,.06,'square',.035,560,.22); },
   moo(){ tone(170,.7,'sawtooth',.045,115); tone(85,.7,'sine',.09,60); },
+  rooster(){ tone(520,.18,'sawtooth',.035,700); tone(700,.22,'sawtooth',.035,900,.2); tone(900,.5,'sawtooth',.03,620,.44); },
   sweep(){ [0,.2,.4].forEach(d => noise(.16,.28,3000,'highpass',d)); },
   bird(){ const b = 2200 + Math.random()*800; tone(b,.08,'sine',.025,b*1.3); tone(b*1.1,.08,'sine',.025,b*1.4,.12); }
 };
@@ -951,8 +1100,8 @@ function render(now){
   items.push({y:HOUSE.y + HOUSE.h, f:() => drawHouse(ctx, state.level, HOUSE.x*TS, HOUSE.y*TS, TS)});
   items.push({y:MARKET.y + MARKET.h, f:() => drawMarket(ctx, MARKET.x*TS, MARKET.y*TS, TS)});
   items.push({y:BARN.y + BARN.h, f:() => drawBarn(ctx, BARN.x*TS, BARN.y*TS, TS, t >= state.barnClean, now)});
-  HENS.forEach(([x,y],i) => items.push({y:y + 1, f:() => drawHen(ctx, (x + .5)*TS, (y + .85)*TS, TS, now, i)}));
-  COWS.forEach(([x,y],i) => items.push({y:y + 1, f:() => drawCow(ctx, (x + .5)*TS, (y + .88)*TS, TS, now, i)}));
+  ANIMALS.forEach(a => items.push({y:a.y + 1, f:() => flipDraw(a.face, (a.x + .5)*TS, () => (a.k === 'hen' ? drawHen : drawCow)(ctx, (a.x + .5)*TS, (a.y + .87)*TS, TS, now, a.i + (a.moving ? 10 : 0)))}));
+  DECOR.forEach((k, key) => { const [x,y] = key.split(',').map(Number); items.push({y:y + 1, f:() => drawDecor(k, x, y, now)}); });
   items.push({y:player.y + 1.001, f:() => drawPlayer(now)});
   NPCS.forEach(n => items.push({y:n.y + 1.0005, f:() => drawPerson(n, n.look, now, false)}));
   items.sort((a,b) => a.y - b.y).forEach(it => it.f());
@@ -963,13 +1112,13 @@ function render(now){
     ctx.rotate(f.dir * Math.min(1, k*1.4) ** 2 * Math.PI / 2); drawTree(ctx, 0, 0, TS); ctx.restore();
   });
   drawBubbles(now);
+  drawAmbient(now);
   // badges
   PLOTS.forEach(([x,y],i) => { const p = state.plots[i]; if (p !== null && t - p >= CROP_GROW) badge((x + .5)*TS, (y - .25)*TS, now, '#e0473c', '!'); });
   if (canBuild()) badge((HOUSE.x + 1.5)*TS, (HOUSE.y - (state.level >= 3 ? 1.3 : .3))*TS, now, '#b9811a', '↑');
   if (t >= state.barnClean) badge((BARN.x + 1.5)*TS, (BARN.y - .75)*TS, now, '#7a5a32', '!');
   else {
-    HENS.forEach(([x,y],i) => { if (t >= state.hens[i]) badge((x + .5)*TS, (y - .1)*TS, now, '#d98c1f', '!'); });
-    COWS.forEach(([x,y],i) => { if (t >= state.cows[i]) badge((x + .7)*TS, (y - .25)*TS, now, '#3d6fd0', '!'); });
+    ANIMALS.forEach(a => { if (t >= state[a.k === 'hen' ? 'hens' : 'cows'][a.i]) badge((a.x + .5)*TS, (a.y - (a.k === 'hen' ? .1 : .3))*TS, now, a.k === 'hen' ? '#d98c1f' : '#3d6fd0', '!'); });
   }
   if (PRODUCTS.some(k => state.res[k] > 0)) badge((MARKET.x + 1)*TS, (MARKET.y - .85)*TS, now, '#2f8a4a', '+');
   // floating text
@@ -992,7 +1141,9 @@ function loop(now){
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   update(dt);
   updateNPCs(dt, now);
+  updateAnimals(dt, now);
   if (AC && !state.mute && now > birdAt){ SFX.bird(); birdAt = now + 7000 + Math.random()*9000; }
+  if (AC && !state.mute && now > farmAt){ (Math.random() < .5 ? SFX.rooster : Math.random() < .5 ? SFX.moo : SFX.cluck)(); farmAt = now + 18000 + Math.random()*22000; }
   render(now);
   requestAnimationFrame(loop);
 }
@@ -1050,6 +1201,10 @@ function onTap(clientX, clientY){
   const r = cv.getBoundingClientRect();
   const wx = (clientX - r.left + Math.round(cam.x)) / TS, wy = (clientY - r.top + Math.round(cam.y)) / TS;
   const tx = Math.floor(wx), ty = Math.floor(wy);
+  let best = null, bd = .75;
+  for (const a of ANIMALS){ const d = Math.hypot(wx - (a.x + .5), wy - (a.y + (a.k === 'cow' ? .45 : .6))); if (d < bd){ bd = d; best = a; } }
+  if (best){ const o = {k:best.k, i:best.i}; marker = null; walkTo((x,y) => Math.hypot(x - best.x, y - best.y) <= 1.25, o); return; }
+  if (DECOR.has(tx+','+ty) || DECOR.has(tx+','+(ty+1)) && DECOR.get(tx+','+(ty+1)) === 'windmill') return;
   let o = objAt(tx,ty);
   if (!o){ const b = objAt(tx, ty+1); if (b && (b.k === 'tree' || b.k === 'house' || b.k === 'market' || b.k === 'barn' || b.k === 'cow')) o = b; }
   if (!o){ const b = objAt(tx, ty+2); if (b && b.k === 'house' && state.level >= 3) o = b; }
@@ -1072,6 +1227,8 @@ addEventListener('keydown', e => {
     e.preventDefault();
     const x = Math.round(player.x), y = Math.round(player.y);
     const order = player.face > 0 ? [[1,0],[0,-1],[0,1],[-1,0]] : [[-1,0],[0,-1],[0,1],[1,0]];
+    const near = ANIMALS.find(a => Math.hypot(a.x - player.x, a.y - player.y) <= 1.3);
+    if (near){ interact({k:near.k, i:near.i}); return; }
     for (const [dx,dy] of order){ const o = objAt(x+dx, y+dy); if (o){ interact(o); break; } }
   }
 });
@@ -1090,7 +1247,8 @@ function burst(x, y, cols, n){
 }
 function interact(o){
   const t = Date.now();
-  const [ox, oy] = LIST[o.k] ? LIST[o.k][o.i] : [0, 0];
+  const an = (o.k === 'hen' || o.k === 'cow') ? animal(o) : null;
+  const [ox, oy] = an ? [an.x, an.y] : LIST[o.k] ? LIST[o.k][o.i] : [0, 0];
   const cx = (ox + .5)*TS, by = (oy + .88)*TS;
   if (o.k === 'tree'){
     if (t < state.trees[o.i]){ toast('الشجرة تنمو من جديد'); return; }
@@ -1336,7 +1494,7 @@ function openSettings(){
 }
 function openHelp(first){
   openSheet(`<h2>قرية الكيمياء</h2>
-    <p class="sub">بناء قرية من البيت الحجري حتى قصر العلماء، بالإجابة عن أسئلة الفصل الأول.</p>
+    <p class="sub">مزرعة تُبنى من البيت الحجري حتى قصر العلماء، بالإجابة عن أسئلة الفصل الأول.</p>
     <ul class="help">
       <li>يتحرك اللاعب بالنقر على أي موضع في الخريطة.</li>
       <li>النقر على <b>الشجرة</b> لقطع الحطب، وعلى <b>الصخرة</b> لتكسير الحجارة، وعلى <b>الحقل</b> لزراعته ثم حصاده بعد نضج الثمار.</li>
