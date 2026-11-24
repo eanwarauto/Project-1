@@ -143,6 +143,7 @@ sup,sub{font-size:.68em;line-height:0}
     </div>
     <div class="tools">
       <div class="chip" title="الإجابات الصحيحة من مجموع الأسئلة"><span data-i="check"></span><b id="n-score" class="ltr">0 / 0</b></div>
+      <button class="iconbtn" id="sndBtn" type="button" aria-label="الصوت"></button>
       <button class="iconbtn" id="helpBtn" type="button" aria-label="طريقة اللعب">؟</button>
       <button class="iconbtn" id="setBtn" type="button" aria-label="الإعدادات"><span data-i="gear"></span></button>
     </div>
@@ -163,6 +164,8 @@ const ICON = {
   house:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 11.5 12 4l9.5 7.5Z" fill="#e0603f"/><rect x="5.5" y="11" width="13" height="9" fill="#f6e2bd"/><rect x="10.5" y="14" width="3" height="6" fill="#9a5f33"/></svg>',
   check:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#2f8a4a"/><path d="m7 12.5 3.5 3.5L17 9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   gear:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.1 2.55"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>',
+  sound:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+  mute:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="m16 9 5 6m0-6-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   hammer:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="10.5" y="9" width="3" height="13" rx="1.3" fill="#9a5f33"/><rect x="4.5" y="3.5" width="15" height="6.5" rx="1.6" fill="#6e7680"/></svg>',
   seed:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11" stroke="#3f8f3a" stroke-width="2.4" stroke-linecap="round"/><path d="M12 13C7 13 5 9 5 6c4 0 7 2 7 7Zm0-1c0-4 3-6 7-6 0 3-2 6-7 6Z" fill="#5fb04f"/></svg>',
   market:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-2-5H5Z" fill="#d9534f"/><rect x="4" y="9" width="16" height="11" fill="#c08a52"/><circle cx="9" cy="14" r="2.5" fill="#e0473c"/><circle cx="15" cy="14" r="2.5" fill="#f2b632"/></svg>'
@@ -320,12 +323,12 @@ const TREE_REGROW = 30000, ROCK_BACK = 40000, CROP_GROW = 18000, FRUIT_PRICE = 5
 const REWARD = {tree:[4,1], rock:[3,1], plot:[4,1]};
 const STAGES = [
   {name:'أرض البناء'},
-  {name:'الكوخ', cost:{wood:6}},
-  {name:'البيت الخشبي', cost:{wood:14, coin:30}},
-  {name:'البيت الحجري', cost:{wood:10, stone:12, coin:50}},
-  {name:'المنزل الكبير', cost:{wood:18, stone:20, coin:90}},
-  {name:'قصر العلماء', cost:{wood:24, stone:28, coin:140}}
+  {name:'البيت الحجري', cost:{stone:8, wood:4}},
+  {name:'البيت الحجري الكبير', cost:{stone:14, wood:8, coin:40}},
+  {name:'المنزل الكبير', cost:{stone:20, wood:16, coin:90}},
+  {name:'قصر العلماء', cost:{stone:28, wood:22, coin:140}}
 ];
+const MAX = STAGES.length - 1;
 const RES_NAME = {wood:'حطب', stone:'حجارة', fruit:'ثمار', coin:'عملات'};
 const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];
 
@@ -360,7 +363,7 @@ function footprint(o){
 /* ---------------- state ---------------- */
 const KEY = 'chem-village-v1';
 function newState(){
-  return {v:1, res:{wood:0, stone:0, fruit:0, coin:0}, level:0, pos:[14,12],
+  return {v:2, res:{wood:0, stone:0, fruit:0, coin:0}, level:0, pos:[14,12], stall:0, mute:false,
     trees:TREES.map(() => 0), rocks:ROCKS.map(() => 0), plots:PLOTS.map(() => null),
     stats:{ok:0, total:0, by:{1:[0,0],2:[0,0],3:[0,0],4:[0,0]}},
     lessons:[1,2,3,4], deck:[], lastQ:-1, seenHelp:false, won:false};
@@ -368,7 +371,10 @@ function newState(){
 function load(){
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && s.v === 1 && s.trees && s.trees.length === TREES.length) return s;
+    if (s && (s.v === 1 || s.v === 2) && s.trees && s.trees.length === TREES.length){
+      if (s.v === 1){ s.level = [0,0,0,2,3,4][s.level] || 0; s.won = false; s.v = 2; }
+      s.stall = s.stall || 0; s.mute = !!s.mute; return s;
+    }
   } catch (e) {}
   return null;
 }
@@ -386,7 +392,7 @@ const cv = $('#cv'), ctx = cv.getContext('2d');
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let dpr = 1, vw = 0, vh = 0, TS = 48, groundCv = null;
 const cam = {x:0, y:0};
-let marker = null, floats = [], parts = [];
+let marker = null, floats = [], parts = [], fxs = [];
 
 function resize(){
   const nd = Math.min(window.devicePixelRatio || 1, 2);
@@ -536,7 +542,8 @@ function drawMarket(c, x, y, s){
   for (let k = 1; k < 3; k++){ c.beginPath(); c.moveTo(x + s*.05, y + s*(1.15 + k*.25)); c.lineTo(x + w - s*.05, y + s*(1.15 + k*.25)); c.stroke(); }
   // crates
   c.fillStyle = '#d7a868'; c.fillRect(x + s*.25, y + s*.88, s*.6, s*.3); c.fillRect(x + s*1.15, y + s*.88, s*.6, s*.3);
-  for (let k = 0; k < 4; k++){ ell(c, x + s*(.33 + k*.15), y + s*.86, s*.08, s*.08, '#e0473c'); ell(c, x + s*(1.23 + k*.15), y + s*.86, s*.08, s*.08, k % 2 ? '#f2b632' : '#8bc34a'); }
+  const shown = Math.min(state.stall, 8);
+  for (let k = 0; k < shown; k++) ell(c, x + s*((k < 4 ? .33 : 1.23) + (k % 4)*.15), y + s*.86, s*.08, s*.08, '#e0473c');
   // awning
   const top = y - s*.1, bot = y + s*.45, n = 6, sw = (w + s*.2) / n;
   for (let k = 0; k < n; k++){
@@ -566,28 +573,20 @@ function drawHouse(c, lv, x, y, s){
     return;
   }
   if (lv === 1){
-    const w = 1.7*s, h = .95*s, wx = cx - w/2, wy = base - h;
-    c.fillStyle = '#c98f55'; c.fillRect(wx, wy, w, h);
-    c.strokeStyle = '#a8713f'; c.lineWidth = Math.max(1, s*.03);
-    for (let k = 1; k < 7; k++){ c.beginPath(); c.moveTo(wx + k*w/7, wy); c.lineTo(wx + k*w/7, base); c.stroke(); }
-    c.fillStyle = '#6d4325'; rr(c, cx - .2*s, base - .62*s, .4*s, .62*s, .12*s); c.fill();
-    poly(c, [[cx - 1.12*s, wy + .12*s],[cx + 1.12*s, wy + .12*s],[cx, wy - 1*s]], '#e2b85c', '#b98d36', Math.max(1, s*.03));
-    c.strokeStyle = '#c99b3e';
-    for (let k = -3; k <= 3; k++){ c.beginPath(); c.moveTo(cx, wy - .9*s); c.lineTo(cx + k*.3*s, wy + .08*s); c.stroke(); }
+    const w = 1.9*s, h = 1.05*s, wx = cx - w/2, wy = base - h;
+    c.fillStyle = '#c3c6cb'; c.fillRect(wx, wy, w, h);
+    c.strokeStyle = '#949aa2'; c.lineWidth = Math.max(1, s*.025);
+    const rows = 5, bh = h / rows;
+    for (let r = 0; r < rows; r++){
+      c.beginPath(); c.moveTo(wx, wy + r*bh); c.lineTo(wx + w, wy + r*bh); c.stroke();
+      for (let k = 0; k < 6; k++){ const bx = wx + (k + (r % 2 ? .5 : 0)) * w/5; if (bx > wx && bx < wx + w){ c.beginPath(); c.moveTo(bx, wy + r*bh); c.lineTo(bx, wy + (r+1)*bh); c.stroke(); } }
+    }
+    poly(c, [[cx - 1.18*s, wy + .1*s],[cx + 1.18*s, wy + .1*s],[cx, wy - .85*s]], '#5f6e84', '#46536a', Math.max(1, s*.04));
+    c.fillStyle = '#7a4c2b'; rr(c, cx - .55*s, base - .62*s, .38*s, .62*s, .1*s); c.fill();
+    window_(c, cx + .15*s, wy + .25*s, .45*s, .4*s, '#f4f4f4');
     return;
   }
   if (lv === 2){
-    const w = 2.3*s, h = 1.2*s, wx = cx - w/2, wy = base - h;
-    c.fillStyle = '#b9773f'; c.fillRect(wx, wy, w, h);
-    c.strokeStyle = '#9c6232'; c.lineWidth = Math.max(1, s*.03);
-    for (let k = 1; k < 6; k++){ c.beginPath(); c.moveTo(wx, wy + k*h/6); c.lineTo(wx + w, wy + k*h/6); c.stroke(); }
-    poly(c, [[cx - 1.42*s, wy + .14*s],[cx + 1.42*s, wy + .14*s],[cx, wy - 1.05*s]], '#7d3f22', '#5c2c16', Math.max(1, s*.04));
-    poly(c, [[cx - 1.42*s, wy + .14*s],[cx + 1.42*s, wy + .14*s],[cx + 1.3*s, wy + .02*s],[cx - 1.3*s, wy + .02*s]], '#9a5532');
-    c.fillStyle = '#5a3519'; rr(c, cx - .62*s, base - .72*s, .42*s, .72*s, .1*s); c.fill();
-    window_(c, cx + .2*s, wy + .3*s, .5*s, .45*s, '#5a3519');
-    return;
-  }
-  if (lv === 3){
     const w = 2.5*s, h = 1.35*s, wx = cx - w/2, wy = base - h;
     c.fillStyle = '#b8bcc2'; c.fillRect(wx, wy, w, h);
     c.strokeStyle = '#8f949b'; c.lineWidth = Math.max(1, s*.025);
@@ -604,7 +603,7 @@ function drawHouse(c, lv, x, y, s){
     c.fillStyle = '#9aa0a7'; c.fillRect(cx - .4*s, base - .04*s, .8*s, .08*s);
     return;
   }
-  if (lv === 4){
+  if (lv === 3){
     const w1 = 2.8*s, h1 = 1.1*s, w2 = 2.35*s, h2 = .95*s, y1 = base - h1, y2 = y1 - h2;
     c.fillStyle = '#a5553f'; c.fillRect(cx + .55*s, y2 - 1*s, .3*s, .8*s);
     c.fillStyle = '#f2ddb6'; c.fillRect(cx - w1/2, y1, w1, h1); c.fillRect(cx - w2/2, y2, w2, h2);
@@ -619,7 +618,7 @@ function drawHouse(c, lv, x, y, s){
     [[-1.15,0],[-.95,0],[.75,0],[.95,0],[1.12,0]].forEach(([dx]) => ell(c, cx + dx*s, y1 + .7*s, .06*s, .06*s, dx < 0 ? '#e0473c' : '#f59ac0'));
     return;
   }
-  // lv 5 palace
+  // lv 4 palace
   const tw = .7*s, th = 2.2*s;
   [cx - 1.45*s, cx + .75*s].forEach(tx => {
     c.fillStyle = '#ece6da'; c.fillRect(tx, base - th, tw, th);
@@ -655,29 +654,149 @@ function arch(c, cx, bottom, hw, h, fill){
   c.fillStyle = fill; c.beginPath(); c.moveTo(cx - hw, bottom); c.lineTo(cx - hw, bottom - h + hw); c.arc(cx, bottom - h + hw, hw, Math.PI, 0); c.lineTo(cx + hw, bottom); c.closePath(); c.fill();
 }
 
-function drawPlayer(now){
-  const s = TS, cx = (player.x + .5)*s, by = (player.y + .9)*s;
-  const step = player.moving && !RM ? Math.sin(now / 75) : 0;
+const PLAYER_LOOK = {coat:'#ffffff', trim:'#c3cde0', hair:'#3b2a45', skin:'#f0c39b'};
+function drawPerson(p, look, now, isPlayer){
+  const s = TS, cx = (p.x + .5)*s, by = (p.y + .9)*s;
+  const step = p.moving && !RM ? Math.sin(now / 75) : 0;
   const bob = Math.abs(step) * s * .04;
   ell(ctx, cx, by, s*.25, s*.08, 'rgba(0,0,0,.22)');
   ctx.fillStyle = '#2c3550';
   ctx.fillRect(cx - s*.12, by - s*.2 + (step > 0 ? -s*.03 : 0), s*.09, s*.2);
   ctx.fillRect(cx + s*.03, by - s*.2 + (step < 0 ? -s*.03 : 0), s*.09, s*.2);
-  ctx.fillStyle = '#ffffff'; rr(ctx, cx - s*.21, by - s*.62 - bob, s*.42, s*.46, s*.1); ctx.fill();
-  ctx.strokeStyle = '#c3cde0'; ctx.lineWidth = Math.max(1, s*.025); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx, by - s*.55 - bob); ctx.lineTo(cx, by - s*.18 - bob); ctx.stroke();
-  ctx.fillStyle = '#3d6fd0'; ctx.fillRect(cx + player.face*s*.06 - s*.04, by - s*.47 - bob, s*.08, s*.1);   // pocket badge
-  // flask in hand
-  const hx = cx + player.face*s*.26, hy = by - s*.36 - bob;
-  ctx.fillStyle = '#e6f6ff'; ctx.beginPath(); ctx.moveTo(hx - s*.03, hy - s*.1); ctx.lineTo(hx + s*.03, hy - s*.1); ctx.lineTo(hx + s*.08, hy + s*.04); ctx.lineTo(hx - s*.08, hy + s*.04); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#5fd08a'; ctx.beginPath(); ctx.moveTo(hx - s*.055, hy - s*.01); ctx.lineTo(hx + s*.055, hy - s*.01); ctx.lineTo(hx + s*.08, hy + s*.04); ctx.lineTo(hx - s*.08, hy + s*.04); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = look.coat; rr(ctx, cx - s*.21, by - s*.62 - bob, s*.42, s*.46, s*.1); ctx.fill();
+  ctx.strokeStyle = look.trim || 'rgba(0,0,0,.18)'; ctx.lineWidth = Math.max(1, s*.025); ctx.stroke();
+  if (isPlayer){
+    ctx.beginPath(); ctx.moveTo(cx, by - s*.55 - bob); ctx.lineTo(cx, by - s*.18 - bob); ctx.stroke();
+    ctx.fillStyle = '#3d6fd0'; ctx.fillRect(cx + p.face*s*.06 - s*.04, by - s*.47 - bob, s*.08, s*.1);
+    const sw = p.swing && now - p.swing.t < 650 ? p.swing : null;
+    if (sw) drawTool(cx, by - bob, s, p.face, sw, now);
+    else {
+      const hx = cx + p.face*s*.26, hy = by - s*.36 - bob;
+      ctx.fillStyle = '#e6f6ff'; ctx.beginPath(); ctx.moveTo(hx - s*.03, hy - s*.1); ctx.lineTo(hx + s*.03, hy - s*.1); ctx.lineTo(hx + s*.08, hy + s*.04); ctx.lineTo(hx - s*.08, hy + s*.04); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#5fd08a'; ctx.beginPath(); ctx.moveTo(hx - s*.055, hy - s*.01); ctx.lineTo(hx + s*.055, hy - s*.01); ctx.lineTo(hx + s*.08, hy + s*.04); ctx.lineTo(hx - s*.08, hy + s*.04); ctx.closePath(); ctx.fill();
+    }
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(cx - s*.21, by - s*.36 - bob, s*.42, s*.05);
+  }
   const hy2 = by - s*.78 - bob;
-  ell(ctx, cx, hy2, s*.19, s*.19, '#f0c39b');
-  ctx.fillStyle = '#3b2a45'; ctx.beginPath(); ctx.arc(cx, hy2 - s*.01, s*.2, Math.PI*1.05, Math.PI*1.95); ctx.closePath(); ctx.fill();
+  ell(ctx, cx, hy2, s*.19, s*.19, look.skin);
+  ctx.fillStyle = look.hair; ctx.beginPath(); ctx.arc(cx, hy2 - s*.01, s*.2, Math.PI*1.05, Math.PI*1.95); ctx.closePath(); ctx.fill();
   ctx.fillRect(cx - s*.2, hy2 - s*.06, s*.05, s*.12); ctx.fillRect(cx + s*.15, hy2 - s*.06, s*.05, s*.12);
-  ell(ctx, cx + player.face*s*.07 - s*.04, hy2 + s*.03, s*.022, s*.026, '#2a2233');
-  ell(ctx, cx + player.face*s*.07 + s*.05, hy2 + s*.03, s*.022, s*.026, '#2a2233');
+  ell(ctx, cx + p.face*s*.07 - s*.04, hy2 + s*.03, s*.022, s*.026, '#2a2233');
+  ell(ctx, cx + p.face*s*.07 + s*.05, hy2 + s*.03, s*.022, s*.026, '#2a2233');
 }
+function drawTool(cx, by, s, face, sw, now){
+  const k = (now - sw.t) / 650;
+  if (sw.kind === 'hand'){ ell(ctx, cx + face*s*.25, by - s*.62 - Math.sin(Math.min(1,k)*Math.PI)*s*.22, s*.09, s*.09, '#e0473c'); return; }
+  const ease = Math.sin(Math.min(1, k*1.6) * Math.PI / 2);
+  ctx.save(); ctx.translate(cx + face*s*.22, by - s*.4); ctx.rotate(face * (-.5 + 2.1*ease));
+  ctx.fillStyle = '#8a5a32'; ctx.fillRect(-s*.025, -s*.46, s*.05, s*.48);
+  ctx.fillStyle = '#8f99a3';
+  if (sw.kind === 'axe'){ ctx.beginPath(); ctx.moveTo(0, -s*.46); ctx.lineTo(face*s*.2, -s*.52); ctx.lineTo(face*s*.2, -s*.3); ctx.lineTo(0, -s*.34); ctx.closePath(); ctx.fill(); }
+  else { ctx.beginPath(); ctx.moveTo(-s*.22, -s*.36); ctx.quadraticCurveTo(0, -s*.52, s*.22, -s*.36); ctx.lineTo(s*.22, -s*.41); ctx.quadraticCurveTo(0, -s*.6, -s*.22, -s*.41); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+}
+function drawPlayer(now){ drawPerson(player, PLAYER_LOOK, now, true); }
+
+/* ---------------- villagers ---------------- */
+const NPC_LOOK = [
+  {coat:'#e07b3c', hair:'#2a2233', skin:'#e8b48a'},
+  {coat:'#4f86c6', hair:'#5a3a22', skin:'#f0c39b'},
+  {coat:'#8e5bb5', hair:'#1e1e1e', skin:'#c98d65'},
+  {coat:'#3f9a6b', hair:'#3b2a45', skin:'#f3cfa8'}
+];
+const NPCS = NPC_LOOK.map((look, i) => ({x:[18,24,9,12][i], y:[12,12,12,13][i], path:[], face:1, moving:false, look, mode:'idle', slot:null, wait:performance.now() + 1500 + i*1300, cool:0, bubble:null}));
+const SLOTS = [[21,15],[22,15]];
+const NPC_SPEED = 2.6;
+function updateNPCs(dt, now){
+  for (const n of NPCS){
+    if (n.path.length){
+      const [tx,ty] = n.path[0], dx = tx - n.x, dy = ty - n.y, d = Math.hypot(dx,dy), st = NPC_SPEED*dt;
+      if (Math.abs(dx) > .01) n.face = dx > 0 ? 1 : -1;
+      n.moving = true;
+      if (d <= st){ n.x = tx; n.y = ty; n.path.shift(); if (!n.path.length) arriveNPC(n, now); }
+      else { n.x += dx/d*st; n.y += dy/d*st; }
+      continue;
+    }
+    n.moving = false;
+    if (now < n.wait) continue;
+    if (state.stall > 0 && now > n.cool && NPCS.filter(m => m.mode === 'shop').length < 2){
+      const slot = SLOTS.find(sl => !NPCS.some(m => m.mode === 'shop' && m.slot === sl));
+      const p = slot && findPath(n.x, n.y, (x,y) => x === slot[0] && y === slot[1]);
+      if (p){ n.mode = 'shop'; n.slot = slot; n.path = p; if (!p.length) arriveNPC(n, now); continue; }
+    }
+    n.mode = 'walk';
+    for (let k = 0; k < 8; k++){
+      const tx = n.x + ((Math.random()*13) | 0) - 6, ty = n.y + ((Math.random()*9) | 0) - 4;
+      if (blocked(tx,ty)) continue;
+      const p = findPath(n.x, n.y, (x,y) => x === tx && y === ty);
+      if (p && p.length){ n.path = p.slice(0, 10); break; }
+    }
+    n.wait = now + 1200 + Math.random()*2600;
+  }
+}
+function arriveNPC(n, now){
+  if (n.mode === 'shop'){
+    n.face = n.x < MARKET.x + 1 ? 1 : -1;
+    if (state.stall > 0){
+      const k = Math.min(state.stall, 1 + ((Math.random()*2) | 0));
+      state.stall -= k; state.res.coin += k*FRUIT_PRICE; updateHUD('coin');
+      n.bubble = {t:now, k};
+      floats.push({x:(n.x + .5)*TS, y:(n.y - .7)*TS, text:`+${k*FRUIT_PRICE} عملة`, col:'#b9811a', t:now});
+      SFX.coin(); save();
+    } else n.bubble = {t:now, k:0};
+    n.mode = 'idle'; n.slot = null; n.wait = now + 1500; n.cool = now + 6000;
+  } else n.mode = 'idle';
+}
+function drawBubbles(now){
+  NPCS.forEach(n => {
+    if (!n.bubble || now - n.bubble.t > 1700) return;
+    const bx = (n.x + .5)*TS, byy = (n.y - .3)*TS;
+    ctx.fillStyle = '#ffffff'; rr(ctx, bx - TS*.34, byy - TS*.34, TS*.68, TS*.38, TS*.13); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.2)'; ctx.lineWidth = 1; ctx.stroke();
+    font(ctx, 800, TS*.2); ctx.fillStyle = '#22355f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (n.bubble.k){ ell(ctx, bx + TS*.13, byy - TS*.15, TS*.09, TS*.09, '#e0473c'); ctx.fillText('×' + n.bubble.k, bx - TS*.09, byy - TS*.14); }
+    else ctx.fillText('…', bx, byy - TS*.16);
+  });
+}
+
+/* ---------------- sound ---------------- */
+let AC = null, NOISE = null, birdAt = 0;
+function audio(){
+  if (state.mute) return null;
+  if (!AC){ try { AC = new (window.AudioContext || window.webkitAudioContext)(); birdAt = performance.now() + 5000; } catch (e) { return null; } }
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f, d, type, vol, f2, delay){
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol || .15, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + .03);
+}
+function noise(d, vol, freq, type, delay){
+  const a = audio(); if (!a) return;
+  if (!NOISE){ NOISE = a.createBuffer(1, a.sampleRate * .6, a.sampleRate); const ch = NOISE.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random()*2 - 1; }
+  const t = a.currentTime + (delay || 0), src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = NOISE; f.type = type || 'lowpass'; f.frequency.value = freq || 1000;
+  g.gain.setValueAtTime(vol || .2, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  src.connect(f).connect(g).connect(a.destination); src.start(t); src.stop(t + d + .03);
+}
+const SFX = {
+  chop(){ noise(.09,.4,1400); tone(150,.12,'square',.07,70); noise(.09,.35,1400,'lowpass',.2); tone(140,.12,'square',.06,70,.2); },
+  fall(){ noise(.55,.3,450); tone(95,.45,'sine',.22,40); },
+  stone(){ noise(.06,.35,2500,'highpass'); tone(820,.06,'triangle',.12); noise(.06,.3,2500,'highpass',.18); tone(700,.06,'triangle',.1,null,.18); },
+  crumble(){ noise(.4,.35,800); tone(120,.3,'sine',.12,60); },
+  plant(){ tone(330,.12,'sine',.12,520); },
+  harvest(){ tone(520,.09,'sine',.14,880); tone(700,.1,'sine',.12,1200,.08); },
+  coin(){ tone(1318,.07,'square',.05); tone(1760,.18,'square',.05,null,.07); },
+  ok(){ [660,880,1175].forEach((f,i) => tone(f,.18,'triangle',.13,null,i*.09)); },
+  bad(){ tone(240,.3,'sawtooth',.06,150); },
+  build(){ [0,.15,.3].forEach(d => noise(.07,.35,1800,'lowpass',d)); [523,659,784,1046].forEach((f,i) => tone(f,.24,'triangle',.13,null,.5 + i*.12)); },
+  tap(){ tone(620,.05,'sine',.06); },
+  bird(){ const b = 2200 + Math.random()*800; tone(b,.08,'sine',.025,b*1.3); tone(b*1.1,.08,'sine',.025,b*1.4,.12); }
+};
 
 function badge(x, y, now, col, glyph){
   const s = TS, b = RM ? 0 : Math.sin(now / 260) * s * .06;
@@ -719,11 +838,19 @@ function render(now){
   items.push({y:HOUSE.y + HOUSE.h, f:() => drawHouse(ctx, state.level, HOUSE.x*TS, HOUSE.y*TS, TS)});
   items.push({y:MARKET.y + MARKET.h, f:() => drawMarket(ctx, MARKET.x*TS, MARKET.y*TS, TS)});
   items.push({y:player.y + 1.001, f:() => drawPlayer(now)});
+  NPCS.forEach(n => items.push({y:n.y + 1.0005, f:() => drawPerson(n, n.look, now, false)}));
   items.sort((a,b) => a.y - b.y).forEach(it => it.f());
+  fxs = fxs.filter(f => now - f.t < 800);
+  fxs.forEach(f => {
+    const k = (now - f.t) / 800;
+    ctx.save(); ctx.globalAlpha = 1 - Math.max(0, k - .6) / .4; ctx.translate(f.x, f.y);
+    ctx.rotate(f.dir * Math.min(1, k*1.4) ** 2 * Math.PI / 2); drawTree(ctx, 0, 0, TS); ctx.restore();
+  });
+  drawBubbles(now);
   // badges
   PLOTS.forEach(([x,y],i) => { const p = state.plots[i]; if (p !== null && t - p >= CROP_GROW) badge((x + .5)*TS, (y - .25)*TS, now, '#e0473c', '!'); });
   if (canBuild()) badge((HOUSE.x + 1.5)*TS, (HOUSE.y - (state.level >= 3 ? 1.3 : .3))*TS, now, '#b9811a', '↑');
-  if (state.res.fruit >= 4) badge((MARKET.x + 1)*TS, (MARKET.y - .85)*TS, now, '#2f8a4a', '$');
+  if (state.res.fruit > 0) badge((MARKET.x + 1)*TS, (MARKET.y - .85)*TS, now, '#2f8a4a', '+');
   // floating text
   floats = floats.filter(f => now - f.t < 1300);
   floats.forEach(f => {
@@ -736,13 +863,15 @@ function render(now){
   parts.forEach(p => {
     const k = (now - p.t)/1000;
     ctx.fillStyle = p.col; ctx.globalAlpha = 1 - (now - p.t)/p.life;
-    ctx.fillRect(p.x + p.vx*k, p.y + p.vy*k + 300*k*k, 6, 9); ctx.globalAlpha = 1;
+    ctx.fillRect(p.x + p.vx*k, p.y + p.vy*k + 300*k*k, p.size || 6, (p.size || 6)*1.4); ctx.globalAlpha = 1;
   });
 }
 let last = performance.now();
 function loop(now){
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   update(dt);
+  updateNPCs(dt, now);
+  if (AC && !state.mute && now > birdAt){ SFX.bird(); birdAt = now + 7000 + Math.random()*9000; }
   render(now);
   requestAnimationFrame(loop);
 }
@@ -831,34 +960,54 @@ addEventListener('keyup', e => { if (KEYS[e.key] && held === KEYS[e.key]) held =
 function tileCenter(o){ const fp = footprint(o); const [x,y] = fp[0]; return [(x + .5)*TS, (y + .1)*TS]; }
 function floatText(o, text, col){ const [x,y] = tileCenter(o); floats.push({x, y, text, col:col || '#22355f', t:performance.now()}); }
 function gain(kind, n){ state.res[kind] += n; updateHUD(kind); }
+function faceTo(x){ if (x > player.x) player.face = 1; else if (x < player.x) player.face = -1; }
+function swing(kind){ player.swing = {kind, t:performance.now()}; }
+function burst(x, y, cols, n){
+  if (RM) n = Math.ceil(n / 3);
+  const now = performance.now();
+  for (let i = 0; i < n; i++) parts.push({x, y, vx:(Math.random() - .5)*260, vy:-Math.random()*260 - 60, col:cols[i % cols.length], t:now, life:650 + Math.random()*450, size:3 + Math.random()*5});
+}
 function interact(o){
   const t = Date.now();
+  const [ox, oy] = LIST[o.k] ? LIST[o.k][o.i] : [0, 0];
+  const cx = (ox + .5)*TS, by = (oy + .88)*TS;
   if (o.k === 'tree'){
     if (t < state.trees[o.i]){ toast('الشجرة تنمو من جديد'); return; }
     ask('قطع الحطب', 'wood', ok => {
       const n = REWARD.tree[ok ? 0 : 1]; gain('wood', n); state.trees[o.i] = Date.now() + TREE_REGROW;
-      floatText(o, `+${n} حطب`, '#7a4c2b'); return {icon:'wood', text:`+${n} حطب`};
+      return {icon:'wood', text:`+${n} حطب`, fx:() => {
+        faceTo(ox); swing('axe'); SFX.chop();
+        setTimeout(() => {
+          fxs.push({k:'fall', x:cx, y:by, dir:player.x <= ox ? 1 : -1, t:performance.now()});
+          burst(cx, by - TS*.4, ['#a8713f','#d9a56b','#5fa84a','#3f8f3a'], 22); SFX.fall(); floatText(o, `+${n} حطب`, '#7a4c2b');
+        }, 330);
+      }};
     });
   } else if (o.k === 'rock'){
     if (t < state.rocks[o.i]){ toast('الصخرة لم تتكوّن بعد'); return; }
     ask('تكسير الحجارة', 'stone', ok => {
       const n = REWARD.rock[ok ? 0 : 1]; gain('stone', n); state.rocks[o.i] = Date.now() + ROCK_BACK;
-      floatText(o, `+${n} حجارة`, '#4f5761'); return {icon:'stone', text:`+${n} حجارة`};
+      return {icon:'stone', text:`+${n} حجارة`, fx:() => {
+        faceTo(ox); swing('pick'); SFX.stone();
+        setTimeout(() => { burst(cx, by - TS*.3, ['#9198a0','#b9bfc5','#6a717a'], 26); SFX.crumble(); floatText(o, `+${n} حجارة`, '#4f5761'); }, 330);
+      }};
     });
   } else if (o.k === 'plot'){
     if (PLOT_LEVEL[o.i] > state.level){ toast(`تُفتح هذه الأرض بعد بناء ${STAGES[PLOT_LEVEL[o.i]].name}`); return; }
     const p = state.plots[o.i];
-    if (p === null){ state.plots[o.i] = t; floatText(o, 'زُرعت البذور', '#2f7a2c'); save(); return; }
+    if (p === null){ state.plots[o.i] = t; faceTo(ox); swing('hand'); SFX.plant(); burst(cx, by - TS*.3, ['#7c4f30','#5fb04f'], 10); floatText(o, 'زُرعت البذور', '#2f7a2c'); save(); return; }
     if (t - p < CROP_GROW){ toast('الثمار لم تنضج بعد'); return; }
     ask('حصاد الثمار', 'fruit', ok => {
       const n = REWARD.plot[ok ? 0 : 1]; gain('fruit', n); state.plots[o.i] = null;
-      floatText(o, `+${n} ثمار`, '#c8443b'); return {icon:'fruit', text:`+${n} ثمار`};
+      return {icon:'fruit', text:`+${n} ثمار`, fx:() => {
+        faceTo(ox); swing('hand'); SFX.harvest(); burst(cx, by - TS*.3, ['#e0473c','#5fb04f','#f68f86'], 16); floatText(o, `+${n} ثمار`, '#c8443b');
+      }};
     });
   } else if (o.k === 'market') openMarket();
   else if (o.k === 'house') openBuild();
 }
 function canBuild(){
-  if (state.level >= 5) return false;
+  if (state.level >= MAX) return false;
   const c = STAGES[state.level + 1].cost;
   return Object.keys(c).every(k => state.res[k] >= c[k]);
 }
@@ -922,6 +1071,7 @@ function ask(title, icon, onAnswer, after){
     if (ok){ st.ok++; st.by[q.l][0]++; }
     else state.deck.splice(Math.min(state.deck.length, 3 + ((Math.random() * 4) | 0)), 0, qi);
     const r = onAnswer(ok);
+    if (ok) SFX.ok(); else SFX.bad();
     updateHUD();
     const fb = sheet.querySelector('.fb');
     fb.innerHTML = `<div class="fbh ${ok ? 'ok' : 'bad'}">${ok ? 'إجابة صحيحة' : 'إجابة غير صحيحة'}</div>
@@ -932,7 +1082,7 @@ function ask(title, icon, onAnswer, after){
     fb.hidden = false;
     const cb = $('#contBtn'); cb.focus({preventScroll:true});
     fb.scrollIntoView({block:'nearest', behavior: RM ? 'auto' : 'smooth'});
-    cb.onclick = () => { closeSheet(); if (after) after(ok); };
+    cb.onclick = () => { closeSheet(); if (r && r.fx) r.fx(); if (after) after(ok); };
     save();
   });
 }
@@ -948,7 +1098,7 @@ function stepsHTML(){
 }
 function openBuild(){
   const lv = state.level;
-  if (lv >= 5){
+  if (lv >= MAX){
     openSheet(`<h2>قصر العلماء</h2><p class="sub">اكتملت جميع مراحل البناء.</p>${stepsHTML()}${statsHTML()}
       <div class="row"><button class="primary" type="button" data-close>إغلاق</button></div>`);
     return;
@@ -969,10 +1119,9 @@ function openBuild(){
       if (!good) return {text:'لم يكتمل البناء، والموارد محفوظة. يمكن المحاولة مرة أخرى بسؤال جديد.'};
       Object.entries(nx.cost).forEach(([k,v]) => { state.res[k] -= v; });
       state.level++;
-      celebrate();
       const extra = PLOT_LEVEL.filter(l => l === state.level).length;
-      return {icon:'house', text:`اكتمل بناء ${nx.name}${extra ? '، وفُتحت أرضان جديدتان للزراعة' : ''}`};
-    }, good => { updateHUD(); if (good && state.level === 5 && !state.won){ state.won = true; save(); showWin(); } });
+      return {icon:'house', text:`اكتمل بناء ${nx.name}${extra ? '، وفُتحت أرضان جديدتان للزراعة' : ''}`, fx:() => { celebrate(); SFX.build(); }};
+    }, good => { updateHUD(); if (good && state.level === MAX && !state.won){ state.won = true; save(); setTimeout(showWin, 1700); } });
   };
 }
 function celebrate(){
@@ -982,23 +1131,26 @@ function celebrate(){
   floats.push({x:cx, y:cy - TS*.5, text:'اكتمل البناء', col:'#b9811a', t:now});
 }
 function openMarket(){
-  const f = state.res.fruit;
+  const f = state.res.fruit, st = state.stall;
   openSheet(`<h2>السوق</h2>
-    <p>سعر الثمرة الواحدة: <b>${FRUIT_PRICE} عملات</b></p>
-    <ul class="cost"><li>${ICON.fruit}الثمار المتوفرة<span class="num">${f}</span></li><li>${ICON.coin}العملات<span class="num">${state.res.coin}</span></li></ul>
-    ${f ? '' : '<p class="sub">لا توجد ثمار للبيع. الثمار تُحصد من الحقول بعد نضجها.</p>'}
+    <p>يأتي أهل القرية إلى البسطة ويشترون الثمار المعروضة فيها، وسعر الثمرة الواحدة <b>${FRUIT_PRICE} عملات</b>.</p>
+    <ul class="cost">
+      <li>${ICON.fruit}الثمار في المخزن<span class="num">${f}</span></li>
+      <li>${ICON.market}الثمار المعروضة في البسطة<span class="num">${st}</span></li>
+      <li>${ICON.coin}العملات<span class="num">${state.res.coin}</span></li>
+    </ul>
+    ${f ? '' : '<p class="sub">لا توجد ثمار في المخزن. الثمار تُحصد من الحقول بعد نضجها.</p>'}
     <div class="row">
-      <button class="primary" type="button" id="sellAll" ${f ? '' : 'disabled'}>بيع كل الثمار (+${f * FRUIT_PRICE} عملة)</button>
-      <button class="ghost" type="button" id="sellOne" ${f ? '' : 'disabled'}>بيع ثمرة واحدة</button>
+      <button class="primary" type="button" id="putAll" ${f ? '' : 'disabled'}>عرض كل الثمار في البسطة</button>
+      <button class="ghost" type="button" id="putOne" ${f ? '' : 'disabled'}>عرض ثمرة واحدة</button>
       <button class="ghost" type="button" data-close>إغلاق</button>
     </div>`);
-  const sell = n => {
+  const put = n => {
     if (!n) return;
-    state.res.fruit -= n; state.res.coin += n * FRUIT_PRICE; updateHUD('coin');
-    floatText({k:'market'}, `+${n * FRUIT_PRICE} عملة`, '#b9811a'); save(); openMarket();
+    state.res.fruit -= n; state.stall += n; updateHUD('fruit'); SFX.harvest(); save(); openMarket();
   };
-  $('#sellAll').onclick = () => sell(state.res.fruit);
-  $('#sellOne').onclick = () => sell(Math.min(1, state.res.fruit));
+  $('#putAll').onclick = () => put(state.res.fruit);
+  $('#putOne').onclick = () => put(Math.min(1, state.res.fruit));
 }
 function pct(a,b){ return b ? Math.round(a / b * 100) + '%' : '—'; }
 function statsHTML(){
@@ -1025,19 +1177,20 @@ function openSettings(){
   });
   $('#resetBtn').onclick = () => {
     $('#resetBox').innerHTML = `<p>سيُحذف التقدّم الحالي كله: الموارد والمباني والنتيجة.</p><div class="row"><button class="danger" type="button" id="resetYes">تأكيد البدء من جديد</button><button class="ghost" type="button" id="resetNo">إلغاء</button></div>`;
-    $('#resetYes').onclick = () => { const ls = state.lessons; state = newState(); state.lessons = ls; state.seenHelp = true; player.x = 14; player.y = 12; player.path = []; player.pending = null; save(); updateHUD(); closeSheet(); toast('بدأت لعبة جديدة'); };
+    $('#resetYes').onclick = () => { const ls = state.lessons, mu = state.mute; state = newState(); state.lessons = ls; state.mute = mu; state.seenHelp = true; player.x = 14; player.y = 12; player.path = []; player.pending = null; save(); updateHUD(); closeSheet(); toast('بدأت لعبة جديدة'); };
     $('#resetNo').onclick = openSettings;
   };
 }
 function openHelp(first){
   openSheet(`<h2>قرية الكيمياء</h2>
-    <p class="sub">بناء قرية من الكوخ حتى قصر العلماء، بالإجابة عن أسئلة الفصل الأول.</p>
+    <p class="sub">بناء قرية من البيت الحجري حتى قصر العلماء، بالإجابة عن أسئلة الفصل الأول.</p>
     <ul class="help">
       <li>يتحرك اللاعب بالنقر على أي موضع في الخريطة.</li>
       <li>النقر على <b>الشجرة</b> لقطع الحطب، وعلى <b>الصخرة</b> لتكسير الحجارة، وعلى <b>الحقل</b> لزراعته ثم حصاده بعد نضج الثمار.</li>
       <li>قبل الحصول على أي مورد يظهر سؤال علمي: الإجابة الصحيحة تمنح المورد كاملًا، والإجابة الخاطئة تمنح جزءًا منه مع عرض الإجابة الصحيحة.</li>
-      <li>تُباع الثمار في <b>السوق</b> مقابل عملات.</li>
+      <li>تُعرض الثمار في بسطة <b>السوق</b>، فيأتي أهل القرية لشرائها، وتُضاف العملات تلقائيًا.</li>
       <li>في وسط القرية <b>أرض البناء</b>: لكل مرحلة بناء موارد مطلوبة وسؤال بناء، وكل مبنى جديد يفتح حقولًا إضافية.</li>
+      <li>زر الصوت في أعلى الشاشة لتشغيل المؤثرات الصوتية أو إيقافها.</li>
       <li>في الحاسوب: مفاتيح الأسهم للحركة، ومفتاح المسافة للتفاعل مع الشيء المجاور، والأرقام 1 إلى 4 لاختيار الإجابة.</li>
     </ul>
     ${stepsHTML()}
@@ -1051,6 +1204,10 @@ function showWin(){
   $('#winNew').onclick = () => { openSettings(); $('#resetBtn').click(); };
 }
 $('#helpBtn').onclick = () => openHelp(false);
+function updateSnd(){ const b = $('#sndBtn'); b.innerHTML = state.mute ? ICON.mute : ICON.sound; b.setAttribute('aria-pressed', String(!state.mute)); b.title = state.mute ? 'الصوت متوقف' : 'الصوت يعمل'; }
+$('#sndBtn').onclick = () => { state.mute = !state.mute; if (state.mute){ if (AC) AC.suspend(); } else { audio(); SFX.tap(); } updateSnd(); save(); };
+addEventListener('pointerdown', () => { if (!AC) audio(); });
+addEventListener('keydown', () => { if (!AC) audio(); });
 $('#setBtn').onclick = openSettings;
 $('#stageBtn').onclick = openBuild;
 
@@ -1058,7 +1215,7 @@ $('#stageBtn').onclick = openBuild;
 addEventListener('resize', resize);
 addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
-resize(); updateHUD();
+resize(); updateHUD(); updateSnd();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => {});
 requestAnimationFrame(t => { last = t; loop(t); });
 if (!state.seenHelp) openHelp(true);
