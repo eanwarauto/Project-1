@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>قرية الكيمياء</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Lalezar&display=swap">
+</head><body>
+<style>
+/* Layout: full-screen village map on canvas; resource HUD floats at the top; panels open as centred sheets.
+   Single daytime look (a deliberate one-world game), so colours are set explicitly for both host themes. */
+:root{
+  --ink:#1c2a4a; --ink-soft:#52607e; --panel:#ffffff; --panel-2:#eef3fa; --line:#d3dcea;
+  --gold:#e3a72f; --gold-deep:#b9811a; --leaf:#3f8f3a; --ok:#2f8a4a; --ok-bg:#e2f4e7; --bad:#c8443b; --bad-bg:#fbe8e6;
+  --navy:#22355f; --ground:#2f5b31; --veil:rgba(14,24,44,.5);
+  --f-display:'Lalezar','Cairo',system-ui,sans-serif;
+  --f-body:'Cairo',system-ui,'Segoe UI',Tahoma,sans-serif;
+  color-scheme: light;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0}
+#cv{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+button{font-family:inherit;color:inherit}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* HUD */
+.hud{position:absolute;top:0;left:0;right:0;display:flex;gap:8px;justify-content:space-between;align-items:flex-start;
+  padding-top:calc(env(safe-area-inset-top,0px) + 10px);
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));pointer-events:none}
+.hud>*{pointer-events:auto}
+.res,.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tools{flex-wrap:nowrap}
+.chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.95);border:0;border-radius:999px;padding-block:4px;padding-inline:8px 12px;
+  font-weight:800;font-size:15px;line-height:1.4;box-shadow:0 2px 0 rgba(0,0,0,.18);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip svg{width:22px;height:22px;flex:none}
+.chip .lbl{font-weight:600;font-size:13px;color:var(--ink-soft)}
+.chip.pop{animation:pop .45s ease}
+@keyframes pop{40%{transform:scale(1.18)}}
+button.chip{cursor:pointer}
+.stage{background:var(--navy);color:#fff}
+.stage .lbl{color:#c9d6f2}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.95);box-shadow:0 2px 0 rgba(0,0,0,.18);
+  display:grid;place-items:center;cursor:pointer;font-weight:800;font-size:19px;color:var(--navy)}
+.iconbtn svg{width:22px;height:22px}
+@media (max-width:560px){.chip .lbl{display:none}.chip{font-size:14px;padding-inline:6px 10px}.chip svg{width:20px;height:20px}}
+
+/* toast */
+#toast{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);background:var(--navy);color:#fff;
+  padding:8px 18px;border-radius:999px;font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:calc(100% - 32px);text-align:center;
+  transition:opacity .25s, transform .25s;pointer-events:none}
+#toast.hide{opacity:0;transform:translate(-50%,10px)}
+
+/* sheets */
+#ov{position:absolute;inset:0;background:var(--veil);display:grid;place-items:center;
+  padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-user-select:text;user-select:text}
+.sheet{background:var(--panel);border-radius:20px;width:100%;max-width:600px;max-height:100%;overflow:auto;padding:20px 22px 22px;
+  box-shadow:0 18px 50px rgba(0,0,0,.35);animation:rise .22s ease}
+@keyframes rise{from{transform:translateY(14px);opacity:0}}
+.sheet h2{font-family:var(--f-display);font-weight:400;font-size:30px;line-height:1.25;margin:0 0 4px;color:var(--navy);text-wrap:balance}
+.sheet h3{font-size:16px;margin:18px 0 8px;color:var(--navy)}
+.sheet p{margin:6px 0;line-height:1.75;font-size:16px}
+.sub{color:var(--ink-soft)}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.primary,.ghost,.danger{border:0;border-radius:12px;padding:10px 20px;font-size:16px;font-weight:800;cursor:pointer}
+.primary{background:var(--gold);color:#2b1d00;box-shadow:0 3px 0 var(--gold-deep)}
+.primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--gold-deep)}
+.primary:disabled{background:#d9dee7;color:#7d879a;box-shadow:none;cursor:not-allowed}
+.ghost{background:var(--panel-2);color:var(--navy)}
+.danger{background:var(--bad);color:#fff}
+
+/* question */
+.qhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.act{display:inline-flex;align-items:center;gap:6px;background:var(--panel-2);border-radius:999px;padding:4px 12px 4px 10px;font-weight:800;color:var(--navy)}
+.act svg{width:22px;height:22px}
+.tag{font-size:13px;font-weight:700;color:var(--ink-soft)}
+.qtext{font-size:20px!important;font-weight:800;line-height:1.7!important;margin:4px 0 14px!important;text-wrap:pretty}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opts.one{grid-template-columns:1fr}
+@media (max-width:520px){.opts{grid-template-columns:1fr}}
+.opt{display:flex;align-items:center;gap:10px;text-align:start;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 12px;
+  font-size:17px;font-weight:700;line-height:1.6;cursor:pointer;min-width:0}
+.opt:hover:not(:disabled){background:var(--panel-2);border-color:#aebbd3}
+.opt:disabled{cursor:default}
+.opt .key{flex:none;width:28px;height:28px;border-radius:50%;background:var(--panel-2);display:grid;place-items:center;font-size:14px;font-weight:800;color:var(--navy)}
+.opt .otext{min-width:0}
+.opt.correct{background:var(--ok-bg);border-color:var(--ok)}
+.opt.correct .key{background:var(--ok);color:#fff}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.opt.wrong .key{background:var(--bad);color:#fff}
+.opt.dim{opacity:.55}
+.fb{margin-top:14px;border-top:2px dashed var(--line);padding-top:12px}
+.fbh{font-family:var(--f-display);font-size:24px}
+.fbh.ok{color:var(--ok)}.fbh.bad{color:var(--bad)}
+.exp{color:var(--ink-soft)}
+.reward{display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:#fff6df;border:1px solid #f0d58f;border-radius:10px;padding:4px 12px;font-weight:800}
+.reward svg{width:22px;height:22px}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+sup,sub{font-size:.68em;line-height:0}
+.orb{display:inline-flex;direction:ltr;gap:0;vertical-align:middle}
+.orb>span{display:flex;flex-direction:column;align-items:center}
+.orb b{width:38px;height:30px;border:2px solid var(--ink);margin-left:-2px;display:grid;place-items:center;font-size:17px;letter-spacing:-2px;background:#fff}
+.orb i{font-style:normal;font-size:12px;color:var(--ink-soft)}
+
+/* build */
+.build{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.build canvas{width:240px;height:210px;max-width:100%;background:linear-gradient(#cfe8ff,#e9f6ff 55%,#9fd27c 55%);border-radius:14px;flex:none}
+.cost{list-style:none;margin:0;padding:0;display:grid;gap:8px;flex:1;min-width:180px}
+.cost li{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;background:var(--panel-2);border-radius:10px;padding:6px 10px}
+.cost li svg{width:24px;height:24px}
+.cost .num{margin-inline-start:auto;font-variant-numeric:tabular-nums}
+.cost .have{color:var(--ok)}.cost .need{color:var(--bad)}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.steps span{font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--panel-2);color:var(--ink-soft)}
+.steps span.done{background:var(--ok-bg);color:var(--ok)}
+.steps span.next{background:#fff3d6;color:var(--gold-deep)}
+
+/* lists */
+.help{margin:8px 0 0;padding-inline-start:22px;line-height:1.85;font-size:16px}
+.help li{margin-bottom:4px}
+.lessons{display:grid;gap:8px}
+.lessons label{display:flex;align-items:center;gap:10px;background:var(--panel-2);border-radius:12px;padding:8px 12px;font-weight:700;cursor:pointer}
+.lessons input{width:20px;height:20px;accent-color:var(--navy);flex:none}
+.lessons .st{margin-inline-start:auto;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+.warn{color:var(--bad);font-weight:700}
+.stat-big{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0}
+.stat-big div{flex:1;min-width:120px;background:var(--panel-2);border-radius:14px;padding:10px 14px}
+.stat-big b{display:block;font-family:var(--f-display);font-size:30px;font-weight:400;color:var(--navy);font-variant-numeric:tabular-nums}
+.stat-big span{font-size:13px;color:var(--ink-soft);font-weight:700}
+@media (prefers-reduced-motion: reduce){.sheet,.chip.pop{animation:none}}
+</style>
+
+<div id="app" dir="rtl" lang="ar">
+  <canvas id="cv" aria-label="خريطة القرية"></canvas>
+  <div class="hud">
+    <div class="res">
+      <div class="chip" id="c-wood"><span data-i="wood"></span><b id="n-wood">0</b><span class="lbl">حطب</span></div>
+      <div class="chip" id="c-stone"><span data-i="stone"></span><b id="n-stone">0</b><span class="lbl">حجارة</span></div>
+      <div class="chip" id="c-fruit"><span data-i="fruit"></span><b id="n-fruit">0</b><span class="lbl">ثمار</span></div>
+      <div class="chip" id="c-coin"><span data-i="coin"></span><b id="n-coin">0</b><span class="lbl">عملات</span></div>
+      <button class="chip stage" id="stageBtn" type="button"><span data-i="house"></span><span id="stageName">أرض البناء</span></button>
+    </div>
+    <div class="tools">
+      <div class="chip" title="الإجابات الصحيحة من مجموع الأسئلة"><span data-i="check"></span><b id="n-score" class="ltr">0 / 0</b></div>
+      <button class="iconbtn" id="helpBtn" type="button" aria-label="طريقة اللعب">؟</button>
+      <button class="iconbtn" id="setBtn" type="button" aria-label="الإعدادات"><span data-i="gear"></span></button>
+    </div>
+  </div>
+  <div id="toast" class="hide" role="status" aria-live="polite"></div>
+  <div id="ov" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+/* ---------------- icons ---------------- */
+const ICON = {
+  wood:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="12" width="17" height="6.5" rx="3.2" fill="#9a5f33"/><ellipse cx="19" cy="15.2" rx="2.7" ry="3.2" fill="#ecc28c" stroke="#9a5f33" stroke-width="1.2"/><rect x="4" y="5.5" width="15" height="6.5" rx="3.2" fill="#b4723f"/><ellipse cx="19" cy="8.7" rx="2.7" ry="3.2" fill="#f3cf9c" stroke="#b4723f" stroke-width="1.2"/></svg>',
+  stone:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17 6 9.5 12 6 18 8 21 15 17 20H7Z" fill="#9aa1a8" stroke="#69707a" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 10.5 12 8.3 15 9.2" stroke="#dde1e4" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg>',
+  fruit:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="7.5" fill="#e0473c"/><circle cx="9.4" cy="11.4" r="2" fill="#f68f86"/><path d="M12 7 9.8 4.2M12 7l2.6-2.6M12 7V3.6" stroke="#3f8f3a" stroke-width="2" stroke-linecap="round"/></svg>',
+  coin:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#f2b632" stroke="#c78a12" stroke-width="1.5"/><circle cx="12" cy="12" r="5.4" fill="none" stroke="#c78a12" stroke-width="1.3"/></svg>',
+  house:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 11.5 12 4l9.5 7.5Z" fill="#e0603f"/><rect x="5.5" y="11" width="13" height="9" fill="#f6e2bd"/><rect x="10.5" y="14" width="3" height="6" fill="#9a5f33"/></svg>',
+  check:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#2f8a4a"/><path d="m7 12.5 3.5 3.5L17 9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.1 2.55"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>',
+  hammer:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="10.5" y="9" width="3" height="13" rx="1.3" fill="#9a5f33"/><rect x="4.5" y="3.5" width="15" height="6.5" rx="1.6" fill="#6e7680"/></svg>',
+  seed:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11" stroke="#3f8f3a" stroke-width="2.4" stroke-linecap="round"/><path d="M12 13C7 13 5 9 5 6c4 0 7 2 7 7Zm0-1c0-4 3-6 7-6 0 3-2 6-7 6Z" fill="#5fb04f"/></svg>',
+  market:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-2-5H5Z" fill="#d9534f"/><rect x="4" y="9" width="16" height="11" fill="#c08a52"/><circle cx="9" cy="14" r="2.5" fill="#e0473c"/><circle cx="15" cy="14" r="2.5" fill="#f2b632"/></svg>'
+};
+document.querySelectorAll('[data-i]').forEach(e => { e.outerHTML = ICON[e.dataset.i]; });
+
+/* ---------------- question bank (book wording, enrichment boxes excluded) ---------------- */
+const L = s => `<span class="ltr">${s}</span>`;
+const cfg = s => s.replace(/(\d[spdf])(\d+)/g, '$1<sup>$2</sup>');
+const el = (z, sym) => L(`<sub>${z}</sub>${sym}`);
+const ML = 'm<sub>ℓ</sub>', MS = 'm<sub>s</sub>';
+const orb = (...a) => `<span class="orb">${a.map((x, i) => `<span><b>${x || '&nbsp;'}</b><i>p<sub>${'xyz'[i]}</sub></i></span>`).join('')}</span>`;
+const BR = ['الكيمياء العضوية', 'الكيمياء غير العضوية', 'الكيمياء الفيزيائية', 'الكيمياء التحليلية', 'الكيمياء الحيوية'];
+const br = (c, ...w) => [BR[c], ...w.map(i => BR[i])];
+
+const LESSONS = {
+  1: `الدرس ${L('[1-1]')}: علم الكيمياء`,
+  2: `الدرس ${L('[2-1]')}: تطوّر النماذج الذرّية`,
+  3: `الدرس ${L('[3-1]')}: أعداد الكَمّ`,
+  4: `الدرس ${L('[4-1]')}: قواعد الترتيب الإلكتروني في الذرّات`
+};
+/* first option is always the correct one; options are shuffled on screen */
+const QB = [
+/* ---- 1-1 ---- */
+{l:1,q:'فرع الكيمياء الذي يدرس المواد التي تحتوي غالبًا على روابط بين الكربون والهيدروجين هو:',o:br(0,1,3,4),e:`الكيمياء العضوية ${L('Organic Chemistry')} مجال دراستها المواد التي تحتوي غالبًا على روابط بين الكربون والهيدروجين.`},
+{l:1,q:'فرع الكيمياء الذي يدرس الفلزات واللافلزات ومركباتها، والأحماض والقواعد والأملاح والأكاسيد هو:',o:br(1,0,2,4),e:`الكيمياء غير العضوية ${L('Inorganic Chemistry')} مجال دراستها الفلزات واللافلزات ومركباتها، والأحماض والقواعد والأملاح والأكاسيد.`},
+{l:1,q:'فرع الكيمياء الذي يدرس سلوك المادة وتغيّراتها والطاقة المصاحبة لها هو:',o:br(2,3,0,1),e:`الكيمياء الفيزيائية ${L('Physical Chemistry')} مجال دراستها سلوك المادة وتغيّراتها والطاقة المصاحبة لها.`},
+{l:1,q:'فرع الكيمياء الذي يختص بتحليل مكوّنات المادة وتحديد كمية كل مكوّن هو:',o:br(3,2,4,0),e:`الكيمياء التحليلية ${L('Analytical Chemistry')} مجال دراستها تحليل مكوّنات المادة وتحديد كمية كل مكوّن.`},
+{l:1,q:'فرع الكيمياء الذي يدرس المواد والتفاعلات الكيميائية التي تحدث داخل الكائنات الحية هو:',o:br(4,0,3,2),e:`الكيمياء الحيوية ${L('Biochemistry')} مجال دراستها المواد والتفاعلات الكيميائية التي تحدث داخل الكائنات الحية.`},
+{l:1,q:'الأدوية والبلاستيكات والوقود والمنظفات من استخدامات:',o:br(0,3,2,1),e:'من استخدامات الكيمياء العضوية: الأدوية، البلاستيكات، الوقود، المنظفات، المبيدات الحشرية، الأصباغ.'},
+{l:1,q:'المبيدات الحشرية والأصباغ من استخدامات:',o:br(0,1,3,2),e:'من استخدامات الكيمياء العضوية: الأدوية، البلاستيكات، الوقود، المنظفات، المبيدات الحشرية، الأصباغ.'},
+{l:1,q:'مواد البناء والسبائك الإلكترونية من استخدامات:',o:br(1,4,0,3),e:'من استخدامات الكيمياء غير العضوية: مواد البناء والسبائك الإلكترونية.'},
+{l:1,q:'تطوير البطاريات وتبريد المحركات من استخدامات:',o:br(2,1,4,3),e:'من استخدامات الكيمياء الفيزيائية: تطوير البطاريات وتبريد المحركات.'},
+{l:1,q:'فحص جودة مياه الشرب ومراقبة تلوث الهواء وكشف الغش التجاري من استخدامات:',o:br(3,2,0,4),e:'من استخدامات الكيمياء التحليلية: فحص جودة مياه الشرب، مراقبة تلوث الهواء، كشف الغش التجاري.'},
+{l:1,q:'دراسة عملية الهضم وعمل الإنزيمات وتحاليل الدم والسموم من استخدامات:',o:br(4,3,0,2),e:'من استخدامات الكيمياء الحيوية: دراسة عملية الهضم، عمل الإنزيمات، تحاليل الدم والسموم.'},
+{l:1,q:'الاسم الإنجليزي لفرع الكيمياء التحليلية هو:',o:['Analytical Chemistry','Physical Chemistry','Inorganic Chemistry','Biochemistry']},
+{l:1,q:`${L('Physical Chemistry')} هو الاسم الإنجليزي لفرع:`,o:br(2,4,3,1)},
+{l:1,q:'أسهمت فروع الكيمياء في تقدم:',o:['الطب والصناعة والتقنية والبيئة','الطب فقط','الصناعة فقط','البيئة فقط'],e:'لأن علم المادة واسع ومليء بالأسرار، انقسم علم الكيمياء إلى فروع متعددة أسهمت في تقدم الطب والصناعة والتقنية والبيئة.'},
+
+/* ---- 1-2 ---- */
+{l:2,q:'تتكون نواة الذرّة من:',o:['بروتونات ونيوترونات','بروتونات وإلكترونات','نيوترونات وإلكترونات','إلكترونات فقط'],e:'تتكون الذرّة من نواة تحتوي على البروتونات (موجبة الشحنة) والنيوترونات (متعادلة الشحنة)، وحول النواة تدور الإلكترونات (سالبة الشحنة).'},
+{l:2,q:'شحنة النيوترون:',o:['متعادلة','موجبة','سالبة'],e:'البروتونات موجبة الشحنة، والنيوترونات متعادلة الشحنة، والإلكترونات سالبة الشحنة.'},
+{l:2,q:'الجسيمات التي تدور حول النواة هي:',o:['الإلكترونات','البروتونات','النيوترونات'],e:'حول النواة تدور الإلكترونات (سالبة الشحنة).'},
+{l:2,q:'في تجربة رذرفورد سُمح لجسيمات ألفا الموجبة أن تصطدم بلوح معدني مبطّن بطبقة من:',o:['كبريتيد الخارصين','الذهب','النحاس','الحديد'],e:'سُمح لجسيمات ألفا الموجبة (α) أن تصطدم بلوح معدني مبطّن بطبقة من كبريتيد الخارصين، وتم تحديد موضع وعدد جسيمات ألفا بدلالة الومضات التي ظهرت على اللوح.'},
+{l:2,q:'الرقاقة التي وُضعت في مسار جسيمات ألفا قبل اصطدامها باللوح المعدني في تجربة رذرفورد هي رقاقة:',o:['الذهب','الفضة','النحاس','الألومنيوم']},
+{l:2,q:'في تجربة رذرفورد تم تحديد موضع جسيمات ألفا وعددها:',o:['بدلالة الومضات التي ظهرت على اللوح','بقياس كتلة اللوح','بتغيّر لون رقاقة الذهب','بقياس درجة حرارة اللوح']},
+{l:2,q:'نفاذ معظم جسيمات ألفا خلال رقاقة الذهب دون أي انحراف في مسارها يدل على أن:',o:['الذرّة معظمها فراغ','الذرّة تحوي جسيمًا موجب الشحنة','معظم كتلة الذرّة في الإلكترونات','الإلكترونات سالبة الشحنة'],e:'المشاهدة: نفاذ معظم جسيمات ألفا دون انحراف. الاستنتاج: الذرّة معظمها فراغ.'},
+{l:2,q:'انحراف عدد قليل من جسيمات ألفا عن مسارها بعد اصطدامها برقاقة الذهب يدل على أن الذرّة:',o:['تحوي جسيمًا مشحونًا بشحنة موجبة (النواة) مشابهة لشحنة جسيمات ألفا','معظمها فراغ','تحوي جسيمًا سالب الشحنة يجذب جسيمات ألفا','لا تحتوي على نواة'],e:'انحراف عدد قليل من جسيمات ألفا يدل على أن الذرّة تحوي جسيمًا مشحونًا بشحنة موجبة (النواة) مشابهة لشحنة جسيمات ألفا، لذلك تنافرت معها.'},
+{l:2,q:'ارتداد عدد قليل جدًا من جسيمات ألفا في اتجاه مصدرها بعد اصطدامها برقاقة الذهب يدل على أن:',o:['بالذرّة جزءًا يشغل حيزًا صغيرًا جدًا يتركز فيه معظم كتلة الذرّة (النواة)','الذرّة معظمها فراغ','الإلكترونات تتحرك في مسار حلزوني','جسيمات ألفا سالبة الشحنة']},
+{l:2,q:'أجرى العالمان جيجر ومارسدن بحثهما تحت إشراف رذرفورد عام:',o:['1909','1913','1923','1900']},
+{l:2,q:'اعترض العلماء على تشبيه رذرفورد دوران الإلكترونات حول النواة بدوران الكواكب حول الشمس، لأن:',o:['الإلكترونات جسيمات تحمل شحنة كهربائية أما الكواكب فهي متعادلة الشحنة','الكواكب أصغر من الإلكترونات','الإلكترونات لا تتحرك حول النواة','النواة سالبة الشحنة']},
+{l:2,q:'وفق قوانين الفيزياء، عند حركة الإلكترونات حول النواة في مدار دائري تفقد طاقة باستمرار، فتتحرك في:',o:['مسار حلزوني حتى تلتصق بالنواة وتنهار الذرّة','مسار مستقيم مبتعدة عن النواة','المدار نفسه دون تغيّر','مستوى طاقة أعلى'],e:'مع فقدان الطاقة تقل سرعة دوران الإلكترونات تدريجيًا، فتقل قوة الطرد المركزي، وتتغلب قوة جذب النواة، فتتحرك في مسار حلزوني حتى تلتصق بالنواة. وهذا لا يحدث، إذ أن الذرّة في الحقيقة لا تنهار.'},
+{l:2,q:'اختار بور في نموذجه عام 1913 ذرّة:',o:['الهيدروجين','الهيليوم','الكربون','الذهب'],e:'اختار بور في نموذجه أبسط الذرّات وهي ذرّة الهيدروجين.'},
+{l:2,q:'استعان بور في وضع نموذجه للذرّة بنتائج أبحاث العلماء عن:',o:['طيف الانبعاث الذري','الكيمياء الحيوية','رقاقة الذهب فقط','كتلة النيوترون']},
+{l:2,q:'وفق نموذج بور، المستويات التي تدور فيها الإلكترونات حول النواة دون أن تكتسب أو تفقد طاقة تُسمى:',o:['مستويات الطاقة الرئيسية','الأفلاك الذرّية','السحابة الإلكترونية','تحت مستويات الطاقة']},
+{l:2,q:'وفق نموذج بور، الذرّة متعادلة كهربائيًا لأن:',o:['عدد الإلكترونات يساوي عدد البروتونات','عدد النيوترونات يساوي عدد البروتونات','الإلكترونات متعادلة الشحنة','النواة متعادلة الشحنة'],e:'عدد الشحنات السالبة (الإلكترونات) التي تدور حول النواة يساوي عدد الشحنات الموجبة (البروتونات) داخل النواة.'},
+{l:2,q:'وفق نموذج بور، كلما زاد بُعد مستوى الطاقة عن النواة:',o:['زادت طاقته','قلّت طاقته','بقيت طاقته ثابتة'],e:`كل مستوى طاقة رئيسي يعبّر عنه بعدد صحيح ويرمز له بالرمز ${L('n')}، وتزداد طاقة المستوى بزيادة بعده عن النواة.`},
+{l:2,q:'عندما يكتسب (يمتص) الإلكترون طاقة معيّنة فإنه:',o:['ينتقل إلى المستوى الأعلى منه في الطاقة (الحالة المثارة)','ينتقل إلى مستوى طاقة أقل','يلتصق بالنواة','يبقى في مستواه دون تغيّر']},
+{l:2,q:'عندما يعود الإلكترون من الحالة المثارة غير المستقرة إلى حالته المستقرة فإنه:',o:['يُطلق الطاقة التي اكتسبها','يكتسب طاقة إضافية','لا تتغيّر طاقته']},
+{l:2,q:'الذرّة عندما تكون طاقة إلكتروناتها أقل ما يمكن، بحيث تترتب إلكتروناتها وفق الترتيب الإلكتروني الأكثر استقرارًا، هي:',o:['الذرّة المستقرة','الذرّة المثارة']},
+{l:2,q:'الذرّة التي اكتسبت (امتصت) كمية معيّنة من الطاقة مما أدى إلى انتقال إلكترون أو أكثر من مستوى طاقة أقل إلى مستوى طاقة أعلى، هي:',o:['الذرّة المثارة','الذرّة المستقرة']},
+{l:2,q:'من الاعتراضات التي واجهت نموذج بور أنه:',o:['فشل في تفسير طيف الانبعاث الذري للذرّات التي تحتوي على عدد أكبر من الإلكترونات','لم يُطبَّق على ذرّة الهيدروجين','افترض أن النواة سالبة الشحنة','افترض أن الذرّة معظمها فراغ']},
+{l:2,q:'العالِم الذي أسهم في تأسيس النظرية الميكانيكية للذرّة ووضع المعادلة الموجية هو:',o:['شرودنغر','رذرفورد','بور','دالتون']},
+{l:2,q:'دفعت أوجه القصور في نموذج بور العلماء إلى إجراء تعديلات عليه عام:',o:['1923','1909','1913']},
+{l:2,q:'المعادلة الموجية التي تطبّق على حركة الإلكترون في الذرّة يمكن عن طريقها تحديد:',o:['السعة القصوى للإلكترونات في كل مستوى طاقة رئيسي','عدد النيوترونات في النواة','كتلة جسيمات ألفا','عدد البروتونات في النواة']},
+{l:2,q:'مناطق الفراغ المحيط بالنواة، والتي يحتمل وجود الإلكترون فيها في كل الاتجاهات، هي:',o:['السحابة الإلكترونية','الأفلاك الذرّية','مستويات الطاقة الرئيسية','النواة']},
+{l:2,q:'مناطق داخل السحابة الإلكترونية يزداد احتمال وجود الإلكترون فيها، هي:',o:['الأفلاك الذرّية','السحابة الإلكترونية','مستويات الطاقة الرئيسية','النواة']},
+
+/* ---- 1-3 ---- */
+{l:3,q:'الوصف الكامل لوضع الإلكترون داخل الذرّة من حيث الطاقة والموقع والاتجاه هو:',o:['حالة الإلكترون','السحابة الإلكترونية','الفلك الذرّي','مستوى الطاقة الرئيسي'],e:'حالة الإلكترون هي الوصف الكامل لوضع الإلكترون داخل الذرّة من حيث الطاقة والموقع والاتجاه، ويتم تحديدها باستخدام أعداد الكَمّ.'},
+{l:3,q:'تُحدَّد حالة الإلكترون في أي ذرّة باستخدام:',o:['أعداد الكَمّ','العدد الذري فقط','عدد النيوترونات','مستويات الطاقة الرئيسية فقط']},
+{l:3,q:'عدد أعداد الكَمّ التي تصف حالة الإلكترون:',o:['4','3','2','7'],e:'أعداد الكَمّ أربعة: الرئيسي، والزاوي، والمغناطيسي، والمغزلي.'},
+{l:3,q:'«عدد يصف طاقة المستوى الرئيسي ويحدد بُعده عن النواة» هو:',o:[`عدد الكَمّ الرئيسي ${L('(n)')}`,`عدد الكَمّ الزاوي ${L('(ℓ)')}`,`عدد الكَمّ المغناطيسي ${L(`(${ML})`)}`,`عدد الكَمّ المغزلي ${L(`(${MS})`)}`]},
+{l:3,q:`رمز مستوى الطاقة الرئيسي الذي قيمة عدد الكَمّ الرئيسي له ${L('n = 3')} هو:`,o:['M','L','K','N'],e:`${L('K = 1 , L = 2 , M = 3 , N = 4 , O = 5 , P = 6 , Q = 7')}`},
+{l:3,q:'قيمة عدد الكَمّ الرئيسي لمستوى الطاقة L:',o:['2','1','3','4'],e:`${L('K = 1 , L = 2 , M = 3 , N = 4')}`},
+{l:3,q:'عدد مستويات الطاقة الرئيسية المشغولة بالإلكترونات والمعروفة حتى الآن:',o:['7','4','5','8'],e:`هي سبعة مستويات رموزها ${L('K , L , M , N , O , P , Q')}.`},
+{l:3,q:`بالمقارنة بين مستويي الطاقة ${L('n = 1')} و ${L('n = 7')}، فإن المستوى ${L('n = 1')}:`,o:['أقل طاقة وأصغر حجمًا','أعلى طاقة وأكبر حجمًا','أقل طاقة وأكبر حجمًا','أعلى طاقة وأصغر حجمًا'],e:`كلما ازدادت قيمة ${L('n')} زاد حجم المستوى وزادت طاقة الإلكترون فيه.`},
+{l:3,q:'«عدد يحدد تحت مستوى الطاقة داخل مستوى الطاقة الرئيسي، كما يحدد شكل الفلك الذرّي الذي يشغله الإلكترون» هو:',o:[`عدد الكَمّ الزاوي ${L('(ℓ)')}`,`عدد الكَمّ الرئيسي ${L('(n)')}`,`عدد الكَمّ المغناطيسي ${L(`(${ML})`)}`,`عدد الكَمّ المغزلي ${L(`(${MS})`)}`]},
+{l:3,q:`يأخذ عدد الكَمّ الزاوي ${L('(ℓ)')} قيمًا صحيحة تتراوح:`,o:[`من الصفر إلى القيمة ${L('(n − 1)')}`,`من 1 إلى ${L('n')}`,`من ${L('(−ℓ)')} إلى ${L('(+ℓ)')}`,`بين ${L('+½')} و ${L('−½')}`]},
+{l:3,q:`تحت مستوى الطاقة الذي قيمة عدد الكَمّ الزاوي له ${L('ℓ = 2')} هو:`,o:['d','p','s','f'],e:`${L('s = 0 , p = 1 , d = 2 , f = 3')}`},
+{l:3,q:'قيمة عدد الكَمّ الزاوي لتحت مستوى الطاقة p:',o:['1','0','2','3'],e:`${L('s = 0 , p = 1 , d = 2 , f = 3')}`},
+{l:3,q:`إذا كانت ${L('n = 2')} و ${L('ℓ = 0')}، فإن تحت مستوى الطاقة هو:`,o:['2s','2p','1s','2d']},
+{l:3,q:`في تحت مستوى الطاقة ${L('3p')} تكون قيمة ${L('ℓ')}:`,o:['1','3','0','2']},
+{l:3,q:'قيم عدد الكَمّ الزاوي المحتملة في مستوى الطاقة الرئيسي M:',o:['0 , 1 , 2','0 , 1','1 , 2 , 3','0 , 1 , 2 , 3'],e:`في المستوى M تكون ${L('n = 3')}، فتتراوح ${L('ℓ')} من الصفر إلى ${L('n − 1 = 2')}.`},
+{l:3,q:'عدد تحت مستويات الطاقة في مستوى الطاقة الرئيسي N:',o:['4','3','2','16'],e:`كل مستوى طاقة رئيسي يحتوي على عدد من تحت المستويات يساوي رقمه: المستوى N يحتوي على ${L('4s , 4p , 4d , 4f')}.`},
+{l:3,q:'«عدد يحدد اتجاه الفلك الذرّي في الفراغ داخل تحت مستوى الطاقة» هو:',o:[`عدد الكَمّ المغناطيسي ${L(`(${ML})`)}`,`عدد الكَمّ الزاوي ${L('(ℓ)')}`,`عدد الكَمّ الرئيسي ${L('(n)')}`,`عدد الكَمّ المغزلي ${L(`(${MS})`)}`]},
+{l:3,q:`قيم عدد الكَمّ المغناطيسي ${L(`(${ML})`)} لتحت مستوى الطاقة p:`,o:['−1 , 0 , +1','0','−2 , −1 , 0 , +1 , +2','+½ , −½'],e:`يأخذ ${L(ML)} قيمًا صحيحة تتراوح من ${L('(−ℓ)')} إلى ${L('(+ℓ)')} مرورًا بالصفر، وفي p تكون ${L('ℓ = 1')}.`},
+{l:3,q:'عدد الأفلاك في تحت مستوى الطاقة d:',o:['5','3','7','10'],e:`قيم ${L(ML)} في d هي ${L('−2 , −1 , 0 , +1 , +2')}، أي خمسة أفلاك.`},
+{l:3,q:'عدد الأفلاك في تحت مستوى الطاقة f:',o:['7','5','3','14']},
+{l:3,q:'أقصى عدد من الإلكترونات في تحت مستوى الطاقة p:',o:['6','2','3','10'],e:'تحت المستوى p فيه ثلاثة أفلاك، وكل فلك يمتلئ بإلكترونين كحد أقصى.'},
+{l:3,q:'كل فلك يمتلئ بـ:',o:['إلكترونين كحد أقصى','إلكترون واحد فقط','ستة إلكترونات كحد أقصى','ثمانية إلكترونات كحد أقصى']},
+{l:3,q:'شكل فلك تحت مستوى الطاقة (s):',o:['كروي','فصّان متقابلان عند الرأس','حلزوني','مستطيل'],e:'فلك s فلك واحد، كروي الشكل، وتمثل سحابته الإلكترونية احتمال وجود الإلكترون حول النواة بشكل متساوٍ في جميع الاتجاهات.'},
+{l:3,q:'ينقسم تحت مستوى الطاقة (p) إلى ثلاثة أفلاك متساوية في الطاقة هي:',o:['p<sub>x</sub> , p<sub>y</sub> , p<sub>z</sub>','s , p , d','K , L , M','1s , 2s , 3s']},
+{l:3,q:'الكثافة الإلكترونية حول كل فلك من أفلاك (p) تأخذ شكل:',o:['فصّين متقابلين عند الرأس','كرة','حلقة دائرية','مكعب']},
+{l:3,q:'«عدد الكَمّ الذي يصف اتجاه دوران الإلكترون حول نفسه داخل الفلك الذرّي» هو:',o:[`عدد الكَمّ المغزلي ${L(`(${MS})`)}`,`عدد الكَمّ المغناطيسي ${L(`(${ML})`)}`,`عدد الكَمّ الزاوي ${L('(ℓ)')}`,`عدد الكَمّ الرئيسي ${L('(n)')}`]},
+{l:3,q:`قيم عدد الكَمّ المغزلي ${L(`(${MS})`)}:`,o:['+½ , −½','0 , 1','−1 , 0 , +1','1 , 2 , 3']},
+{l:3,q:'دوران الإلكترون حول محوره في اتجاه عقارب الساعة يُعطى إشارة:',o:['موجبة','سالبة','صفر'],e:'الدوران في اتجاه عقارب الساعة يُعطى إشارة موجبة، والدوران عكس عقارب الساعة يُعطى إشارة سالبة.'},
+{l:3,q:'يوجد إلكترونان في الفلك الذرّي نفسه، لأن:',o:['حركتهما المغزلية متعاكسة، فينشأ مجالان مغناطيسيان متعاكسان في الاتجاه مما يقلل التنافر بينهما','حركتهما المغزلية في الاتجاه نفسه','شحنة أحدهما موجبة والآخر سالبة','النواة تجذب أحدهما فقط']},
+{l:3,q:`عدد الأفلاك في مستوى الطاقة الرئيسي M ${L('(n²)')}:`,o:['9','4','3','18']},
+{l:3,q:`العدد الأقصى للإلكترونات في مستوى الطاقة الرئيسي L ${L('(2n²)')}:`,o:['8','4','2','18']},
+{l:3,q:'مستوى الطاقة الرئيسي الذي عدد أفلاكه 16 والعدد الأقصى للإلكترونات فيه 32 هو:',o:['N','M','L','K']},
+{l:3,q:'يحتوي تحت مستوى الطاقة (s) على فلك واحد، لأن:',o:[`قيمة ${L('ℓ = 0')}، فيكون لعدد الكَمّ المغناطيسي قيمة واحدة هي الصفر`,`قيمة ${L('ℓ = 1')}`,'يمتلئ بإلكترون واحد فقط','هو أبعد تحت مستوى عن النواة']},
+{l:3,q:'يمتلئ تحت مستوى الطاقة (d) بعشرة إلكترونات كحد أقصى، لأن:',o:['يحتوي على خمسة أفلاك، وكل فلك يمتلئ بإلكترونين كحد أقصى','يحتوي على عشرة أفلاك','يحتوي على ثلاثة أفلاك',`قيمة ${L('ℓ')} له تساوي 10`]},
+{l:3,q:'تحت مستويات الطاقة في مستوى الطاقة الرئيسي K:',o:['1s فقط','1s , 1p','2s , 2p','1s , 2s']},
+
+/* ---- 1-4 ---- */
+{l:4,q:'«مستويات الطاقة الرئيسية ذات الطاقة المنخفضة تملأ بالإلكترونات أولًا» هو نص:',o:['مبدأ أوفباو (البناء التصاعدي)','قاعدة مادلنج','قاعدة هوند','مبدأ الاستبعاد لباولي']},
+{l:4,q:`«تحت مستوى الطاقة الذي يكون مجموع قيمة عددي الكَمّ الرئيسي والزاوي ${L('(n+ℓ)')} له أقل يملأ بالإلكترونات أولًا» هو نص:`,o:['قاعدة مادلنج','مبدأ أوفباو (البناء التصاعدي)','قاعدة هوند','مبدأ الاستبعاد لباولي']},
+{l:4,q:'«لا يحدث تزاوج بين إلكترونين في فلك تحت مستوى طاقة معيّن يتكوّن من عدة أفلاك إلا بعد أن تشغل أفلاكه فرادى أولًا» هو نص:',o:['قاعدة هوند','قاعدة مادلنج','مبدأ أوفباو (البناء التصاعدي)','مبدأ الاستبعاد لباولي']},
+{l:4,q:'«في ذرّة ما لا يوجد إلكترونان لهما قيم أعداد الكَمّ الأربعة نفسها» هو نص:',o:['مبدأ الاستبعاد لباولي','قاعدة هوند','قاعدة مادلنج','مبدأ أوفباو (البناء التصاعدي)']},
+{l:4,q:'«أوفباو» كلمة باللغة الألمانية تعني:',o:['البناء أو التركيب التدريجي (البناء التصاعدي)','الاستبعاد','الازدواج','الإثارة']},
+{l:4,q:`وفق مبدأ أوفباو، مستوى الطاقة الرئيسي الذي يمتلئ أولًا بالإلكترونات هو:`,o:[L('n = 1'),L('n = 2'),L('n = 3'),L('n = 7')],e:`المستوى ${L('n = 1')} يملأ أولًا لأنه أقلها طاقة وهو أقرب المستويات إلى النواة.`},
+{l:4,q:`مجموع ${L('(n+ℓ)')} لتحت مستوى الطاقة ${L('3d')}:`,o:['5','3','4','6'],e:L('3 + 2 = 5')},
+{l:4,q:`مجموع ${L('(n+ℓ)')} لتحت مستوى الطاقة ${L('4s')}:`,o:['4','5','3','6'],e:L('4 + 0 = 4')},
+{l:4,q:`مجموع ${L('(n+ℓ)')} لتحت مستوى الطاقة ${L('4f')}:`,o:['7','4','5','8'],e:L('4 + 3 = 7')},
+{l:4,q:`يمتلئ تحت مستوى الطاقة ${L('2p')} بالإلكترونات قبل ${L('3p')}، لأن:`,o:[`مجموع ${L('(n+ℓ)')} لتحت المستوى ${L('2p')} أقل`,`قيمة ${L('ℓ')} لتحت المستوى ${L('2p')} أقل`,`مجموع ${L('(n+ℓ)')} لهما متساوٍ`,`تحت المستوى ${L('3p')} يحتوي أفلاكًا أكثر`],e:`${L('2p: 2 + 1 = 3')} و ${L('3p: 3 + 1 = 4')}`},
+{l:4,q:`يمتلئ تحت مستوى الطاقة ${L('4s')} قبل ${L('3d')}، لأن:`,o:[`مجموع قيمة ${L('(n+ℓ)')} لتحت المستوى ${L('4s')} أقل`,`قيمة ${L('n')} لتحت المستوى ${L('4s')} أقل`,`تحت المستوى ${L('4s')} يحتوي أفلاكًا أكثر`,`مجموع ${L('(n+ℓ)')} لهما متساوٍ`],e:`${L('4s: 4 + 0 = 4')} و ${L('3d: 3 + 2 = 5')}`},
+{l:4,q:`يمتلئ تحت مستوى الطاقة ${L('3p')} قبل ${L('4s')}، لأن:`,o:[`في حالة التساوي في مجموع ${L('(n+ℓ)')} تكون قيمة ${L('n')} لتحت المستوى ${L('3p')} أقل`,`مجموع ${L('(n+ℓ)')} لتحت المستوى ${L('3p')} أقل`,`قيمة ${L('ℓ')} لتحت المستوى ${L('3p')} أقل`,`تحت المستوى ${L('4s')} أقرب إلى النواة`],e:`${L('3p: 3 + 1 = 4')} و ${L('4s: 4 + 0 = 4')}، فيمتلئ أولًا تحت المستوى الذي له أقل قيمة ${L('n')}.`},
+{l:4,q:`تحت مستوى الطاقة الذي يمتلئ بالإلكترونات أولًا من بين ${L('6p')} و ${L('5f')}:`,o:[`${L('6p')}، لأن مجموع ${L('(n+ℓ)')} له يساوي 7 وهو أقل من ${L('5f')} الذي يساوي 8`,`${L('5f')}، لأن قيمة ${L('n')} له أقل`,`${L('5f')}، لأن مجموع ${L('(n+ℓ)')} له أقل`,`${L('6p')}، لأن قيمة ${L('n')} له أكبر`]},
+{l:4,q:`الترتيب التصاعدي لتحت مستويات الطاقة ${L('6s , 4p , 3d , 4f')} من حيث أولوية امتلائها بالإلكترونات:`,o:['3d → 4p → 6s → 4f','4p → 3d → 4f → 6s','3d → 4f → 4p → 6s','6s → 4f → 4p → 3d'],e:`${L('3d = 5 , 4p = 5 , 6s = 6 , 4f = 7')}، و ${L('3d')} قبل ${L('4p')} لأن قيمة ${L('n')} له أقل.`},
+{l:4,q:'الترتيب الصحيح لامتلاء تحت مستويات الطاقة بالإلكترونات:',o:['1s 2s 2p 3s 3p 4s 3d 4p','1s 2s 2p 3s 3p 3d 4s 4p','1s 2s 3s 2p 3p 4s 3d 4p','1s 2s 2p 3s 4s 3p 3d 4p']},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(11,'Na')}:`,o:[cfg('1s2 2s2 2p6 3s1'),cfg('1s2 2s2 2p6 3s2'),cfg('1s2 2s2 2p5 3s2'),cfg('1s2 2s2 2p7')]},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(12,'Mg')}:`,o:[cfg('1s2 2s2 2p6 3s2'),cfg('1s2 2s2 2p6 3s1'),cfg('1s2 2s2 2p6 3p2'),cfg('1s2 2s2 2p8')]},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(13,'Al')}:`,o:[cfg('1s2 2s2 2p6 3s2 3p1'),cfg('1s2 2s2 2p6 3s1 3p2'),cfg('1s2 2s2 2p6 3p3'),cfg('1s2 2s2 2p7 3s2')]},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(19,'K')}:`,o:[cfg('1s2 2s2 2p6 3s2 3p6 4s1'),cfg('1s2 2s2 2p6 3s2 3p6 3d1'),cfg('1s2 2s2 2p6 3s2 3p5 4s2'),cfg('1s2 2s2 2p6 3s2 3p7')],e:`تحت المستوى ${L('4s')} يمتلئ قبل ${L('3d')}.`},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(21,'Sc')}:`,o:[cfg('1s2 2s2 2p6 3s2 3p6 4s2 3d1'),cfg('1s2 2s2 2p6 3s2 3p6 3d3'),cfg('1s2 2s2 2p6 3s2 3p6 4s1 3d2'),cfg('1s2 2s2 2p6 3s2 3p6 4s2 4p1')]},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(26,'Fe')}:`,o:[cfg('1s2 2s2 2p6 3s2 3p6 4s2 3d6'),cfg('1s2 2s2 2p6 3s2 3p6 3d8'),cfg('1s2 2s2 2p6 3s2 3p6 4s2 4p6'),cfg('1s2 2s2 2p6 3s2 3p6 4s1 3d7')]},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(35,'Br')}:`,o:[cfg('1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p5'),cfg('1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6'),cfg('1s2 2s2 2p6 3s2 3p6 4s2 4p6 3d9'),cfg('1s2 2s2 2p6 3s2 3p6 3d10 4p7')]},
+{l:4,q:`الترتيب الإلكتروني حسب تحت مستويات الطاقة لعنصر ${el(36,'Kr')}:`,o:[cfg('1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6'),cfg('1s2 2s2 2p6 3s2 3p6 3d10 4s2 4p4 5s2'),cfg('1s2 2s2 2p6 3s2 3p6 4s2 4p6 3d10 4f0'),cfg('1s2 2s2 2p6 3s2 3p6 4s2 3d8 4p8')]},
+{l:4,q:`عدد الإلكترونات المفردة (غير المزدوجة) في ذرّة النيتروجين ${el(7,'N')}:`,o:['3','1','2','5'],e:`تحت المستوى ${L('2p')} فيه ثلاثة إلكترونات تشغل الأفلاك ${L('p<sub>x</sub> , p<sub>y</sub> , p<sub>z</sub>')} فرادى، كل منها بإلكترون (قاعدة هوند).`},
+{l:4,q:`عدد أزواج الإلكترونات في ذرّة النيتروجين ${el(7,'N')}:`,o:['2','3','4','1'],e:`أزواج الإلكترونات = عدد الأفلاك المكتملة: ${L(cfg('1s2'))} و ${L(cfg('2s2'))}.`},
+{l:4,q:`عدد الإلكترونات المزدوجة في ذرّة النيتروجين ${el(7,'N')}:`,o:['4','2','3','7'],e:'عدد الإلكترونات المزدوجة = مجموع الإلكترونات في الأفلاك المكتملة.'},
+{l:4,q:`الترتيب الصحيح لإلكترونات تحت مستوى الطاقة ${L('2p')} في ذرّة الأكسجين ${el(8,'O')} حسب الأفلاك:`,o:[orb('↑↓','↑','↑'),orb('↑↓','↑↓','')],e:'وفق قاعدة هوند: تشغل الإلكترونات أفلاك تحت المستوى فرادى أولًا، ثم يبدأ الازدواج.'},
+{l:4,q:`عدد الإلكترونات المفردة في ذرّة الألومنيوم ${el(13,'Al')}:`,o:['1','3','2','0'],e:L(cfg('1s2 2s2 2p6 3s2 3p1'))},
+{l:4,q:`عدد أزواج الإلكترونات في ذرّة الألومنيوم ${el(13,'Al')}:`,o:['6','12','7','5'],e:L(cfg('1s2 2s2 2p6 3s2 3p1'))},
+{l:4,q:`عدد الإلكترونات المزدوجة في ذرّة الألومنيوم ${el(13,'Al')}:`,o:['12','6','13','10'],e:L(cfg('1s2 2s2 2p6 3s2 3p1'))},
+{l:4,q:'وفق قاعدة هوند، تتتابع أفلاك تحت مستوى الطاقة الواحد في الامتلاء بالإلكترونات:',o:['بشكل فردي أولًا، وتكون الحركة المغزلية في الاتجاه نفسه','بشكل مزدوج أولًا','بشكل فردي أولًا، وتكون الحركة المغزلية متعاكسة','دون ترتيب محدد']},
+{l:4,q:'يبدأ الازدواج في أفلاك تحت مستوى الطاقة الواحد بعد شغل جميع أفلاكه فرادى، ويكون غزل إلكترونَي الفلك الواحد:',o:['باتجاه معاكس','بالاتجاه نفسه']},
+{l:4,q:`إلكترونا تحت مستوى الطاقة ${L(cfg('1s2'))} يتفقان في قيم أعداد الكَمّ ${L(`(n , ℓ , ${ML})`)} ويختلفان في قيمة:`,o:[`عدد الكَمّ المغزلي ${L(MS)}`,`عدد الكَمّ الرئيسي ${L('n')}`,`عدد الكَمّ الزاوي ${L('ℓ')}`,`عدد الكَمّ المغناطيسي ${L(ML)}`]},
+{l:4,q:`الإلكترونان في تحت مستوى الطاقة ${L(cfg('2p2'))} يتفقان في قيم أعداد الكَمّ ${L(`(n , ℓ , ${MS})`)} ويختلفان في قيمة:`,o:[`عدد الكَمّ المغناطيسي ${L(ML)}`,`عدد الكَمّ المغزلي ${L(MS)}`,`عدد الكَمّ الرئيسي ${L('n')}`,`عدد الكَمّ الزاوي ${L('ℓ')}`]},
+{l:4,q:`قيم أعداد الكَمّ الأربعة للإلكترون الأول في تحت مستوى الطاقة ${L('1s')}:`,o:[`n = 1 , ℓ = 0 , ${ML} = 0 , ${MS} = +½`,`n = 1 , ℓ = 1 , ${ML} = 0 , ${MS} = +½`,`n = 0 , ℓ = 0 , ${ML} = 0 , ${MS} = +½`,`n = 1 , ℓ = 0 , ${ML} = 1 , ${MS} = +½`]},
+{l:4,q:'لا تتوزع الإلكترونات في الذرّة عشوائيًا، بل تترتب في مستويات الطاقة الرئيسية وتحت مستويات الطاقة وفق قواعد محددة:',o:['تبدأ بالأقل طاقة فالأعلى','تبدأ بالأعلى طاقة فالأقل','تبدأ بالأبعد عن النواة','تبدأ بتحت المستوى f']}
+];
+
+/* ---------------- world layout ---------------- */
+const MW = 30, MH = 22;
+const HOUSE = {x:13, y:7, w:3, h:3};
+const MARKET = {x:21, y:13, w:2, h:2};
+const TREES = [[2,2],[5,2],[8,3],[11,2],[3,5],[6,6],[9,7],[2,8],[5,9],[17,2],[19,4],[16,5],[20,8],[11,5]];
+const ROCKS = [[25,14],[27,16],[24,18],[26,19],[19,17],[21,19],[16,16],[17,19]];
+const PLOTS = [[4,14],[6,14],[8,14],[10,14],[4,16],[6,16],[8,16],[10,16]];
+const PLOT_LEVEL = [0,0,1,1,2,2,3,3];
+const LIST = {tree:TREES, rock:ROCKS, plot:PLOTS};
+const TREE_REGROW = 30000, ROCK_BACK = 40000, CROP_GROW = 18000, FRUIT_PRICE = 5;
+const REWARD = {tree:[4,1], rock:[3,1], plot:[4,1]};
+const STAGES = [
+  {name:'أرض البناء'},
+  {name:'الكوخ', cost:{wood:6}},
+  {name:'البيت الخشبي', cost:{wood:14, coin:30}},
+  {name:'البيت الحجري', cost:{wood:10, stone:12, coin:50}},
+  {name:'المنزل الكبير', cost:{wood:18, stone:20, coin:90}},
+  {name:'قصر العلماء', cost:{wood:24, stone:28, coin:140}}
+];
+const RES_NAME = {wood:'حطب', stone:'حجارة', fruit:'ثمار', coin:'عملات'};
+const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];
+
+const PATH = new Set();
+for (let x = 3; x <= 25; x++) PATH.add(x + ',11');
+['14,10','21,12','22,12','7,12','7,13'].forEach(k => PATH.add(k));
+const OBJ = new Map();
+TREES.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'tree', i}));
+ROCKS.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'rock', i}));
+PLOTS.forEach(([x,y],i) => OBJ.set(x+','+y, {k:'plot', i}));
+const inRect = (x,y,r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
+const isWater = (x,y) => ((x + .5 - 26) / 3.3) ** 2 + ((y + .5 - 4.5) / 2.4) ** 2 < 1;
+function objAt(x,y){
+  if (inRect(x,y,HOUSE)) return {k:'house'};
+  if (inRect(x,y,MARKET)) return {k:'market'};
+  return OBJ.get(x+','+y) || null;
+}
+function blocked(x,y){
+  if (x < 1 || y < 1 || x > MW - 2 || y > MH - 2) return true;
+  if (isWater(x,y)) return true;
+  return objAt(x,y) !== null;
+}
+function footprint(o){
+  if (o.k === 'house' || o.k === 'market'){
+    const r = o.k === 'house' ? HOUSE : MARKET, out = [];
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) out.push([x,y]);
+    return out;
+  }
+  return [LIST[o.k][o.i]];
+}
+
+/* ---------------- state ---------------- */
+const KEY = 'chem-village-v1';
+function newState(){
+  return {v:1, res:{wood:0, stone:0, fruit:0, coin:0}, level:0, pos:[14,12],
+    trees:TREES.map(() => 0), rocks:ROCKS.map(() => 0), plots:PLOTS.map(() => null),
+    stats:{ok:0, total:0, by:{1:[0,0],2:[0,0],3:[0,0],4:[0,0]}},
+    lessons:[1,2,3,4], deck:[], lastQ:-1, seenHelp:false, won:false};
+}
+function load(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && s.v === 1 && s.trees && s.trees.length === TREES.length) return s;
+  } catch (e) {}
+  return null;
+}
+let state = load() || newState();
+function save(){
+  state.pos = [Math.round(player.x), Math.round(player.y)];
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+}
+const player = {x:state.pos[0], y:state.pos[1], path:[], pending:null, face:1, moving:false};
+if (blocked(player.x, player.y)) { player.x = 14; player.y = 12; }
+
+/* ---------------- canvas setup ---------------- */
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let dpr = 1, vw = 0, vh = 0, TS = 48, groundCv = null;
+const cam = {x:0, y:0};
+let marker = null, floats = [], parts = [];
+
+function resize(){
+  const nd = Math.min(window.devicePixelRatio || 1, 2);
+  vw = cv.clientWidth; vh = cv.clientHeight;
+  cv.width = Math.round(vw * nd); cv.height = Math.round(vh * nd);
+  const nt = Math.round(Math.max(36, Math.min(60, Math.min(vw / 12, vh / 9.5))));
+  if (nt !== TS || nd !== dpr || !groundCv){ TS = nt; dpr = nd; buildGround(); }
+}
+function hash(x,y){ let n = (x * 374761393 + y * 668265263) | 0; n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967295; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function ell(c,x,y,rx,ry,fill){ c.beginPath(); c.ellipse(x,y,rx,ry,0,0,Math.PI*2); if (fill){ c.fillStyle = fill; c.fill(); } }
+function poly(c,pts,fill,stroke,lw){ c.beginPath(); pts.forEach(([x,y],i) => i ? c.lineTo(x,y) : c.moveTo(x,y)); c.closePath(); if (fill){ c.fillStyle = fill; c.fill(); } if (stroke){ c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); } }
+function font(c,w,px){ c.font = `${w} ${px}px Cairo, system-ui, sans-serif`; }
+
+function buildGround(){
+  const g = document.createElement('canvas');
+  g.width = MW * TS * dpr; g.height = MH * TS * dpr;
+  const c = g.getContext('2d'); c.scale(dpr, dpr); const s = TS;
+  const greens = ['#8fcb6a','#88c463','#95d071'];
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){
+    c.fillStyle = greens[(hash(x,y) * 3) | 0]; c.fillRect(x*s, y*s, s+1, s+1);
+  }
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++){   // grass tufts and flowers
+    const r = hash(x+7, y+3);
+    if (PATH.has(x+','+y)) continue;
+    c.strokeStyle = '#6fae4f'; c.lineWidth = Math.max(1, s * .03);
+    for (let k = 0; k < 2; k++){
+      const gx = x*s + s * (.2 + hash(x*3+k, y) * .6), gy = y*s + s * (.25 + hash(x, y*3+k) * .6);
+      c.beginPath(); c.moveTo(gx - s*.05, gy); c.lineTo(gx - s*.08, gy - s*.08); c.moveTo(gx, gy); c.lineTo(gx, gy - s*.1); c.moveTo(gx + s*.05, gy); c.lineTo(gx + s*.08, gy - s*.08); c.stroke();
+    }
+    if (r > .86 && !objAt(x,y)){
+      const col = ['#ffffff','#ffd84a','#f59ac0'][(hash(x,y+9)*3)|0];
+      for (let k = 0; k < 3; k++) ell(c, x*s + s*(.25 + .25*k), y*s + s*(.3 + .3*hash(k,x)), s*.045, s*.045, col);
+    }
+  }
+  // paths
+  PATH.forEach(k => {
+    const [x,y] = k.split(',').map(Number);
+    c.fillStyle = '#e2c88f'; rr(c, x*s - 1, y*s + s*.08, s + 2, s*.84, s*.18); c.fill();
+    if (PATH.has(x+','+(y-1))) c.fillRect(x*s + s*.08, y*s - 2, s*.84, s*.3);
+    if (PATH.has(x+','+(y+1))) c.fillRect(x*s + s*.08, y*s + s*.7, s*.84, s*.32);
+    for (let p = 0; p < 3; p++) ell(c, x*s + s*(.2 + .6*hash(x+p,y)), y*s + s*(.25 + .5*hash(x,y+p)), s*.04, s*.03, '#c9ad72');
+  });
+  // pond
+  ell(c, 26*s, 4.5*s, 3.3*s + s*.22, 2.4*s + s*.22, '#d9c78f');
+  ell(c, 26*s, 4.5*s, 3.3*s, 2.4*s, '#59a9d4');
+  ell(c, 26*s, 4.7*s, 2.6*s, 1.8*s, '#4c9bc8');
+  c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = Math.max(1.5, s*.04); c.lineCap = 'round';
+  [[24.6,3.6],[26.8,5.4],[25.6,5.9],[27.4,3.9]].forEach(([x,y]) => { c.beginPath(); c.moveTo(x*s, y*s); c.lineTo(x*s + s*.5, y*s); c.stroke(); });
+  [[23.9,4.9],[27.9,5.1]].forEach(([x,y]) => { ell(c, x*s, y*s, s*.22, s*.16, '#4f9a45'); ell(c, x*s + s*.08, y*s - s*.06, s*.06, s*.06, '#f59ac0'); });
+  // border hedge
+  for (let x = 0; x < MW; x++) for (const y of [0, MH-1]) bush(c, x, y, s);
+  for (let y = 1; y < MH-1; y++) for (const x of [0, MW-1]) bush(c, x, y, s);
+  groundCv = g;
+}
+function bush(c,x,y,s){
+  const cx = x*s + s/2, cy = y*s + s/2;
+  ell(c, cx, cy + s*.12, s*.55, s*.42, '#3c7f36');
+  ell(c, cx - s*.2, cy - s*.05, s*.32, s*.3, '#4a9642');
+  ell(c, cx + s*.2, cy - s*.02, s*.3, s*.28, '#4a9642');
+  ell(c, cx - s*.12, cy - s*.15, s*.12, s*.1, '#66b35a');
+}
+
+/* ---------------- sprites ---------------- */
+function drawTree(c, cx, by, s, k){
+  k = k || 1;
+  ell(c, cx, by, s*.42*k, s*.13*k, 'rgba(0,0,0,.18)');
+  c.fillStyle = '#7a4c2b'; c.fillRect(cx - s*.08*k, by - s*.5*k, s*.16*k, s*.5*k);
+  ell(c, cx, by - s*.82*k, s*.44*k, s*.4*k, '#367f33');
+  ell(c, cx - s*.22*k, by - s*.68*k, s*.3*k, s*.27*k, '#3f8f3a');
+  ell(c, cx + s*.22*k, by - s*.7*k, s*.3*k, s*.27*k, '#3f8f3a');
+  ell(c, cx - s*.1*k, by - s*.95*k, s*.24*k, s*.2*k, '#55a84a');
+  ell(c, cx - s*.16*k, by - s*1.02*k, s*.09*k, s*.07*k, '#79c46a');
+}
+function drawStump(c, cx, by, s){
+  ell(c, cx, by - s*.02, s*.3, s*.1, 'rgba(0,0,0,.16)');
+  c.fillStyle = '#7a4c2b'; c.fillRect(cx - s*.17, by - s*.22, s*.34, s*.2);
+  ell(c, cx, by - s*.22, s*.17, s*.07, '#d9a56b');
+  c.strokeStyle = '#b07e4a'; c.lineWidth = 1; ell(c, cx, by - s*.22, s*.09, s*.035); c.stroke();
+}
+function drawRock(c, cx, by, s){
+  ell(c, cx, by - s*.02, s*.42, s*.12, 'rgba(0,0,0,.18)');
+  poly(c, [[cx - s*.4, by - s*.05],[cx - s*.32, by - s*.4],[cx - s*.05, by - s*.58],[cx + s*.28, by - s*.48],[cx + s*.42, by - s*.15],[cx + s*.3, by]], '#9198a0', '#6a717a', Math.max(1, s*.03));
+  poly(c, [[cx - s*.3, by - s*.38],[cx - s*.05, by - s*.54],[cx + s*.24, by - s*.45],[cx + s*.05, by - s*.33]], '#b9bfc5');
+  poly(c, [[cx + s*.1, by - s*.15],[cx + s*.36, by - s*.16],[cx + s*.28, by - s*.02]], '#7c838b');
+}
+function drawRubble(c, cx, by, s, p){
+  [[-.2,-.08,.09],[.12,-.06,.08],[0,-.15,.06]].forEach(([dx,dy,r]) => ell(c, cx + dx*s, by + dy*s, r*s, r*s*.7, '#8d949c'));
+  if (p > .05){ c.globalAlpha = .25 + p*.5; drawRockMini(c, cx, by, s*(.35 + .6*p)); c.globalAlpha = 1; }
+}
+function drawRockMini(c, cx, by, s){ poly(c, [[cx - s*.4, by - s*.05],[cx - s*.3, by - s*.38],[cx, by - s*.5],[cx + s*.35, by - s*.3],[cx + s*.4, by]], '#9198a0'); }
+
+function drawPlot(i, now){
+  const [x,y] = PLOTS[i], s = TS, px = x*s, py = y*s, cx = px + s/2;
+  if (PLOT_LEVEL[i] > state.level){
+    c_fence(px, py, s);
+    const ly = py + s*.5;
+    ctx.strokeStyle = '#7d858f'; ctx.lineWidth = s*.06; ctx.beginPath(); ctx.arc(cx, ly - s*.02, s*.1, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = '#e3a72f'; rr(ctx, cx - s*.15, ly - s*.02, s*.3, s*.24, s*.05); ctx.fill();
+    ell(ctx, cx, ly + s*.08, s*.035, s*.035, '#7a5410');
+    return;
+  }
+  ctx.fillStyle = '#7c4f30'; rr(ctx, px + s*.06, py + s*.08, s*.88, s*.86, s*.14); ctx.fill();
+  ctx.fillStyle = '#93603b'; rr(ctx, px + s*.1, py + s*.1, s*.8, s*.78, s*.12); ctx.fill();
+  ctx.strokeStyle = '#6e4428'; ctx.lineWidth = Math.max(1, s*.035);
+  for (let k = 0; k < 3; k++){ const ly = py + s*(.3 + k*.22); ctx.beginPath(); ctx.moveTo(px + s*.18, ly); ctx.lineTo(px + s*.82, ly); ctx.stroke(); }
+  const t = state.plots[i];
+  if (t === null){
+    ctx.globalAlpha = .55; ctx.fillStyle = '#fff'; font(ctx, 800, s*.4); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', cx, py + s*.5); ctx.globalAlpha = 1;
+    return;
+  }
+  const p = Math.min(1, (now - t) / CROP_GROW);
+  for (let k = 0; k < 3; k++){
+    const sx = px + s*(.25 + k*.25), sy = py + s*(.5 + (k%2)*.18);
+    if (p < 1){
+      const h = s * (.08 + .22 * p);
+      ctx.strokeStyle = '#3f8f3a'; ctx.lineWidth = Math.max(1.5, s*.04); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy - h); ctx.stroke();
+      ell(ctx, sx - s*.05, sy - h, s*(.04 + .05*p), s*(.025 + .03*p), '#5fb04f');
+      ell(ctx, sx + s*.05, sy - h + s*.02, s*(.04 + .05*p), s*(.025 + .03*p), '#5fb04f');
+    } else {
+      ell(ctx, sx, sy - s*.12, s*.14, s*.13, '#3f8f3a');
+      ell(ctx, sx - s*.03, sy - s*.17, s*.07, s*.06, '#5fb04f');
+      ell(ctx, sx + s*.05, sy - s*.08, s*.065, s*.065, '#e0473c');
+      ell(ctx, sx - s*.06, sy - s*.04, s*.055, s*.055, '#e0473c');
+      ell(ctx, sx + s*.03, sy - s*.1, s*.02, s*.02, '#ffb3ab');
+    }
+  }
+  if (p < 1){
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; rr(ctx, px + s*.15, py - s*.08, s*.7, s*.1, s*.05); ctx.fill();
+    ctx.fillStyle = '#9be36f'; rr(ctx, px + s*.15, py - s*.08, s*.7*p, s*.1, s*.05); ctx.fill();
+  }
+}
+function c_fence(px, py, s){
+  ctx.fillStyle = 'rgba(120,80,40,.12)'; ctx.fillRect(px + s*.08, py + s*.1, s*.84, s*.84);
+  ctx.strokeStyle = '#a0703f'; ctx.lineWidth = s*.05;
+  ctx.strokeRect(px + s*.1, py + s*.2, s*.8, s*.7);
+  ctx.fillStyle = '#8a5a32';
+  [[.1,.2],[.9,.2],[.1,.9],[.9,.9],[.5,.2],[.5,.9]].forEach(([a,b]) => ctx.fillRect(px + s*a - s*.04, py + s*b - s*.12, s*.08, s*.16));
+}
+
+function drawMarket(c, x, y, s){
+  const w = 2*s;
+  ell(c, x + w/2, y + 1.95*s, w*.52, s*.18, 'rgba(0,0,0,.18)');
+  c.fillStyle = '#8a5a32'; c.fillRect(x + s*.12, y + s*.25, s*.12, s*1.6); c.fillRect(x + w - s*.24, y + s*.25, s*.12, s*1.6);
+  c.fillStyle = '#b5804a'; rr(c, x + s*.05, y + s*1.15, w - s*.1, s*.75, s*.08); c.fill();
+  c.strokeStyle = '#94653a'; c.lineWidth = Math.max(1, s*.03);
+  for (let k = 1; k < 3; k++){ c.beginPath(); c.moveTo(x + s*.05, y + s*(1.15 + k*.25)); c.lineTo(x + w - s*.05, y + s*(1.15 + k*.25)); c.stroke(); }
+  // crates
+  c.fillStyle = '#d7a868'; c.fillRect(x + s*.25, y + s*.88, s*.6, s*.3); c.fillRect(x + s*1.15, y + s*.88, s*.6, s*.3);
+  for (let k = 0; k < 4; k++){ ell(c, x + s*(.33 + k*.15), y + s*.86, s*.08, s*.08, '#e0473c'); ell(c, x + s*(1.23 + k*.15), y + s*.86, s*.08, s*.08, k % 2 ? '#f2b632' : '#8bc34a'); }
+  // awning
+  const top = y - s*.1, bot = y + s*.45, n = 6, sw = (w + s*.2) / n;
+  for (let k = 0; k < n; k++){
+    c.fillStyle = k % 2 ? '#fff4e2' : '#d9534f';
+    c.beginPath(); c.moveTo(x - s*.1 + k*sw, top); c.lineTo(x - s*.1 + (k+1)*sw, top); c.lineTo(x - s*.1 + (k+1)*sw, bot);
+    c.arc(x - s*.1 + (k+.5)*sw, bot, sw/2, 0, Math.PI); c.closePath(); c.fill();
+  }
+  c.fillStyle = '#f6e7c8'; rr(c, x + s*.45, top - s*.42, s*1.1, s*.4, s*.08); c.fill();
+  c.strokeStyle = '#8a5a32'; c.lineWidth = Math.max(1, s*.03); c.stroke();
+  c.fillStyle = '#7a3e1d'; font(c, 800, s*.24); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('السوق', x + w/2, top - s*.21);
+}
+
+function drawHouse(c, lv, x, y, s){
+  const cx = x + 1.5*s, base = y + 2.9*s;
+  ell(c, cx, base, 1.45*s, .26*s, 'rgba(0,0,0,.18)');
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+  if (lv === 0){
+    c.fillStyle = '#c9a26a'; rr(c, x + .25*s, y + .6*s, 2.5*s, 2.2*s, .3*s); c.fill();
+    c.fillStyle = '#b8915b'; for (let k = 0; k < 6; k++) ell(c, x + s*(.6 + hash(k,1)*1.8), y + s*(.9 + hash(1,k)*1.6), s*.06, s*.04);
+    const P = [[x + .45*s, y + .75*s],[x + 2.55*s, y + .75*s],[x + 2.55*s, y + 2.65*s],[x + .45*s, y + 2.65*s]];
+    c.strokeStyle = '#f5e6bb'; c.lineWidth = Math.max(1.5, s*.035); c.beginPath(); P.forEach(([a,b],i) => i ? c.lineTo(a, b - s*.22) : c.moveTo(a, b - s*.22)); c.closePath(); c.stroke();
+    c.fillStyle = '#8a5a32'; P.forEach(([a,b]) => c.fillRect(a - s*.05, b - s*.32, s*.1, s*.34));
+    c.fillRect(cx - s*.05, y + 1.4*s, s*.1, .95*s);
+    c.fillStyle = '#ecc98f'; rr(c, cx - .82*s, y + 1.05*s, 1.64*s, .52*s, .08*s); c.fill();
+    c.strokeStyle = '#8a5a32'; c.lineWidth = Math.max(1, s*.04); c.stroke();
+    c.fillStyle = '#5a3a1e'; font(c, 800, s*.24); c.fillText('أرض البناء', cx, y + 1.32*s);
+    return;
+  }
+  if (lv === 1){
+    const w = 1.7*s, h = .95*s, wx = cx - w/2, wy = base - h;
+    c.fillStyle = '#c98f55'; c.fillRect(wx, wy, w, h);
+    c.strokeStyle = '#a8713f'; c.lineWidth = Math.max(1, s*.03);
+    for (let k = 1; k < 7; k++){ c.beginPath(); c.moveTo(wx + k*w/7, wy); c.lineTo(wx + k*w/7, base); c.stroke(); }
+    c.fillStyle = '#6d4325'; rr(c, cx - .2*s, base - .62*s, .4*s, .62*s, .12*s); c.fill();
+    poly(c, [[cx - 1.12*s, wy + .12*s],[cx + 1.12*s, wy + .12*s],[cx, wy - 1*s]], '#e2b85c', '#b98d36', Math.max(1, s*.03));
+    c.strokeStyle = '#c99b3e';
+    for (let k = -3; k <= 3; k++){ c.beginPath(); c.moveTo(cx, wy - .9*s); c.lineTo(cx + k*.3*s, wy + .08*s); c.stroke(); }
+    return;
+  }
+  if (lv === 2){
+    const w = 2.3*s, h = 1.2*s, wx = cx - w/2, wy = base - h;
+    c.fillStyle = '#b9773f'; c.fillRect(wx, wy, w, h);
+    c.strokeStyle = '#9c6232'; c.lineWidth = Math.max(1, s*.03);
+    for (let k = 1; k < 6; k++){ c.beginPath(); c.moveTo(wx, wy + k*h/6); c.lineTo(wx + w, wy + k*h/6); c.stroke(); }
+    poly(c, [[cx - 1.42*s, wy + .14*s],[cx + 1.42*s, wy + .14*s],[cx, wy - 1.05*s]], '#7d3f22', '#5c2c16', Math.max(1, s*.04));
+    poly(c, [[cx - 1.42*s, wy + .14*s],[cx + 1.42*s, wy + .14*s],[cx + 1.3*s, wy + .02*s],[cx - 1.3*s, wy + .02*s]], '#9a5532');
+    c.fillStyle = '#5a3519'; rr(c, cx - .62*s, base - .72*s, .42*s, .72*s, .1*s); c.fill();
+    window_(c, cx + .2*s, wy + .3*s, .5*s, .45*s, '#5a3519');
+    return;
+  }
+  if (lv === 3){
+    const w = 2.5*s, h = 1.35*s, wx = cx - w/2, wy = base - h;
+    c.fillStyle = '#b8bcc2'; c.fillRect(wx, wy, w, h);
+    c.strokeStyle = '#8f949b'; c.lineWidth = Math.max(1, s*.025);
+    const rows = 6, bh = h / rows;
+    for (let r = 0; r < rows; r++){
+      c.beginPath(); c.moveTo(wx, wy + r*bh); c.lineTo(wx + w, wy + r*bh); c.stroke();
+      for (let k = 0; k < 7; k++){ const bx = wx + (k + (r % 2 ? .5 : 0)) * w/6.5; if (bx > wx && bx < wx + w){ c.beginPath(); c.moveTo(bx, wy + r*bh); c.lineTo(bx, wy + (r+1)*bh); c.stroke(); } }
+    }
+    poly(c, [[cx - 1.5*s, wy + .12*s],[cx + 1.5*s, wy + .12*s],[cx + .9*s, wy - 1*s],[cx - .9*s, wy - 1*s]], '#c4513f', '#9e3b2d', Math.max(1, s*.04));
+    c.strokeStyle = '#a9402f'; for (let k = 1; k < 4; k++){ const yy = wy - 1*s + k*.28*s; c.beginPath(); c.moveTo(cx - 1.5*s + (4-k)*.15*s, yy); c.lineTo(cx + 1.5*s - (4-k)*.15*s, yy); c.stroke(); }
+    c.fillStyle = '#6b3e1f'; c.beginPath(); c.moveTo(cx - .25*s, base); c.lineTo(cx - .25*s, base - .55*s); c.arc(cx, base - .55*s, .25*s, Math.PI, 0); c.lineTo(cx + .25*s, base); c.closePath(); c.fill();
+    window_(c, wx + .22*s, wy + .32*s, .5*s, .45*s, '#f4f4f4');
+    window_(c, wx + w - .72*s, wy + .32*s, .5*s, .45*s, '#f4f4f4');
+    c.fillStyle = '#9aa0a7'; c.fillRect(cx - .4*s, base - .04*s, .8*s, .08*s);
+    return;
+  }
+  if (lv === 4){
+    const w1 = 2.8*s, h1 = 1.1*s, w2 = 2.35*s, h2 = .95*s, y1 = base - h1, y2 = y1 - h2;
+    c.fillStyle = '#a5553f'; c.fillRect(cx + .55*s, y2 - 1*s, .3*s, .8*s);
+    c.fillStyle = '#f2ddb6'; c.fillRect(cx - w1/2, y1, w1, h1); c.fillRect(cx - w2/2, y2, w2, h2);
+    c.fillStyle = '#9a5f33'; c.fillRect(cx - w1/2 - .05*s, y1 - .08*s, w1 + .1*s, .14*s);
+    poly(c, [[cx - 1.4*s, y2 + .1*s],[cx + 1.4*s, y2 + .1*s],[cx, y2 - .95*s]], '#2f5d6b', '#21434e', Math.max(1, s*.04));
+    c.fillStyle = '#6b3e1f'; rr(c, cx - .22*s, base - .7*s, .44*s, .7*s, .1*s); c.fill();
+    window_(c, cx - 1.2*s, y1 + .25*s, .5*s, .45*s, '#9a5f33');
+    window_(c, cx + .7*s, y1 + .25*s, .5*s, .45*s, '#9a5f33');
+    window_(c, cx - .9*s, y2 + .22*s, .48*s, .45*s, '#9a5f33');
+    window_(c, cx + .42*s, y2 + .22*s, .48*s, .45*s, '#9a5f33');
+    c.fillStyle = '#6b3e1f'; c.fillRect(cx - 1.25*s, y1 + .72*s, .6*s, .1*s); c.fillRect(cx + .65*s, y1 + .72*s, .6*s, .1*s);
+    [[-1.15,0],[-.95,0],[.75,0],[.95,0],[1.12,0]].forEach(([dx]) => ell(c, cx + dx*s, y1 + .7*s, .06*s, .06*s, dx < 0 ? '#e0473c' : '#f59ac0'));
+    return;
+  }
+  // lv 5 palace
+  const tw = .7*s, th = 2.2*s;
+  [cx - 1.45*s, cx + .75*s].forEach(tx => {
+    c.fillStyle = '#ece6da'; c.fillRect(tx, base - th, tw, th);
+    c.strokeStyle = '#cbbfa6'; c.lineWidth = Math.max(1, s*.03); c.strokeRect(tx, base - th, tw, th);
+    poly(c, [[tx - .08*s, base - th + .02*s],[tx + tw + .08*s, base - th + .02*s],[tx + tw/2, base - th - .85*s]], '#2f4f8f', '#243d70', Math.max(1, s*.03));
+    ell(c, tx + tw/2, base - th - .88*s, .06*s, .06*s, '#e3a72f');
+    arch(c, tx + tw/2, base - 1.4*s, .16*s, .38*s, '#7fb3e0');
+  });
+  const bw = 1.9*s, bh = 1.65*s, bx = cx - bw/2, by = base - bh;
+  c.fillStyle = '#f6f1e7'; c.fillRect(bx, by, bw, bh);
+  c.strokeStyle = '#cbbfa6'; c.lineWidth = Math.max(1, s*.03); c.strokeRect(bx, by, bw, bh);
+  c.fillStyle = '#f6f1e7'; for (let k = 0; k < 5; k++){ c.fillRect(bx + k*bw/4.5, by - .2*s, bw/9, .22*s); c.strokeRect(bx + k*bw/4.5, by - .2*s, bw/9, .22*s); }
+  c.fillStyle = '#e3a72f'; c.fillRect(bx, by + .5*s, bw, .07*s);
+  arch(c, cx, base, .32*s, .78*s, '#b9811a');
+  c.fillStyle = '#8a6418'; c.fillRect(cx - .015*s, base - .7*s, .03*s, .7*s);
+  arch(c, bx + .32*s, by + 1*s, .14*s, .32*s, '#7fb3e0');
+  arch(c, bx + bw - .32*s, by + 1*s, .14*s, .32*s, '#7fb3e0');
+  // flag with atom
+  c.fillStyle = '#6e5a3a'; c.fillRect(cx - .025*s, by - 1.1*s, .05*s, .92*s);
+  c.fillStyle = '#e3a72f'; c.fillRect(cx + .025*s, by - 1.08*s, .62*s, .42*s);
+  const ax = cx + .34*s, ay = by - .87*s;
+  c.strokeStyle = '#22355f'; c.lineWidth = Math.max(1, s*.022);
+  for (let k = 0; k < 3; k++){ c.beginPath(); c.ellipse(ax, ay, .17*s, .06*s, k*Math.PI/3, 0, Math.PI*2); c.stroke(); }
+  ell(c, ax, ay, .035*s, .035*s, '#c8443b');
+}
+function window_(c, x, y, w, h, frame){
+  c.fillStyle = frame; c.fillRect(x - w*.08, y - h*.08, w*1.16, h*1.16);
+  c.fillStyle = '#bfe3f5'; c.fillRect(x, y, w, h);
+  c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(x + w*.1, y + h*.1, w*.25, h*.3);
+  c.fillStyle = frame; c.fillRect(x + w/2 - w*.04, y, w*.08, h); c.fillRect(x, y + h/2 - h*.05, w, h*.1);
+}
+function arch(c, cx, bottom, hw, h, fill){
+  c.fillStyle = fill; c.beginPath(); c.moveTo(cx - hw, bottom); c.lineTo(cx - hw, bottom - h + hw); c.arc(cx, bottom - h + hw, hw, Math.PI, 0); c.lineTo(cx + hw, bottom); c.closePath(); c.fill();
+}
+
+function drawPlayer(now){
+  const s = TS, cx = (player.x + .5)*s, by = (player.y + .9)*s;
+  const step = player.moving && !RM ? Math.sin(now / 75) : 0;
+  const bob = Math.abs(step) * s * .04;
+  ell(ctx, cx, by, s*.25, s*.08, 'rgba(0,0,0,.22)');
+  ctx.fillStyle = '#2c3550';
+  ctx.fillRect(cx - s*.12, by - s*.2 + (step > 0 ? -s*.03 : 0), s*.09, s*.2);
+  ctx.fillRect(cx + s*.03, by - s*.2 + (step < 0 ? -s*.03 : 0), s*.09, s*.2);
+  ctx.fillStyle = '#ffffff'; rr(ctx, cx - s*.21, by - s*.62 - bob, s*.42, s*.46, s*.1); ctx.fill();
+  ctx.strokeStyle = '#c3cde0'; ctx.lineWidth = Math.max(1, s*.025); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, by - s*.55 - bob); ctx.lineTo(cx, by - s*.18 - bob); ctx.stroke();
+  ctx.fillStyle = '#3d6fd0'; ctx.fillRect(cx + player.face*s*.06 - s*.04, by - s*.47 - bob, s*.08, s*.1);   // pocket badge
+  // flask in hand
+  const hx = cx + player.face*s*.26, hy = by - s*.36 - bob;
+  ctx.fillStyle = '#e6f6ff'; ctx.beginPath(); ctx.moveTo(hx - s*.03, hy - s*.1); ctx.lineTo(hx + s*.03, hy - s*.1); ctx.lineTo(hx + s*.08, hy + s*.04); ctx.lineTo(hx - s*.08, hy + s*.04); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#5fd08a'; ctx.beginPath(); ctx.moveTo(hx - s*.055, hy - s*.01); ctx.lineTo(hx + s*.055, hy - s*.01); ctx.lineTo(hx + s*.08, hy + s*.04); ctx.lineTo(hx - s*.08, hy + s*.04); ctx.closePath(); ctx.fill();
+  const hy2 = by - s*.78 - bob;
+  ell(ctx, cx, hy2, s*.19, s*.19, '#f0c39b');
+  ctx.fillStyle = '#3b2a45'; ctx.beginPath(); ctx.arc(cx, hy2 - s*.01, s*.2, Math.PI*1.05, Math.PI*1.95); ctx.closePath(); ctx.fill();
+  ctx.fillRect(cx - s*.2, hy2 - s*.06, s*.05, s*.12); ctx.fillRect(cx + s*.15, hy2 - s*.06, s*.05, s*.12);
+  ell(ctx, cx + player.face*s*.07 - s*.04, hy2 + s*.03, s*.022, s*.026, '#2a2233');
+  ell(ctx, cx + player.face*s*.07 + s*.05, hy2 + s*.03, s*.022, s*.026, '#2a2233');
+}
+
+function badge(x, y, now, col, glyph){
+  const s = TS, b = RM ? 0 : Math.sin(now / 260) * s * .06;
+  ell(ctx, x, y + b, s*.2, s*.2, '#ffffff');
+  ctx.strokeStyle = col; ctx.lineWidth = s*.05; ctx.stroke();
+  ctx.fillStyle = col; font(ctx, 800, s*.26); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(glyph, x, y + b + s*.01);
+}
+
+/* ---------------- frame ---------------- */
+function updateCam(){
+  const mw = MW*TS, mh = MH*TS;
+  const tx = (player.x + .5)*TS - vw/2, ty = (player.y + .5)*TS - vh/2 + 10;
+  cam.x = mw <= vw ? (mw - vw)/2 : Math.max(0, Math.min(mw - vw, tx));
+  cam.y = mh <= vh ? (mh - vh)/2 : Math.max(-60, Math.min(mh - vh, ty));
+}
+function render(now){
+  const t = Date.now();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle = '#2f5b31'; ctx.fillRect(0,0,vw,vh);
+  updateCam();
+  ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
+  ctx.drawImage(groundCv, 0, 0, MW*TS, MH*TS);
+  PLOTS.forEach((p,i) => drawPlot(i, t));
+  if (marker && now - marker.t < 900){
+    const k = (now - marker.t) / 900;
+    ctx.strokeStyle = `rgba(255,255,255,${1-k})`; ctx.lineWidth = 3;
+    ell(ctx, (marker.x + .5)*TS, (marker.y + .55)*TS, TS*(.2 + .2*k), TS*(.1 + .1*k)); ctx.stroke();
+  }
+  const items = [];
+  TREES.forEach(([x,y],i) => items.push({y:y + 1, f:() => {
+    const cx = (x + .5)*TS, by = (y + .88)*TS, r = state.trees[i];
+    if (t >= r) drawTree(ctx, cx, by, TS);
+    else { drawStump(ctx, cx, by, TS); const p = 1 - (r - t)/TREE_REGROW; if (p > .1) drawTree(ctx, cx + TS*.22, by, TS, .2 + .3*p); }
+  }}));
+  ROCKS.forEach(([x,y],i) => items.push({y:y + 1, f:() => {
+    const cx = (x + .5)*TS, by = (y + .85)*TS, r = state.rocks[i];
+    if (t >= r) drawRock(ctx, cx, by, TS); else drawRubble(ctx, cx, by, TS, 1 - (r - t)/ROCK_BACK);
+  }}));
+  items.push({y:HOUSE.y + HOUSE.h, f:() => drawHouse(ctx, state.level, HOUSE.x*TS, HOUSE.y*TS, TS)});
+  items.push({y:MARKET.y + MARKET.h, f:() => drawMarket(ctx, MARKET.x*TS, MARKET.y*TS, TS)});
+  items.push({y:player.y + 1.001, f:() => drawPlayer(now)});
+  items.sort((a,b) => a.y - b.y).forEach(it => it.f());
+  // badges
+  PLOTS.forEach(([x,y],i) => { const p = state.plots[i]; if (p !== null && t - p >= CROP_GROW) badge((x + .5)*TS, (y - .25)*TS, now, '#e0473c', '!'); });
+  if (canBuild()) badge((HOUSE.x + 1.5)*TS, (HOUSE.y - (state.level >= 3 ? 1.3 : .3))*TS, now, '#b9811a', '↑');
+  if (state.res.fruit >= 4) badge((MARKET.x + 1)*TS, (MARKET.y - .85)*TS, now, '#2f8a4a', '$');
+  // floating text
+  floats = floats.filter(f => now - f.t < 1300);
+  floats.forEach(f => {
+    const k = (now - f.t) / 1300;
+    ctx.globalAlpha = 1 - k*k; font(ctx, 800, TS*.34); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.strokeText(f.text, f.x, f.y - k*TS*.9);
+    ctx.fillStyle = f.col; ctx.fillText(f.text, f.x, f.y - k*TS*.9); ctx.globalAlpha = 1;
+  });
+  parts = parts.filter(p => now - p.t < p.life);
+  parts.forEach(p => {
+    const k = (now - p.t)/1000;
+    ctx.fillStyle = p.col; ctx.globalAlpha = 1 - (now - p.t)/p.life;
+    ctx.fillRect(p.x + p.vx*k, p.y + p.vy*k + 300*k*k, 6, 9); ctx.globalAlpha = 1;
+  });
+}
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  update(dt);
+  render(now);
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- movement ---------------- */
+const SPEED = 5.5;
+let held = null, saveTimer = 0;
+function update(dt){
+  if (player.path.length){
+    const [tx,ty] = player.path[0], dx = tx - player.x, dy = ty - player.y, d = Math.hypot(dx,dy), st = SPEED*dt;
+    if (Math.abs(dx) > .01) player.face = dx > 0 ? 1 : -1;
+    player.moving = true;
+    if (d <= st){
+      player.x = tx; player.y = ty; player.path.shift();
+      if (!player.path.length && player.pending){ const o = player.pending; player.pending = null; player.moving = false; interact(o); }
+    } else { player.x += dx/d*st; player.y += dy/d*st; }
+  } else {
+    player.moving = false;
+    if (held && ov.hidden){
+      const nx = player.x + held[0], ny = player.y + held[1];
+      if (held[0]) player.face = held[0];
+      if (!blocked(nx,ny)) player.path.push([nx,ny]);
+    }
+  }
+  saveTimer += dt; if (saveTimer > 4){ saveTimer = 0; save(); }
+}
+function findPath(sx, sy, goal){
+  const prev = new Int32Array(MW*MH).fill(-2), q = [sy*MW + sx]; prev[q[0]] = -1;
+  for (let h = 0; h < q.length; h++){
+    const k = q[h], x = k % MW, y = (k / MW) | 0;
+    if (goal(x,y)){ const p = []; let c = k; while (prev[c] !== -1){ p.push([c % MW, (c / MW) | 0]); c = prev[c]; } return p.reverse(); }
+    for (const [dx,dy] of DIRS){
+      const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue;
+      const nk = ny*MW + nx; if (prev[nk] !== -2 || blocked(nx,ny)) continue;
+      prev[nk] = k; q.push(nk);
+    }
+  }
+  return null;
+}
+function adjGoal(o){
+  const set = new Set(footprint(o).map(([x,y]) => x+','+y));
+  return (x,y) => DIRS.some(([dx,dy]) => set.has((x+dx)+','+(y+dy)));
+}
+function walkTo(goal, pending){
+  const mid = player.path.length ? player.path[0] : null;
+  const sx = mid ? mid[0] : Math.round(player.x), sy = mid ? mid[1] : Math.round(player.y);
+  const p = findPath(sx, sy, goal);
+  if (!p){ toast('لا يمكن الوصول إلى هذا الموضع'); return; }
+  player.path = mid ? [mid, ...p] : p;
+  player.pending = pending;
+  if (!player.path.length && pending){ player.pending = null; interact(pending); }
+}
+function onTap(clientX, clientY){
+  if (!ov.hidden) return;
+  const r = cv.getBoundingClientRect();
+  const wx = (clientX - r.left + Math.round(cam.x)) / TS, wy = (clientY - r.top + Math.round(cam.y)) / TS;
+  const tx = Math.floor(wx), ty = Math.floor(wy);
+  let o = objAt(tx,ty);
+  if (!o){ const b = objAt(tx, ty+1); if (b && (b.k === 'tree' || b.k === 'house' || b.k === 'market')) o = b; }
+  if (!o){ const b = objAt(tx, ty+2); if (b && b.k === 'house' && state.level >= 3) o = b; }
+  if (o){ marker = null; walkTo(adjGoal(o), o); }
+  else if (!blocked(tx,ty)){ marker = {x:tx, y:ty, t:performance.now()}; walkTo((x,y) => x === tx && y === ty, null); }
+}
+let down = null;
+cv.addEventListener('pointerdown', e => { down = {x:e.clientX, y:e.clientY}; });
+cv.addEventListener('pointerup', e => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 14) onTap(e.clientX, e.clientY); down = null; });
+const KEYS = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0], w:[0,-1], s:[0,1], a:[-1,0], d:[1,0]};
+addEventListener('keydown', e => {
+  if (!ov.hidden){
+    if (e.key === 'Escape' && closable) closeSheet();
+    const opts = [...sheet.querySelectorAll('.opt:not(:disabled)')];
+    const n = '1234'.indexOf(e.key); if (n >= 0 && opts.length){ const b = sheet.querySelectorAll('.opt')[n]; if (b && !b.disabled) b.click(); }
+    return;
+  }
+  if (KEYS[e.key]){ held = KEYS[e.key]; player.pending = null; e.preventDefault(); }
+  else if (e.key === ' ' || e.key === 'Enter'){
+    e.preventDefault();
+    const x = Math.round(player.x), y = Math.round(player.y);
+    const order = player.face > 0 ? [[1,0],[0,-1],[0,1],[-1,0]] : [[-1,0],[0,-1],[0,1],[1,0]];
+    for (const [dx,dy] of order){ const o = objAt(x+dx, y+dy); if (o){ interact(o); break; } }
+  }
+});
+addEventListener('keyup', e => { if (KEYS[e.key] && held === KEYS[e.key]) held = null; });
+
+/* ---------------- interactions ---------------- */
+function tileCenter(o){ const fp = footprint(o); const [x,y] = fp[0]; return [(x + .5)*TS, (y + .1)*TS]; }
+function floatText(o, text, col){ const [x,y] = tileCenter(o); floats.push({x, y, text, col:col || '#22355f', t:performance.now()}); }
+function gain(kind, n){ state.res[kind] += n; updateHUD(kind); }
+function interact(o){
+  const t = Date.now();
+  if (o.k === 'tree'){
+    if (t < state.trees[o.i]){ toast('الشجرة تنمو من جديد'); return; }
+    ask('قطع الحطب', 'wood', ok => {
+      const n = REWARD.tree[ok ? 0 : 1]; gain('wood', n); state.trees[o.i] = Date.now() + TREE_REGROW;
+      floatText(o, `+${n} حطب`, '#7a4c2b'); return {icon:'wood', text:`+${n} حطب`};
+    });
+  } else if (o.k === 'rock'){
+    if (t < state.rocks[o.i]){ toast('الصخرة لم تتكوّن بعد'); return; }
+    ask('تكسير الحجارة', 'stone', ok => {
+      const n = REWARD.rock[ok ? 0 : 1]; gain('stone', n); state.rocks[o.i] = Date.now() + ROCK_BACK;
+      floatText(o, `+${n} حجارة`, '#4f5761'); return {icon:'stone', text:`+${n} حجارة`};
+    });
+  } else if (o.k === 'plot'){
+    if (PLOT_LEVEL[o.i] > state.level){ toast(`تُفتح هذه الأرض بعد بناء ${STAGES[PLOT_LEVEL[o.i]].name}`); return; }
+    const p = state.plots[o.i];
+    if (p === null){ state.plots[o.i] = t; floatText(o, 'زُرعت البذور', '#2f7a2c'); save(); return; }
+    if (t - p < CROP_GROW){ toast('الثمار لم تنضج بعد'); return; }
+    ask('حصاد الثمار', 'fruit', ok => {
+      const n = REWARD.plot[ok ? 0 : 1]; gain('fruit', n); state.plots[o.i] = null;
+      floatText(o, `+${n} ثمار`, '#c8443b'); return {icon:'fruit', text:`+${n} ثمار`};
+    });
+  } else if (o.k === 'market') openMarket();
+  else if (o.k === 'house') openBuild();
+}
+function canBuild(){
+  if (state.level >= 5) return false;
+  const c = STAGES[state.level + 1].cost;
+  return Object.keys(c).every(k => state.res[k] >= c[k]);
+}
+
+/* ---------------- HUD ---------------- */
+function updateHUD(changed){
+  ['wood','stone','fruit','coin'].forEach(k => { $('#n-' + k).textContent = state.res[k]; });
+  $('#n-score').textContent = `${state.stats.ok} / ${state.stats.total}`;
+  $('#stageName').textContent = STAGES[state.level].name;
+  if (changed){ const c = $('#c-' + changed); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+}
+let toastT = 0;
+function toast(msg){
+  const el = $('#toast'); el.textContent = msg; el.classList.remove('hide');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hide'), 2200);
+}
+
+/* ---------------- sheets ---------------- */
+const ov = $('#ov'), sheet = $('#sheet');
+let closable = true;
+function openSheet(html, canClose){
+  closable = canClose !== false;
+  sheet.innerHTML = html; ov.hidden = false; held = null;
+  sheet.scrollTop = 0;
+  sheet.querySelectorAll('[data-close]').forEach(b => b.onclick = closeSheet);
+  const f = sheet.querySelector('.opt, .primary:not(:disabled), button'); if (f) f.focus({preventScroll:true});
+}
+function closeSheet(){ ov.hidden = true; sheet.innerHTML = ''; }
+ov.addEventListener('pointerdown', e => { if (e.target === ov && closable) closeSheet(); });
+
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const plain = h => h.replace(/<[^>]+>/g, '');
+const fmt = h => /[؀-ۿ]/.test(plain(h)) ? h : L(h);
+const KEYL = ['أ','ب','ج','د'];
+function nextQ(){
+  const en = state.lessons;
+  let deck = state.deck.filter(i => QB[i] && en.includes(QB[i].l));
+  if (!deck.length){
+    deck = shuffle(QB.map((q,i) => i).filter(i => en.includes(QB[i].l)));
+    if (deck.length > 1 && deck[0] === state.lastQ) deck.push(deck.shift());
+  }
+  const i = deck.shift(); state.deck = deck; state.lastQ = i; return i;
+}
+function ask(title, icon, onAnswer, after){
+  const qi = nextQ(), q = QB[qi];
+  const order = shuffle(q.o.map((_, i) => i));
+  const one = q.o.some(o => plain(o).length > 26);
+  openSheet(`
+    <div class="qhead"><span class="act">${ICON[icon]}${title}</span><span class="tag">${LESSONS[q.l]}</span></div>
+    <p class="qtext">${q.q}</p>
+    <div class="opts${one ? ' one' : ''}">${order.map((oi,k) => `<button class="opt" type="button" data-i="${oi}"><span class="key">${KEYL[k]}</span><span class="otext">${fmt(q.o[oi])}</span></button>`).join('')}</div>
+    <div class="fb" hidden></div>`, false);
+  sheet.querySelectorAll('.opt').forEach(btn => btn.onclick = () => {
+    const ok = +btn.dataset.i === 0;
+    sheet.querySelectorAll('.opt').forEach(b => {
+      b.disabled = true;
+      if (+b.dataset.i === 0) b.classList.add('correct'); else if (b !== btn) b.classList.add('dim');
+    });
+    if (!ok) btn.classList.add('wrong');
+    const st = state.stats; st.total++; st.by[q.l][1]++;
+    if (ok){ st.ok++; st.by[q.l][0]++; }
+    else state.deck.splice(Math.min(state.deck.length, 3 + ((Math.random() * 4) | 0)), 0, qi);
+    const r = onAnswer(ok);
+    updateHUD();
+    const fb = sheet.querySelector('.fb');
+    fb.innerHTML = `<div class="fbh ${ok ? 'ok' : 'bad'}">${ok ? 'إجابة صحيحة' : 'إجابة غير صحيحة'}</div>
+      ${ok ? '' : `<p><b>الإجابة الصحيحة:</b> ${fmt(q.o[0])}</p>`}
+      ${q.e ? `<p class="exp">${q.e}</p>` : ''}
+      ${r && r.text ? `<div class="reward">${r.icon ? ICON[r.icon] : ''}${r.text}</div>` : ''}
+      <div class="row"><button class="primary" type="button" id="contBtn">متابعة</button></div>`;
+    fb.hidden = false;
+    const cb = $('#contBtn'); cb.focus({preventScroll:true});
+    fb.scrollIntoView({block:'nearest', behavior: RM ? 'auto' : 'smooth'});
+    cb.onclick = () => { closeSheet(); if (after) after(ok); };
+    save();
+  });
+}
+
+function costList(c){
+  return Object.keys(c).map(k => {
+    const have = state.res[k], ok = have >= c[k];
+    return `<li>${ICON[k]}${RES_NAME[k]}<span class="num ${ok ? 'have' : 'need'}">${Math.min(have, c[k])} / ${c[k]}</span></li>`;
+  }).join('');
+}
+function stepsHTML(){
+  return `<div class="steps">${STAGES.slice(1).map((st,i) => `<span class="${i + 1 <= state.level ? 'done' : i + 1 === state.level + 1 ? 'next' : ''}">${st.name}</span>`).join('')}</div>`;
+}
+function openBuild(){
+  const lv = state.level;
+  if (lv >= 5){
+    openSheet(`<h2>قصر العلماء</h2><p class="sub">اكتملت جميع مراحل البناء.</p>${stepsHTML()}${statsHTML()}
+      <div class="row"><button class="primary" type="button" data-close>إغلاق</button></div>`);
+    return;
+  }
+  const nx = STAGES[lv + 1], ok = canBuild();
+  openSheet(`<h2>${STAGES[lv].name}</h2>
+    <p class="sub">المرحلة التالية: <b>${nx.name}</b></p>
+    <div class="build"><canvas id="prev" width="480" height="420" aria-label="${nx.name}"></canvas><ul class="cost">${costList(nx.cost)}</ul></div>
+    <p>${ok ? 'الموارد كافية. يكتمل البناء بإجابة صحيحة عن سؤال البناء، وتبقى الموارد محفوظة عند الإجابة الخاطئة.' : 'الموارد غير كافية بعد. الحطب من الأشجار، والحجارة من الصخور، والعملات من بيع الثمار في السوق.'}</p>
+    ${stepsHTML()}
+    <div class="row"><button class="primary" type="button" id="doBuild" ${ok ? '' : 'disabled'}>${ICON.hammer.replace('<svg','<svg width="20" height="20" style="vertical-align:-4px"')} البناء</button><button class="ghost" type="button" data-close>إغلاق</button></div>`);
+  const pc = $('#prev'), c = pc.getContext('2d'); c.scale(2,2);
+  const s = 50; drawHouse(c, lv + 1, (240 - 3*s)/2, 210 - 3*s - 6, s);
+  const b = $('#doBuild');
+  if (b) b.onclick = () => {
+    closeSheet();
+    ask('سؤال البناء', 'hammer', good => {
+      if (!good) return {text:'لم يكتمل البناء، والموارد محفوظة. يمكن المحاولة مرة أخرى بسؤال جديد.'};
+      Object.entries(nx.cost).forEach(([k,v]) => { state.res[k] -= v; });
+      state.level++;
+      celebrate();
+      const extra = PLOT_LEVEL.filter(l => l === state.level).length;
+      return {icon:'house', text:`اكتمل بناء ${nx.name}${extra ? '، وفُتحت أرضان جديدتان للزراعة' : ''}`};
+    }, good => { updateHUD(); if (good && state.level === 5 && !state.won){ state.won = true; save(); showWin(); } });
+  };
+}
+function celebrate(){
+  const now = performance.now(), cx = (HOUSE.x + 1.5)*TS, cy = (HOUSE.y + .5)*TS;
+  const cols = ['#e3a72f','#e0473c','#3f8f3a','#3d6fd0','#ffffff'];
+  for (let i = 0; i < (RM ? 0 : 70); i++) parts.push({x:cx, y:cy, vx:(Math.random() - .5)*420, vy:-Math.random()*380 - 80, col:cols[i % 5], t:now, life:1400 + Math.random()*600});
+  floats.push({x:cx, y:cy - TS*.5, text:'اكتمل البناء', col:'#b9811a', t:now});
+}
+function openMarket(){
+  const f = state.res.fruit;
+  openSheet(`<h2>السوق</h2>
+    <p>سعر الثمرة الواحدة: <b>${FRUIT_PRICE} عملات</b></p>
+    <ul class="cost"><li>${ICON.fruit}الثمار المتوفرة<span class="num">${f}</span></li><li>${ICON.coin}العملات<span class="num">${state.res.coin}</span></li></ul>
+    ${f ? '' : '<p class="sub">لا توجد ثمار للبيع. الثمار تُحصد من الحقول بعد نضجها.</p>'}
+    <div class="row">
+      <button class="primary" type="button" id="sellAll" ${f ? '' : 'disabled'}>بيع كل الثمار (+${f * FRUIT_PRICE} عملة)</button>
+      <button class="ghost" type="button" id="sellOne" ${f ? '' : 'disabled'}>بيع ثمرة واحدة</button>
+      <button class="ghost" type="button" data-close>إغلاق</button>
+    </div>`);
+  const sell = n => {
+    if (!n) return;
+    state.res.fruit -= n; state.res.coin += n * FRUIT_PRICE; updateHUD('coin');
+    floatText({k:'market'}, `+${n * FRUIT_PRICE} عملة`, '#b9811a'); save(); openMarket();
+  };
+  $('#sellAll').onclick = () => sell(state.res.fruit);
+  $('#sellOne').onclick = () => sell(Math.min(1, state.res.fruit));
+}
+function pct(a,b){ return b ? Math.round(a / b * 100) + '%' : '—'; }
+function statsHTML(){
+  const s = state.stats;
+  return `<div class="stat-big"><div><b class="ltr">${s.ok} / ${s.total}</b><span>إجابات صحيحة</span></div><div><b class="ltr">${pct(s.ok, s.total)}</b><span>نسبة الإجابات الصحيحة</span></div></div>`;
+}
+function lessonsHTML(){
+  return `<div class="lessons">${[1,2,3,4].map(l => {
+    const [a,b] = state.stats.by[l];
+    return `<label><input type="checkbox" id="les${l}" data-l="${l}" ${state.lessons.includes(l) ? 'checked' : ''}>${LESSONS[l]}<span class="st">${b ? `${a} من ${b} صحيحة` : 'لم تُطرح أسئلة بعد'}</span></label>`;
+  }).join('')}</div>`;
+}
+function openSettings(){
+  openSheet(`<h2>الإعدادات</h2>
+    <h3>دروس الأسئلة</h3>${lessonsHTML()}<p class="warn" id="lesWarn" hidden>يلزم اختيار درس واحد على الأقل.</p>
+    <h3>النتيجة</h3>${statsHTML()}
+    <h3>التقدّم</h3>
+    <div id="resetBox"><button class="danger" type="button" id="resetBtn">لعبة جديدة</button></div>
+    <div class="row"><button class="primary" type="button" data-close>إغلاق</button></div>`);
+  sheet.querySelectorAll('.lessons input').forEach(inp => inp.onchange = () => {
+    const ls = [...sheet.querySelectorAll('.lessons input:checked')].map(i => +i.dataset.l);
+    if (!ls.length){ inp.checked = true; $('#lesWarn').hidden = false; return; }
+    $('#lesWarn').hidden = true; state.lessons = ls; state.deck = []; save();
+  });
+  $('#resetBtn').onclick = () => {
+    $('#resetBox').innerHTML = `<p>سيُحذف التقدّم الحالي كله: الموارد والمباني والنتيجة.</p><div class="row"><button class="danger" type="button" id="resetYes">تأكيد البدء من جديد</button><button class="ghost" type="button" id="resetNo">إلغاء</button></div>`;
+    $('#resetYes').onclick = () => { const ls = state.lessons; state = newState(); state.lessons = ls; state.seenHelp = true; player.x = 14; player.y = 12; player.path = []; player.pending = null; save(); updateHUD(); closeSheet(); toast('بدأت لعبة جديدة'); };
+    $('#resetNo').onclick = openSettings;
+  };
+}
+function openHelp(first){
+  openSheet(`<h2>قرية الكيمياء</h2>
+    <p class="sub">بناء قرية من الكوخ حتى قصر العلماء، بالإجابة عن أسئلة الفصل الأول.</p>
+    <ul class="help">
+      <li>يتحرك اللاعب بالنقر على أي موضع في الخريطة.</li>
+      <li>النقر على <b>الشجرة</b> لقطع الحطب، وعلى <b>الصخرة</b> لتكسير الحجارة، وعلى <b>الحقل</b> لزراعته ثم حصاده بعد نضج الثمار.</li>
+      <li>قبل الحصول على أي مورد يظهر سؤال علمي: الإجابة الصحيحة تمنح المورد كاملًا، والإجابة الخاطئة تمنح جزءًا منه مع عرض الإجابة الصحيحة.</li>
+      <li>تُباع الثمار في <b>السوق</b> مقابل عملات.</li>
+      <li>في وسط القرية <b>أرض البناء</b>: لكل مرحلة بناء موارد مطلوبة وسؤال بناء، وكل مبنى جديد يفتح حقولًا إضافية.</li>
+      <li>في الحاسوب: مفاتيح الأسهم للحركة، ومفتاح المسافة للتفاعل مع الشيء المجاور، والأرقام 1 إلى 4 لاختيار الإجابة.</li>
+    </ul>
+    ${stepsHTML()}
+    <div class="row"><button class="primary" type="button" data-close>${first ? 'بدء اللعب' : 'إغلاق'}</button></div>`);
+  if (first){ state.seenHelp = true; save(); }
+}
+function showWin(){
+  openSheet(`<h2>اكتمل بناء قصر العلماء</h2>
+    <p>اكتملت جميع مراحل البناء في قرية الكيمياء.</p>${statsHTML()}${lessonsHTML().replace(/<input[^>]*>/g, '')}
+    <div class="row"><button class="primary" type="button" data-close>متابعة اللعب</button><button class="ghost" type="button" id="winNew">لعبة جديدة</button></div>`);
+  $('#winNew').onclick = () => { openSettings(); $('#resetBtn').click(); };
+}
+$('#helpBtn').onclick = () => openHelp(false);
+$('#setBtn').onclick = openSettings;
+$('#stageBtn').onclick = openBuild;
+
+/* ---------------- boot ---------------- */
+addEventListener('resize', resize);
+addEventListener('pagehide', save);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+resize(); updateHUD();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => {});
+requestAnimationFrame(t => { last = t; loop(t); });
+if (!state.seenHelp) openHelp(true);
+})();
+</script>
+</body></html>
