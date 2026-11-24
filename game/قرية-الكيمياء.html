@@ -161,7 +161,6 @@ sup,sub{font-size:.68em;line-height:0}
       <button class="iconbtn" id="setBtn" type="button" aria-label="الإعدادات"><span data-i="gear"></span></button>
     </div>
   </div>
-  <div class="credit-tag">إعداد المعلمة: م. أنوار الفضلي</div>
   <div id="toast" class="hide" role="status" aria-live="polite"></div>
   <div id="ov" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 </div>
@@ -1514,8 +1513,7 @@ function openHelp(first){
 function showWin(){
   openSheet(`<h2>اكتمل بناء قصر العلماء</h2>
     <p>اكتملت جميع مراحل البناء في قرية الكيمياء.</p>${statsHTML()}${lessonsHTML().replace(/<input[^>]*>/g, '')}
-    <div class="row"><button class="primary" type="button" data-close>متابعة اللعب</button><button class="ghost" type="button" id="winNew">لعبة جديدة</button></div>
-    <p class="credit">إعداد المعلمة: م. أنوار الفضلي</p>`);
+    <div class="row"><button class="primary" type="button" data-close>متابعة اللعب</button><button class="ghost" type="button" id="winNew">لعبة جديدة</button></div>`);
   $('#winNew').onclick = () => { openSettings(); $('#resetBtn').click(); };
 }
 $('#helpBtn').onclick = () => openHelp(false);
