@@ -234,6 +234,15 @@ input.name{width:100%;max-width:360px;padding:12px 16px;border-radius:8px;border
 .stats b{display:block;font-family:var(--mono);font-size:24px;color:var(--fluid);font-variant-numeric:tabular-nums;direction:ltr}
 .stats small{color:var(--mute)}
 .room-meta{display:flex;gap:10px;flex-wrap:wrap}
+.idcard{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:12px;padding:18px;background:repeating-linear-gradient(135deg,rgba(63,224,197,.04) 0 10px,transparent 10px 20px),var(--void)}
+.id-head{display:flex;justify-content:space-between;align-items:center}
+.id-photo{width:46px;height:56px;border-radius:6px;border:1px dashed var(--fluid-dim);background:radial-gradient(circle at 50% 38%,var(--fluid-dim) 0 9px,transparent 10px),radial-gradient(ellipse at 50% 100%,var(--fluid-dim) 0 17px,transparent 18px)}
+.idcard label{font-weight:900;font-size:20px;color:var(--fluid)}
+.idcard input.name{max-width:none;font-size:22px;padding:14px 16px;border-color:var(--fluid-dim)}
+.id-err{color:var(--alarm);font-weight:700}
+.cert-shot{display:grid;place-items:center;min-height:200px}
+.cert-shot img{width:100%;max-width:460px;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px var(--line);-webkit-touch-callout:default}
+.save-msg{color:var(--mute);font-size:14px;text-align:center}
 .pill{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid var(--line);color:var(--mute)}
 .pill.r{border-color:rgba(255,59,71,.5);color:var(--alarm)}
 
@@ -498,50 +507,108 @@ const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floo
 const mmss = t => `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ============ الصوت ============ */
-const A = { ctx:null, master:null, muted:false, beatT:0 };
+/* ============ الصوت (كله مُولَّد بالكود، بدون ملفات) ============ */
+const A = { ctx:null, master:null, rev:null, muted:false, boxOn:false, boxT:null, bi:0 };
+function impulse(sec=3.4, decay=2.4){
+  const r=A.ctx.sampleRate, len=Math.floor(r*sec), b=A.ctx.createBuffer(2,len,r);
+  for(let c=0;c<2;c++){ const d=b.getChannelData(c); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay); }
+  return b;
+}
 function audioInit(){
-  if (A.ctx) return;
+  if(A.ctx){ if(A.ctx.state==='suspended') A.ctx.resume(); return; }
   try{
-    A.ctx = new (window.AudioContext||window.webkitAudioContext)();
-    A.master = A.ctx.createGain(); A.master.gain.value = .55; A.master.connect(A.ctx.destination);
-    // drone
-    const lp = A.ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=170;
-    const g = A.ctx.createGain(); g.gain.value=.06; lp.connect(g); g.connect(A.master);
-    [55,55.6,82.4].forEach(fq=>{const o=A.ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=fq; o.connect(lp); o.start();});
-    const lfo=A.ctx.createOscillator(), lg=A.ctx.createGain(); lfo.frequency.value=.08; lg.gain.value=60; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+    A.ctx=new (window.AudioContext||window.webkitAudioContext)();
+    A.master=A.ctx.createGain(); A.master.gain.value=A.muted?0:.6; A.master.connect(A.ctx.destination);
+    A.rev=A.ctx.createConvolver(); A.rev.buffer=impulse(); const wet=A.ctx.createGain(); wet.gain.value=.6; A.rev.connect(wet); wet.connect(A.master);
+    // طنين المنشأة: نغمات منخفضة متنافرة تتنفس ببطء
+    const lp=A.ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=160;
+    const g=A.ctx.createGain(); g.gain.value=.07; lp.connect(g); route(g,.35);
+    [55,55.7,58.3,82.4].forEach(fq=>{const o=A.ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=fq; o.connect(lp); o.start();});
+    const lfo=A.ctx.createOscillator(), lg=A.ctx.createGain(); lfo.frequency.value=.07; lg.gain.value=70; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
   }catch(e){ A.ctx=null; }
 }
-function tone(fq, dur=.15, type='sine', vol=.2, to=null, delay=0){
+function route(node, wet=.25){ node.connect(A.master); if(wet>0){ const g=A.ctx.createGain(); g.gain.value=wet; node.connect(g); g.connect(A.rev); } }
+function env(g,t,vol,att,dur){ g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+att); g.gain.exponentialRampToValueAtTime(.0001,t+dur); }
+function tone(fq, dur=.15, type='sine', vol=.2, to=null, delay=0, wet=.2, att=.005){
   if(!A.ctx) return; const t=A.ctx.currentTime+delay;
   const o=A.ctx.createOscillator(), g=A.ctx.createGain(); o.type=type; o.frequency.setValueAtTime(fq,t);
   if(to) o.frequency.exponentialRampToValueAtTime(to,t+dur);
-  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  o.connect(g); g.connect(A.master); o.start(t); o.stop(t+dur+.02);
+  env(g,t,vol,att,dur); o.connect(g); route(g,wet); o.start(t); o.stop(t+dur+.05);
+  return o;
 }
-function noise(dur=.4, freq=1000, vol=.2, type='bandpass', to=null){
-  if(!A.ctx) return; const t=A.ctx.currentTime;
-  const b=A.ctx.createBuffer(1,A.ctx.sampleRate*dur,A.ctx.sampleRate), d=b.getChannelData(0);
+function noise(dur=.4, freq=1000, vol=.2, type='bandpass', to=null, delay=0, wet=.2, att=.005, q=1){
+  if(!A.ctx) return; const t=A.ctx.currentTime+delay;
+  const b=A.ctx.createBuffer(1,Math.floor(A.ctx.sampleRate*dur),A.ctx.sampleRate), d=b.getChannelData(0);
   for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-  const s=A.ctx.createBufferSource(); s.buffer=b; const fl=A.ctx.createBiquadFilter(); fl.type=type; fl.frequency.setValueAtTime(freq,t);
+  const s=A.ctx.createBufferSource(); s.buffer=b; const fl=A.ctx.createBiquadFilter(); fl.type=type; fl.Q.value=q; fl.frequency.setValueAtTime(freq,t);
   if(to) fl.frequency.exponentialRampToValueAtTime(to,t+dur);
-  const g=A.ctx.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  s.connect(fl); fl.connect(g); g.connect(A.master); s.start(t);
+  const g=A.ctx.createGain(); env(g,t,vol,att,dur); s.connect(fl); fl.connect(g); route(g,wet); s.start(t);
 }
+function distort(k=60){ const n=1024,c=new Float32Array(n); for(let i=0;i<n;i++){const x=i*2/n-1; c[i]=(3+k)*x*20*Math.PI/180/(Math.PI+k*Math.abs(x));} const w=A.ctx.createWaveShaper(); w.curve=c; return w; }
 const sfx = {
-  ok(){ tone(660,.12,'triangle',.18,990); tone(1320,.18,'sine',.12,null,.1); },
-  tick(){ tone(880,.06,'square',.05); },
-  type(){ tone(1800+Math.random()*400,.015,'square',.015); },
-  wrong(){ tone(110,.4,'square',.14,70); noise(.3,400,.12); },
-  alarm(){ for(let i=0;i<3;i++){ tone(880,.22,'sawtooth',.08,null,i*.5); tone(620,.22,'sawtooth',.08,null,i*.5+.25);} },
-  door(){ noise(1.6,180,.25,'lowpass',2200); tone(60,1.4,'sine',.25,40); },
-  beat(){ tone(62,.14,'sine',.45,40); tone(55,.16,'sine',.35,38,.2); },
-  whisper(){ noise(1.4,2800,.07,'bandpass',1200); },
-  win(){ [523,659,784,1046].forEach((n,i)=>tone(n,.5,'triangle',.14,null,i*.15)); },
-  lose(){ tone(220,2,'sawtooth',.12,40); noise(2,600,.15,'lowpass',80); }
+  tick(){ tone(1400,.03,'square',.03,null,0,0); },
+  type(){ tone(1800+Math.random()*400,.015,'square',.012,null,0,0); },
+  // جرس معدني غريب عند فتح القفل
+  ok(){ const b=392; [1,2.76,5.4,8.93].forEach((r,i)=>tone(b*r,2.2-i*.4,'sine',.12/(i+1),null,0,.7)); tone(b*1.5,1.6,'sine',.05,null,.12,.7); },
+  // صرير مشوّه عند الخطأ
+  wrong(){ if(!A.ctx) return; const t=A.ctx.currentTime, o=A.ctx.createOscillator(), g=A.ctx.createGain(), w=distort(120);
+    o.type='sawtooth'; o.frequency.setValueAtTime(1300,t); o.frequency.exponentialRampToValueAtTime(90,t+.55);
+    env(g,t,.12,.01,.6); o.connect(w); w.connect(g); route(g,.4); o.start(t); o.stop(t+.7);
+    tone(48,.5,'sine',.5,30,0,.2); noise(.25,2500,.15,'bandpass',600,0,.3); },
+  alarm(){ for(let i=0;i<3;i++){ tone(880,.22,'sawtooth',.06,null,i*.5,.5); tone(620,.22,'sawtooth',.06,null,i*.5+.25,.5);} },
+  boom(v=.7){ tone(58,2.2,'sine',v,24,0,.5); noise(1.4,140,v*.6,'lowpass',40,0,.6); },
+  riser(){ noise(2.2,250,.18,'bandpass',3500,0,.5,2,2); tone(110,2.2,'sawtooth',.03,440,0,.6,2); },
+  door(){ // صرير باب حديدي ثم ارتطام
+    if(!A.ctx) return; const t=A.ctx.currentTime, o=A.ctx.createOscillator(), bp=A.ctx.createBiquadFilter(), g=A.ctx.createGain();
+    o.type='sawtooth'; o.frequency.setValueAtTime(70,t); for(let i=1;i<14;i++) o.frequency.linearRampToValueAtTime(55+Math.random()*60,t+i*.09);
+    bp.type='bandpass'; bp.frequency.value=900; bp.Q.value=9; env(g,t,.25,.05,1.3); o.connect(bp); bp.connect(g); route(g,.5); o.start(t); o.stop(t+1.4);
+    noise(1.6,180,.25,'lowpass',2200,.2,.5); setTimeout(()=>sfx.boom(.55),1250); },
+  beat(){ tone(62,.14,'sine',.5,40,0,.1); tone(55,.16,'sine',.4,38,.2,.1); },
+  // همس: نبضات ضوضاء بتردّدات أصوات بشرية
+  whisper(){ for(let i=0;i<5;i++) noise(.35+Math.random()*.3,1400+Math.random()*2200,.06,'bandpass',900+Math.random()*1500,i*.28,.8,.08,6); },
+  stinger(){ [740,784,1046,1108,1480].forEach(fq=>tone(fq,1.6,'sawtooth',.035,fq*.97,0,.8,.02)); sfx.boom(.45); },
+  drip(){ const fq=1100+Math.random()*700; tone(fq,.12,'sine',.07,fq*.35,0,.9); },
+  clank(){ const k=.7+Math.random()*.6; [180,471,793,1187,1609].forEach((fq,i)=>tone(fq*k,1.8-i*.25,'sine',.04/(i+1),null,0,.9)); noise(.08,3000,.06,'highpass',null,0,.9); },
+  moan(){ // أنين بعيد
+    if(!A.ctx) return; const t=A.ctx.currentTime, o=A.ctx.createOscillator(), bp=A.ctx.createBiquadFilter(), g=A.ctx.createGain(), v=A.ctx.createOscillator(), vg=A.ctx.createGain();
+    o.type='sawtooth'; o.frequency.setValueAtTime(140,t); o.frequency.linearRampToValueAtTime(95,t+3.2);
+    v.frequency.value=5; vg.gain.value=4; v.connect(vg); vg.connect(o.frequency);
+    bp.type='bandpass'; bp.Q.value=5; bp.frequency.setValueAtTime(700,t); bp.frequency.linearRampToValueAtTime(380,t+3.2);
+    env(g,t,.05,1.1,3.4); o.connect(bp); bp.connect(g); route(g,.9); o.start(t); v.start(t); o.stop(t+3.5); v.stop(t+3.5); },
+  swell(){ [110,116.5,155.6,164.8].forEach(fq=>tone(fq,5,'sawtooth',.018,fq*.99,0,.9,2.5)); },
+  step(v=.08){ noise(.12,260,v,'lowpass',90,0,.5); tone(70,.1,'sine',v*1.4,45,0,.3); },
+  steps(v=.08){ sfx.step(v); setTimeout(()=>sfx.step(v*1.05),620); setTimeout(()=>sfx.step(v*1.1),1240); },
+  box(fq){ tone(fq,1.6,'triangle',.06,null,0,.75); tone(fq*2.003,.9,'sine',.025,null,0,.75); tone(fq*3.01,.4,'sine',.012,null,0,.75); },
+  win(){ [261.6,329.6,392,523.3].forEach((n,i)=>tone(n,3,'triangle',.07,null,i*.12,.8,.4)); },
+  scream(){ if(!A.ctx) return; const t=A.ctx.currentTime, o=A.ctx.createOscillator(), g=A.ctx.createGain(), w=distort(80), v=A.ctx.createOscillator(), vg=A.ctx.createGain();
+    o.type='sawtooth'; o.frequency.setValueAtTime(500,t); o.frequency.exponentialRampToValueAtTime(1500,t+.4); o.frequency.exponentialRampToValueAtTime(260,t+2.2);
+    v.frequency.value=9; vg.gain.value=40; v.connect(vg); vg.connect(o.frequency);
+    env(g,t,.1,.05,2.4); o.connect(w); w.connect(g); route(g,.8); o.start(t); v.start(t); o.stop(t+2.5); v.stop(t+2.5);
+    noise(2.2,1800,.12,'bandpass',500,0,.8,.05,2); sfx.boom(.8); }
 };
+// صندوق موسيقى مخيف في شاشة البداية
+const MELODY=[659,0,440,523,494,440,0,659,698,659,622,659,0,0,494,523,494,415,440,0,0,0];
+function musicBox(on){ A.boxOn=on; if(on && !A.boxT) boxStep(); }
+function boxStep(){ if(!A.boxOn||!A.ctx){ A.boxT=null; return; } const n=MELODY[A.bi++%MELODY.length]; if(n) sfx.box(n*(1+(Math.random()-.5)*.008)); A.boxT=setTimeout(boxStep,440+Math.random()*60); }
+// أصوات المنشأة العشوائية: قطرات، ارتطام معدني، أنين، وخطوات في الجناح الأخير
+setInterval(()=>{
+  if(!A.ctx||A.muted||!S.running) return;
+  const r=Math.random();
+  if(r<.07) sfx.drip(); else if(r<.095) sfx.clank(); else if(r<.11) sfx.moan(); else if(r<.13) sfx.swell();
+  if(S.room===ROOMS.length-1 && !S.paused && Math.random()<.12) sfx.steps(.05+S.pz*.025);
+},1000);
+// همس اسم الطالبة بصوت عربي إن توفّر في الجهاز
+function speakName(){
+  try{
+    if(A.muted||!('speechSynthesis' in window)) return;
+    const v=speechSynthesis.getVoices().find(x=>x.lang&&x.lang.toLowerCase().startsWith('ar')); if(!v) return;
+    const u=new SpeechSynthesisUtterance(S.name+'…'); u.voice=v; u.lang=v.lang; u.pitch=.1; u.rate=.6; u.volume=.8; speechSynthesis.speak(u);
+  }catch(e){}
+}
+try{ speechSynthesis.getVoices(); }catch(e){}
 $('muteBtn').onclick = () => {
-  audioInit(); A.muted=!A.muted; if(A.master) A.master.gain.value = A.muted?0:.55;
+  audioInit(); A.muted=!A.muted; if(A.master) A.master.gain.value = A.muted?0:.6;
+  try{ if(A.muted) speechSynthesis.cancel(); }catch(e){}
   $('muteIcon').innerHTML = A.muted ? '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/>' : '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/>';
 };
 
@@ -565,7 +632,7 @@ function scheduleEyes(){
     if(S.running && !S.paused){
       const e=$('eyes'), side=Math.random()<.5;
       e.style.top=(15+Math.random()*65)+'%'; e.style.left=side?'3%':'auto'; e.style.right=side?'auto':'3%';
-      e.classList.add('on'); sfx.whisper(); if(Math.random()<.5) flicker();
+      e.classList.add('on'); sfx.stinger(); setTimeout(sfx.whisper,700); if(Math.random()<.5) flicker();
       setTimeout(()=>e.classList.remove('on'),2600);
     }
     scheduleEyes();
@@ -607,20 +674,26 @@ function typeText(el, text, done){
 
 /* ============ الشاشات ============ */
 function showIntro(){
-  S.running=false; S.paused=true; $('hud').hidden=true; document.body.classList.remove('playing','critical');
+  S.running=false; S.paused=true; $('hud').hidden=true; try{speechSynthesis.cancel();}catch(e){} document.body.classList.remove('playing','critical');
   stage.innerHTML=`
   <section class="panel stack">
     <span class="tag">GENOVA BIOSYSTEMS · LEVEL −4 · RESTRICTED</span>
     <h1><span class="glitch" data-t="المنشأة X-21">المنشأة X-21</span></h1>
     <p class="lead">غرفة هروب كيميائية في مختبر سري لتعديل الجينات. خمسة أجنحة مقفلة، وكل قفل لا يُفتح إلا بمعلومة من درس <b style="color:var(--ink)">الجدول الدوري</b>. أمامكِ ${CFG.TIME/60} دقيقة قبل الإغلاق النهائي.</p>
     <div class="room-meta"><span class="pill">5 أجنحة</span><span class="pill">${ROOMS.reduce((n,r)=>n+r.puzzles.length,0)} قفلًا</span><span class="pill r">الخطأ: −${CFG.BIG} ثانية</span><span class="pill">التلميح: −${CFG.HINT} ثانية</span></div>
-    <form id="startForm" class="stack" style="gap:12px">
-      <label for="pname" style="font-weight:700">اسم الناجية</label>
-      <input class="name" id="pname" maxlength="24" autocomplete="off" placeholder="اكتبي اسمكِ" value="${esc(S.name)}" required>
-      <div class="row"><button class="btn danger" type="submit">ادخلي إن تجرّأتِ</button><small style="color:var(--mute)">يُفضَّل تشغيل الصوت 🎧</small></div>
+    <form id="startForm" class="idcard" autocomplete="off">
+      <div class="id-head"><span class="tag">VISITOR ID · X-21</span><span class="id-photo" aria-hidden="true"></span></div>
+      <label for="pname">اسم الطالبة</label>
+      <input class="name" id="pname" maxlength="30" placeholder="اكتبي اسمكِ هنا" value="${esc(S.name)}">
+      <small class="id-err" id="nameErr" hidden>لا يمكن الدخول بدون اسم. اكتبي اسمكِ أولًا.</small>
+      <div class="row"><button class="btn danger" type="submit">ادخلي إن تجرّأتِ</button><small style="color:var(--mute)">شغّلي الصوت للتجربة الكاملة 🎧</small></div>
     </form>
   </section>`;
-  $('startForm').onsubmit = e => { e.preventDefault(); const n=$('pname').value.trim(); if(!n){$('pname').focus();return;} S.name=n; audioInit(); if(A.ctx&&A.ctx.state==='suspended')A.ctx.resume(); sfx.alarm(); flash(); showBrief(); };
+  const wake=()=>{ audioInit(); musicBox(true); };
+  stage.addEventListener('pointerdown',wake,{once:true}); $('pname').addEventListener('input',()=>{$('nameErr').hidden=true;}); $('pname').addEventListener('keydown',wake,{once:true});
+  $('startForm').onsubmit = e => { e.preventDefault(); const n=$('pname').value.trim();
+    if(!n){ $('nameErr').hidden=false; $('pname').focus(); return; }
+    S.name=n; audioInit(); musicBox(false); sfx.boom(); sfx.alarm(); flash(); flicker(); showBrief(); };
 }
 
 function showBrief(){
@@ -628,6 +701,7 @@ function showBrief(){
   $('hud').hidden=false; document.body.classList.add('playing'); hud(); startTimer(); scheduleEyes();
   const text=`${S.name}… هل تسمعينني؟\nتحذير: تم اختراق الحجر الصحي.\nالعيّنة X-21 خارج حاويتها.\nسيتم إغلاق المنشأة نهائيًا خلال ${CFG.TIME/60} دقيقة.\nالأبواب لا تُفتح إلا لمن يعرف أسرار الجدول الدوري.\nأي خطأ… يرفع نسبة التلوث ويسرق من وقتكِ.`;
   stage.innerHTML=`<section class="panel stack"><span class="tag">SYSTEM://BROADCAST</span><div class="term" id="term"></div><div class="row" id="go" hidden><button class="btn danger" id="goBtn">ابدئي الهروب</button></div></section>`;
+  setTimeout(speakName,600);
   const skip=typeText($('term'),text,()=>{$('go').hidden=false; $('goBtn').focus();});
   $('term').onclick=skip;
   $('goBtn').onclick=()=>showRoom();
@@ -642,9 +716,10 @@ function showRoom(){
     <div class="term" id="term"></div>
     <div class="row" id="go" hidden><button class="btn" id="goBtn">ادخلي الجناح</button></div>
   </section>`;
+  sfx.riser(); setTimeout(()=>sfx.boom(.6),2000);
   const skip=typeText($('term'),r.intro,()=>{$('go').hidden=false;});
   $('term').onclick=skip;
-  $('goBtn').onclick=()=>{ flicker(); showPuzzle(); };
+  $('goBtn').onclick=()=>{ flicker(); sfx.clank(); showPuzzle(); };
 }
 
 function showPuzzle(){
@@ -706,7 +781,7 @@ function showNote(){
   stage.innerHTML=`<section class="stack" style="animation:enter .5s"><span class="tag" style="text-align:center;display:block">FOUND ON FLOOR</span>
     <div class="note"><h3>${n.title}</h3>${body}</div>
     <div class="row" style="justify-content:center"><button class="btn" id="goBtn">تابعي إلى الجناح التالي</button></div></section>`;
-  if(n.body.includes('{NAME}')) sfx.whisper();
+  sfx.whisper(); if(n.body.includes('{NAME}')){ setTimeout(speakName,900); setTimeout(sfx.stinger,2600); }
   $('goBtn').onclick=showRoom;
 }
 
@@ -715,27 +790,70 @@ function stats(){
   const stars = S.mistakes<=4 && S.hints<=2 ? 3 : S.mistakes<=10 ? 2 : 1;
   return {used,stars};
 }
-function win(){
-  S.running=false; clearInterval(timerId); document.body.classList.remove('critical','playing'); sfx.win();
-  const {used,stars}=stats(); const rank=['','ناجية بأعجوبة','ناجية ذكية','ناجية أسطورية'][stars];
+let DL=null;
+(async()=>{ try{ if(window.claude&&window.claude.use) DL=await window.claude.use('downloads'); }catch(e){ DL=null; } })();
+async function certCanvas(stars, rank){
+  try{ await Promise.all(['700 80px "Reem Kufi"','900 40px Cairo','700 40px Cairo','400 40px "Share Tech Mono"'].map(f=>document.fonts.load(f))); }catch(e){}
+  const W=1080,H=1350,c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0f2427'); g.addColorStop(1,'#05080a'); x.fillStyle=g; x.fillRect(0,0,W,H);
+  const rg=x.createRadialGradient(W/2,0,10,W/2,0,700); rg.addColorStop(0,'rgba(63,224,197,.25)'); rg.addColorStop(1,'rgba(63,224,197,0)'); x.fillStyle=rg; x.fillRect(0,0,W,H);
+  x.fillStyle='rgba(255,255,255,.025)'; for(let y=0;y<H;y+=4) x.fillRect(0,y,W,1);
+  x.strokeStyle='#3fe0c5'; x.lineWidth=4; x.strokeRect(40,40,W-80,H-80); x.strokeStyle='rgba(63,224,197,.35)'; x.lineWidth=1.5; x.strokeRect(58,58,W-116,H-116);
+  x.direction='rtl'; x.textAlign='center'; x.textBaseline='middle';
+  x.fillStyle='#ff3b47'; x.font='400 26px "Share Tech Mono",monospace'; x.direction='ltr'; x.fillText('GENOVA BIOSYSTEMS · FACILITY X-21 · EXIT LOG',W/2,120); x.direction='rtl';
+  x.fillStyle='#80969e'; x.font='700 40px Cairo,sans-serif'; x.fillText('شهادة نجاة من',W/2,215);
+  x.fillStyle='#d9e6ea'; x.font='700 92px "Reem Kufi",Cairo,sans-serif'; x.fillText('المنشأة X-21',W/2,315);
+  x.fillStyle='#3fe0c5'; x.fillRect(W/2-120,395,240,3);
+  x.fillStyle='#80969e'; x.font='700 34px Cairo,sans-serif'; x.fillText('تشهد إدارة المنشأة بأن',W/2,465);
+  let fs=110; x.font=`900 ${fs}px Cairo,sans-serif`; while(x.measureText(S.name).width>W-200 && fs>50){ fs-=6; x.font=`900 ${fs}px Cairo,sans-serif`; }
+  x.shadowColor='rgba(63,224,197,.6)'; x.shadowBlur=30; x.fillStyle='#ffffff'; x.fillText(S.name,W/2,585); x.shadowBlur=0;
+  x.fillStyle='#80969e'; x.font='700 34px Cairo,sans-serif'; x.fillText('نجحت في الهروب بمعرفتها بأسرار الجدول الدوري',W/2,700);
+  x.fillStyle='#3fe0c5'; x.font='900 54px Cairo,sans-serif'; x.fillText(rank,W/2,790);
+  x.font='70px sans-serif'; x.direction='ltr';
+  for(let i=0;i<3;i++){ x.fillStyle=i<stars?'#ffb53a':'#2a3a40'; x.shadowColor=i<stars?'rgba(255,181,58,.7)':'transparent'; x.shadowBlur=i<stars?24:0; x.fillText('★',W/2+(i-1)*110,890); }
+  x.shadowBlur=0; x.direction='rtl';
+  const box=[[mmss(S.time),'الوقت المتبقي'],[String(S.mistakes),'الأخطاء'],[String(S.hints),'التلميحات']];
+  box.forEach((b,i)=>{ const bx=W-140-i*300-260, by=970; x.strokeStyle='#1f3138'; x.lineWidth=2; x.fillStyle='#05080a'; x.beginPath(); x.roundRect?x.roundRect(bx,by,260,150,16):x.rect(bx,by,260,150); x.fill(); x.stroke();
+    x.fillStyle='#3fe0c5'; x.font='400 60px "Share Tech Mono",monospace'; x.direction='ltr'; x.fillText(b[0],bx+130,by+62); x.direction='rtl';
+    x.fillStyle='#80969e'; x.font='700 28px Cairo,sans-serif'; x.fillText(b[1],bx+130,by+120); });
+  const d=new Date(); x.fillStyle='#80969e'; x.font='400 26px "Share Tech Mono",monospace'; x.direction='ltr';
+  x.fillText(`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}  ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,W/2,1200);
+  x.direction='rtl'; x.font='700 26px Cairo,sans-serif'; x.fillText('غرفة هروب كيميائية · دروس الجدول الدوري',W/2,1250);
+  return c;
+}
+async function win(){
+  S.running=false; clearInterval(timerId); document.body.classList.remove('critical','playing'); $('hud').hidden=true; sfx.win();
+  const {stars}=stats(); const rank=['','ناجية بأعجوبة','ناجية ذكية','ناجية أسطورية'][stars];
   stage.innerHTML=`<section class="panel stack" style="background:linear-gradient(180deg,#14282b,var(--panel))">
     <span class="tag" style="color:var(--ok)">EXIT · SURFACE LEVEL</span>
     <div class="term" style="min-height:0">ضوء النهار… هواء نقي.\nخلفكِ تُغلق البوابة الفولاذية بقوة،\nوخلفها صرخة غاضبة لن تسمعيها مرة أخرى.</div>
-    <div class="cert">
-      <div style="color:var(--mute);font-size:14px">شهادة نجاة من المنشأة X-21</div>
-      <div class="who">${esc(S.name)}</div>
-      <div style="color:var(--fluid);font-weight:700">${rank}</div>
-      <div class="stars" aria-label="${stars} نجوم">${'★'.repeat(stars)}<span class="off">${'★'.repeat(3-stars)}</span></div>
-      <div class="stats"><div><b>${mmss(S.time)}</b><small>الوقت المتبقي</small></div><div><b>${S.mistakes}</b><small>الأخطاء</small></div><div><b>${S.hints}</b><small>التلميحات</small></div></div>
-    </div>
-    <p style="color:var(--mute);font-size:14px;text-align:center">صوّري الشهادة وأريها لمعلمتكِ.</p>
-    <div class="row" style="justify-content:center"><button class="btn" id="again">العبي مرة أخرى</button></div>
+    <div class="cert-shot" id="certShot"><span style="color:var(--mute)">جارٍ إصدار شهادتكِ…</span></div>
+    <div class="row" style="justify-content:center"><button class="btn danger" id="saveCert" hidden>حفظ الشهادة صورة</button><button class="btn" id="again">العبي مرة أخرى</button></div>
+    <p class="save-msg" id="saveMsg" role="status">صوّري الشاشة، أو اضغطي مطوّلًا على الشهادة لحفظها، ثم أرسليها لمعلمتكِ.</p>
   </section>`;
   $('again').onclick=showIntro;
+  const c=await certCanvas(stars,rank);
+  const url=c.toDataURL('image/png'); const img=new Image(); img.src=url; img.alt=`شهادة نجاة باسم ${S.name}`;
+  $('certShot').replaceChildren(img);
+  const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+  const fname=`شهادة-نجاة-X21-${S.name.replace(/[\\/:*?"<>|]/g,'')}.png`;
+  const inViewer=!!(window.claude&&window.claude.use);
+  if(DL || !inViewer){
+    const b=$('saveCert'); b.hidden=false;
+    b.onclick=async()=>{
+      if(DL){
+        try{ await DL.save({filename:fname,data:blob}); $('saveMsg').textContent='تم حفظ الشهادة.'; }
+        catch(err){ const code=err&&err.code; $('saveMsg').textContent = code==='declined' ? 'لم تُحفظ الشهادة. يمكنكِ تصوير الشاشة بدلًا من ذلك.' : code==='rate_limited' ? 'انتظري لحظة ثم حاولي مرة أخرى.' : 'الحفظ غير متاح هنا. صوّري الشاشة أو اضغطي مطوّلًا على الشهادة.'; if(code!=='declined'&&code!=='rate_limited') b.hidden=true; }
+      } else {
+        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+        $('saveMsg').textContent='تم تنزيل الشهادة.';
+      }
+    };
+  }
 }
 function lose(){
   if(!S.running) return;
-  S.running=false; S.paused=true; clearInterval(timerId); sfx.lose(); flash();
+  S.running=false; S.paused=true; clearInterval(timerId); sfx.scream(); flash();
   if(S.keyHandler){ removeEventListener('keydown',S.keyHandler); S.keyHandler=null; }
   document.body.classList.remove('critical');
   stage.innerHTML=`<section class="panel stack" style="border-color:var(--alarm)">
