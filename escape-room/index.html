@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>المنشأة X-21</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Reem+Kufi:wght@500;700&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: one-screen escape room — fixed HUD strip on top, a single specimen-terminal panel centred below, ambient lab atmosphere behind. Single dark look by design. */
+:root{
+  --void:#05080a;
+  --panel:#0b1215;
+  --panel-2:#101b20;
+  --line:#1f3138;
+  --fluid:#3fe0c5;      /* specimen fluid */
+  --fluid-dim:#1d6e62;
+  --alarm:#ff3b47;      /* emergency light */
+  --amber:#ffb53a;      /* warnings */
+  --ink:#d9e6ea;
+  --mute:#80969e;
+  --ok:#5cf0a0;
+  --display:'Reem Kufi','Cairo',system-ui,sans-serif;
+  --body:'Cairo',system-ui,'Segoe UI',Tahoma,sans-serif;
+  --mono:'Share Tech Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.75;overflow-x:hidden}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+/* atmosphere */
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.scan{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);mix-blend-mode:overlay}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,transparent 35%,rgba(0,0,0,.85) 100%)}
+.emergency{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.0;
+  background:radial-gradient(ellipse at 50% -10%,var(--alarm),transparent 60%);animation:siren 3.2s ease-in-out infinite}
+body.playing .emergency{opacity:.16}
+body.critical .emergency{opacity:.32;animation-duration:1.1s}
+@keyframes siren{0%,100%{filter:brightness(.4)}50%{filter:brightness(1.4)}}
+body.flicker #app{animation:flick .5s steps(2) 1}
+@keyframes flick{0%{opacity:1}20%{opacity:.25}40%{opacity:1}60%{opacity:.5}100%{opacity:1}}
+.flash{position:fixed;inset:0;z-index:50;pointer-events:none;background:var(--alarm);opacity:0}
+.flash.on{animation:flash .45s ease-out}
+@keyframes flash{0%{opacity:.35}100%{opacity:0}}
+
+/* creature */
+.eyes{position:fixed;z-index:3;pointer-events:none;display:flex;gap:22px;opacity:0;transition:opacity 1.2s}
+.eyes.on{opacity:.9}
+.eyes i{width:22px;height:9px;border-radius:50%;background:radial-gradient(circle,#fff6b0 0 18%,var(--amber) 35%,rgba(255,80,0,.0) 72%);
+  box-shadow:0 0 18px 4px rgba(255,150,40,.45);animation:blink 2.6s infinite}
+@keyframes blink{0%,44%,52%,100%{transform:scaleY(1)}48%{transform:scaleY(.08)}}
+
+#app{position:relative;z-index:2;min-height:100%;display:flex;flex-direction:column;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
+
+/* HUD */
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-inline:auto;width:100%;max-width:820px;padding-block:12px;background:linear-gradient(var(--void) 70%,transparent)}
+.hud[hidden]{display:none!important}
+.timer{font-family:var(--mono);font-size:30px;letter-spacing:2px;color:var(--fluid);direction:ltr;
+  padding:2px 14px;border:1px solid var(--line);border-radius:6px;background:var(--panel);text-shadow:0 0 12px rgba(63,224,197,.5);
+  font-variant-numeric:tabular-nums;position:relative}
+body.critical .timer{color:var(--alarm);text-shadow:0 0 14px rgba(255,59,71,.7);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.6}}
+.pen{position:absolute;top:-6px;left:50%;font-size:16px;color:var(--alarm);animation:rise 1.1s ease-out forwards;pointer-events:none}
+@keyframes rise{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-34px);opacity:0}}
+.wing{display:flex;flex-direction:column;line-height:1.3;min-width:0;flex:1}
+.wing b{font-family:var(--display);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wing small{color:var(--mute);font-size:12px;letter-spacing:.5px}
+.contam{display:flex;flex-direction:column;gap:3px;width:120px}
+.contam small{color:var(--mute);font-size:11px}
+.bar{height:7px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line);overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--alarm));transition:width .5s}
+.icon-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center}
+.icon-btn svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2}
+@media (max-width:520px){.contam{width:84px}.timer{font-size:24px}.wing b{font-size:15px}}
+
+/* stage */
+#stage{width:100%;max-width:820px;margin-inline:auto;flex:1;display:flex;flex-direction:column;justify-content:center;padding-block:12px}
+.panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:clamp(18px,4vw,32px);
+  box-shadow:0 0 0 1px rgba(63,224,197,.05),0 30px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;animation:enter .5s ease-out}
+.panel::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,transparent,var(--fluid),transparent);opacity:.6}
+@keyframes enter{from{opacity:.35;transform:translateY(14px)}to{opacity:1;transform:none}}
+.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+
+.tag{font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--alarm);direction:ltr;display:inline-block}
+h1,h2{font-family:var(--display);font-weight:700;text-wrap:balance;margin:0}
+h1{font-size:clamp(46px,11vw,92px);line-height:1.05;letter-spacing:1px}
+h2{font-size:clamp(22px,5vw,30px);line-height:1.35}
+p{margin:0}
+.lead{color:var(--mute);font-size:17px;max-width:60ch}
+.stack{display:flex;flex-direction:column;gap:18px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+.glitch{position:relative;display:inline-block;color:var(--ink)}
+.glitch::before,.glitch::after{content:attr(data-t);position:absolute;inset:0;overflow:hidden}
+.glitch::before{color:var(--alarm);transform:translate(3px,0);clip-path:inset(0 0 55% 0);animation:g1 2.8s infinite steps(1)}
+.glitch::after{color:var(--fluid);transform:translate(-3px,0);clip-path:inset(55% 0 0 0);animation:g2 3.3s infinite steps(1)}
+@keyframes g1{0%,90%{transform:translate(0)}92%{transform:translate(5px,-2px)}95%{transform:translate(-4px,1px)}}
+@keyframes g2{0%,86%{transform:translate(0)}88%{transform:translate(-6px,2px)}93%{transform:translate(4px,0)}}
+
+.btn{border:1px solid var(--fluid);background:rgba(63,224,197,.1);color:var(--fluid);padding:12px 26px;border-radius:8px;
+  font-weight:700;font-size:17px;transition:background .2s,transform .1s}
+.btn:hover{background:rgba(63,224,197,.2)}
+.btn:active{transform:scale(.97)}
+.btn.danger{border-color:var(--alarm);color:#fff;background:var(--alarm);box-shadow:0 0 30px rgba(255,59,71,.35)}
+.btn.danger:hover{background:#ff5560}
+.btn.ghost{border-color:var(--line);color:var(--mute);background:transparent;font-weight:600;font-size:15px;padding:8px 16px}
+.btn.ghost.free{border-color:var(--amber);color:var(--amber);animation:pulse 1.2s infinite}
+.btn small{font-weight:400;opacity:.8}
+input.name{width:100%;max-width:360px;padding:12px 16px;border-radius:8px;border:1px solid var(--line);background:var(--void);color:var(--ink);font:inherit;font-size:18px}
+
+.f{direction:ltr;unicode-bidi:isolate;font-family:var(--mono);color:var(--fluid);white-space:nowrap}
+
+/* terminal text */
+.term{font-size:18px;line-height:1.95;white-space:pre-line;min-height:6em}
+.term .cur{display:inline-block;width:9px;height:1.1em;background:var(--fluid);vertical-align:-3px;margin-inline-start:2px;animation:pulse .8s infinite}
+.note{background:#e9e1cf;color:#2a2018;border-radius:4px;padding:24px 26px;transform:rotate(-1.2deg);font-size:18px;line-height:1.9;
+  box-shadow:0 18px 50px rgba(0,0,0,.7);position:relative;max-width:620px;margin-inline:auto}
+.note::after{content:"";position:absolute;width:90px;height:60px;left:22px;bottom:16px;border-radius:50%;
+  background:radial-gradient(circle,rgba(120,10,10,.5),rgba(120,10,10,.15) 55%,transparent 70%);filter:blur(1px)}
+.note .glitch{color:#7a0d12}
+.note .glitch::before,.note .glitch::after{display:none}
+.note h3{font-family:var(--display);margin:0 0 8px;font-size:20px}
+
+/* puzzle */
+.pz-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.locks{display:flex;gap:6px;flex-wrap:wrap}
+.lk{width:14px;height:14px;border-radius:3px;border:1px solid var(--line);background:var(--void)}
+.lk.done{background:var(--fluid);border-color:var(--fluid);box-shadow:0 0 8px var(--fluid)}
+.lk.cur{border-color:var(--alarm);background:rgba(255,59,71,.25);animation:pulse 1s infinite}
+.pz-count{font-family:var(--mono);font-size:13px;color:var(--mute);white-space:nowrap}
+.pz-title{color:var(--amber);font-size:15px;font-family:var(--body);font-weight:700;letter-spacing:.5px;margin-bottom:6px}
+.pz-prompt{font-size:19px;font-weight:600;line-height:1.85;margin-bottom:18px}
+.widget{display:flex;flex-direction:column;gap:12px}
+.widget.locked{pointer-events:none}
+.fb{min-height:0;margin-top:14px}
+.fb .bad{color:var(--alarm);font-weight:700}
+.fb .good{border:1px solid rgba(92,240,160,.4);background:rgba(92,240,160,.07);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;animation:enter .4s}
+.fb .good b{color:var(--ok);font-family:var(--display);font-size:20px}
+.pz-foot{display:flex;justify-content:flex-start;margin-top:16px}
+.hint{margin-top:12px;border-inline-start:3px solid var(--amber);padding:8px 14px;background:rgba(255,181,58,.07);color:#ffe2b0;border-radius:4px}
+
+.opt{display:flex;gap:12px;align-items:center;text-align:start;padding:13px 16px;border-radius:10px;border:1px solid var(--line);background:var(--void);font-size:17px;line-height:1.6;transition:border-color .2s,background .2s}
+.opt:hover{border-color:var(--fluid-dim)}
+.opt .k{flex:none;width:28px;height:28px;border-radius:6px;display:grid;place-items:center;border:1px solid var(--line);font-family:var(--mono);color:var(--mute);font-size:14px}
+.opt.ok{border-color:var(--ok);background:rgba(92,240,160,.1)}
+.opt.ok .k{background:var(--ok);color:#03210f;border-color:var(--ok)}
+.opt.bad{border-color:var(--alarm);background:rgba(255,59,71,.08);opacity:.55;text-decoration:line-through;text-decoration-color:var(--alarm)}
+
+/* keypad */
+.kp{display:flex;flex-direction:column;align-items:center;gap:14px}
+.kp-screen{display:flex;gap:8px;direction:ltr}
+.kp-screen span{width:46px;height:58px;border:1px solid var(--line);border-radius:8px;background:#020405;display:grid;place-items:center;font-family:var(--mono);font-size:32px;color:var(--fluid);text-shadow:0 0 10px var(--fluid)}
+.kp-keys{display:grid;grid-template-columns:repeat(3,72px);gap:9px;direction:ltr}
+.kp-keys button{height:56px;border-radius:10px;border:1px solid var(--line);background:linear-gradient(#1a262c,#0e161a);font-family:var(--mono);font-size:24px;box-shadow:0 3px 0 #02070a}
+.kp-keys button:active{transform:translateY(2px);box-shadow:none}
+.kp-keys .go{color:var(--ok);border-color:rgba(92,240,160,.5)}
+.kp-keys .del{color:var(--amber)}
+
+/* match */
+.match{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.match .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.chip{padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--void);font-size:16px;line-height:1.5;text-align:center;transition:all .2s}
+.chip:hover{border-color:var(--fluid-dim)}
+.chip.sel{border-color:var(--amber);background:rgba(255,181,58,.12);box-shadow:0 0 0 1px var(--amber)}
+.chip.ok{border-color:var(--ok);background:rgba(92,240,160,.1);color:var(--ok);pointer-events:none}
+.chip.bad{border-color:var(--alarm);animation:shake .35s}
+
+/* sort */
+.buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.bucket{min-height:110px;border:1px dashed var(--fluid-dim);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:rgba(63,224,197,.03);text-align:center}
+.bucket h4{margin:0;font-family:var(--display);color:var(--fluid);font-size:18px}
+.bucket .in{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.bucket .in .chip{font-size:13px;padding:4px 9px}
+.bucket.armed{border-style:solid;border-color:var(--amber);background:rgba(255,181,58,.06)}
+.bucket.bad{border-color:var(--alarm);animation:shake .35s}
+.pool{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:48px;padding:10px;border-radius:12px;background:rgba(0,0,0,.3)}
+.tube{display:inline-flex;align-items:center;gap:6px}
+.tube::before{content:"";width:8px;height:20px;border-radius:0 0 5px 5px;border:1px solid var(--fluid);border-top:none;background:linear-gradient(transparent 40%,var(--fluid) 40%)}
+
+/* order */
+.slots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;direction:rtl}
+.slot{min-width:64px;height:48px;border:1px dashed var(--line);border-radius:8px;display:grid;place-items:center;font-family:var(--mono);color:var(--fluid);font-size:20px}
+.slot.fill{border-style:solid;border-color:var(--fluid);background:rgba(63,224,197,.08)}
+.order-pool{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.order-pool .chip{font-family:var(--mono);font-size:22px;min-width:76px}
+.order-pool .chip.used{opacity:.2;pointer-events:none}
+.order-lbl{display:flex;justify-content:space-between;color:var(--mute);font-size:13px;max-width:420px;margin-inline:auto;width:100%}
+
+/* grid (periodic map) */
+.spec{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;padding:10px;border:1px solid var(--line);border-radius:10px;background:#020405}
+.spec .f{font-size:20px}
+.spec small{color:var(--mute)}
+.ptable-wrap{overflow-x:auto;padding-bottom:4px}
+.ptable{display:grid;grid-template-columns:14px repeat(18,minmax(0,1fr));gap:2px;direction:ltr;max-width:620px;margin-inline:auto}
+.ptable .lbl{font-family:var(--mono);font-size:9px;color:var(--mute);display:grid;place-items:center}
+.ptable .c{aspect-ratio:1;border-radius:3px;border:1px solid var(--line);background:rgba(63,224,197,.05);padding:0;font-family:var(--mono);font-size:clamp(8px,2.2vw,12px);min-width:0;overflow:hidden;color:var(--ok);display:grid;place-items:center}
+.ptable .c:hover{background:rgba(255,181,58,.25);border-color:var(--amber)}
+.ptable .c.hit{background:rgba(92,240,160,.25);border-color:var(--ok);pointer-events:none;font-weight:700}
+.ptable .c.miss{background:rgba(255,59,71,.5);border-color:var(--alarm)}
+.ptable .e{aspect-ratio:1}
+.axis{display:flex;justify-content:space-between;color:var(--mute);font-size:12px}
+
+/* levers */
+.lev{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 1fr;gap:8px 10px;align-items:center}
+.lev .h{color:var(--mute);font-size:13px;text-align:center;line-height:1.4}
+.lev .p{font-weight:700;font-size:16px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;padding:8px 4px;border:none;background:var(--void);color:var(--mute);font-size:14px;font-weight:600}
+.seg button.on[data-v="up"]{background:rgba(92,240,160,.15);color:var(--ok)}
+.seg button.on[data-v="down"]{background:rgba(255,181,58,.15);color:var(--amber)}
+@media (max-width:520px){.lev{grid-template-columns:1fr 1fr}.lev .p{grid-column:1/-1;margin-top:6px}.lev .h.first{display:none}}
+
+/* doors */
+.doors{position:relative;height:200px;border-radius:12px;overflow:hidden;background:radial-gradient(circle,#fff8e0,#ffcf6b 30%,#5a3a00 70%);}
+.doors i{position:absolute;top:0;bottom:0;width:50%;background:repeating-linear-gradient(90deg,#1a252b 0 14px,#121b20 14px 28px);border:2px solid #2e4048;transition:transform 1.6s cubic-bezier(.7,0,.3,1)}
+.doors i:first-child{right:0}.doors i:last-child{left:0}
+.doors i::after{content:"";position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--alarm);box-shadow:0 0 12px var(--alarm)}
+.doors i:first-child::after{left:10px}.doors i:last-child::after{right:10px}
+.doors.open i:first-child{transform:translateX(102%)}.doors.open i:last-child{transform:translateX(-102%)}
+.doors.open i::after{background:var(--ok);box-shadow:0 0 12px var(--ok)}
+
+/* certificate */
+.cert{text-align:center;border:2px solid var(--fluid);border-radius:14px;padding:28px 18px;background:radial-gradient(circle at 50% 0,rgba(63,224,197,.15),transparent 60%)}
+.cert .who{font-family:var(--display);font-size:clamp(30px,8vw,48px);color:#fff}
+.stars{font-size:40px;letter-spacing:8px;color:var(--amber);text-shadow:0 0 16px rgba(255,181,58,.6)}
+.stars .off{color:#2a3a40;text-shadow:none}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.stats div{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--void)}
+.stats b{display:block;font-family:var(--mono);font-size:24px;color:var(--fluid);font-variant-numeric:tabular-nums;direction:ltr}
+.stats small{color:var(--mute)}
+.room-meta{display:flex;gap:10px;flex-wrap:wrap}
+.pill{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid var(--line);color:var(--mute)}
+.pill.r{border-color:rgba(255,59,71,.5);color:var(--alarm)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="emergency" aria-hidden="true"></div>
+<div class="scan" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="flash" id="flash" aria-hidden="true"></div>
+<div class="eyes" id="eyes" aria-hidden="true"><i></i><i></i></div>
+
+<div id="app" dir="rtl" lang="ar">
+  <header class="hud" id="hud" hidden>
+    <div class="timer" id="timer">35:00</div>
+    <div class="wing"><b id="wingName">—</b><small id="wingSub">—</small></div>
+    <div class="contam"><small>نسبة التلوث</small><div class="bar"><span id="contam"></span></div></div>
+    <button class="icon-btn" id="muteBtn" aria-label="كتم الصوت" title="الصوت">
+      <svg viewBox="0 0 24 24" id="muteIcon"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
+    </button>
+  </header>
+  <main id="stage" aria-live="polite"></main>
+</div>
+
+<script>
+/* ============ إعدادات ============ */
+const CFG = { TIME: 35*60, BIG: 15, SMALL: 5, HINT: 30 };
+
+const f = s => `<span class="f">${s}</span>`;
+
+/* ============ المحتوى (من الدروس 2-1 و 2-2 و 2-3 فقط، بدون فقرات الإضاءات) ============ */
+const ROOMS = [
+{
+  name:'غرفة الإيقاظ', sub:'الجناح A · الحاضنة 07',
+  intro:'تفتحين عينيكِ داخل حاضنة زجاجية.\nالسائل الأخضر ينسحب ببطء… والإنذار لا يتوقف.\nعلى الشاشة المكسورة أمامكِ:\n«للخروج من الحاضنة أثبتي أنكِ لستِ عيّنة. أجيبي عن أسئلة النظام».',
+  puzzles:[
+    {type:'mcq', title:'تحقّق الهوية 1',
+     prompt:'جرت محاولات كثيرة لتصنيف العناصر، منها محاولات دوبرينر ونيولاندز وماير، حتى جاء العالم الروسي مندليف فرتّب العناصر في صفوف أفقية حسب تزايد…',
+     options:['الكتل الذرية','الأعداد الذرية','السالبية الكهربائية','عدد مستويات الطاقة'], answer:0,
+     hint:'الأعداد الذرية هي أساس الجدول <b>الحديث</b>. أما مندليف فرتّب العناصر قبل ذلك حسب شيء آخر.',
+     explain:'رتّب مندليف العناصر حسب تزايد الكتل الذرية، فتكررت خواصها وتكوّنت أعمدة رأسية تضم عناصر متشابهة في الخواص الفيزيائية والكيميائية.'},
+    {type:'mcq', title:'تحقّق الهوية 2',
+     prompt:'ترك مندليف في جدوله أماكن شاغرة. لماذا؟',
+     options:['لعناصر تنبأ باكتشافها مستقبلًا','لأن الجدول كان صغيرًا','لأنه لم يعرف الكتل الذرية','ليضع فيها الغازات النبيلة فقط'], answer:0,
+     hint:'كان مندليف يتوقع أن العلم سيكتشف عناصر جديدة لاحقًا.',
+     explain:'ترك مندليف أماكن شاغرة لعناصر تنبأ باكتشافها مستقبلًا.'},
+    {type:'mcq', title:'تحقّق الهوية 3',
+     prompt:'في الجدول الدوري الحديث رُتّبت العناصر بحيث يزيد كل عنصر عن العنصر الذي يسبقه بـ…',
+     options:['بروتون واحد','نيوترون واحد','مستوى طاقة رئيسي واحد','دورة واحدة'], answer:0,
+     hint:'الجدول الحديث مرتّب حسب العدد الذري، والعدد الذري هو عدد…؟',
+     explain:'أصبح التصنيف حسب الأعداد الذرية للعناصر، وكل عنصر يزيد عن الذي يسبقه ببروتون واحد.'},
+    {type:'mcq', title:'القانون الدوري',
+     prompt:'أكملي القانون الدوري: «عند ترتيب العناصر ترتيبًا تصاعديًا حسب ______ يظهر تدرج وتكرار دوري في خواصها الفيزيائية والكيميائية».',
+     options:['أعدادها الذرية','كتلها الذرية','أنصاف أقطارها','حالتها الفيزيائية'], answer:0,
+     hint:'هو الأساس نفسه الذي رُتّب عليه الجدول الدوري الحديث.',
+     explain:'القانون الدوري: عند ترتيب العناصر ترتيبًا تصاعديًا حسب أعدادها الذرية يظهر تدرج وتكرار دوري في خواصها.'},
+    {type:'keypad', title:'قفل الحاضنة', code:'187',
+     prompt:'ورقة ملصقة على الزجاج بخط مستعجل:<br>«الرمز = <b>عدد المجموعات</b> (الأعمدة الرأسية) ثم <b>عدد الدورات</b> (الصفوف الأفقية)».',
+     hint:'عدد المجموعات 18… فكم عدد الدورات؟',
+     explain:'يتكون الجدول الدوري من 18 مجموعة (أعمدة رأسية) و7 دورات (صفوف أفقية). الرمز 187.'}
+  ],
+  note:{title:'سجلّ الحارس — 03:14 فجرًا',
+        body:'انطفأت الأضواء في الجناح B.\nسمعت خدشًا داخل الجدران… كأن شيئًا يعدّ الثواني.\nأغلقت باب الأرشيف خلفي.\nإذا قرأتِ هذا: لا تلتفتي إلى الخلف.'}
+},
+{
+  name:'أرشيف الملفات السرية', sub:'الجناح B · غرفة السجلات',
+  intro:'ممر طويل والأضواء تومض.\nخلف باب حديدي أرشيف مليء بملفات ممزقة.\nالحاسوب يطلب إعادة ترتيب الملفات قبل أن يفتح المخرج…\nوشيء ما يخدش الجدار من الجهة الأخرى.',
+  puzzles:[
+    {type:'match', title:'ملفات المجموعات',
+     prompt:'اختلطت الملفات! صِلي رقم كل مجموعة باسمها المميز.<br><small style="color:var(--mute)">اختاري من العمود الأول ثم من الثاني.</small>',
+     pairs:[['المجموعة 1','فلزات الأقلاء'],['المجموعة 2','فلزات الأقلاء الأرضية'],['المجموعة 17','الهالوجينات'],['المجموعة 18','الغازات النبيلة']],
+     hint:'المجموعة 18 في آخر الجدول، والمجموعة 17 قبلها مباشرة. والمجموعة 2 اسمها قريب من اسم المجموعة 1.',
+     explain:'1 فلزات الأقلاء، 2 فلزات الأقلاء الأرضية، 17 الهالوجينات، 18 الغازات النبيلة.'},
+    {type:'mcq', title:'ملف التشابه',
+     prompt:'لماذا تتشابه عناصر المجموعة الواحدة في الخواص الكيميائية؟',
+     options:['بسبب تشابهها في التركيب الإلكتروني','لأن لها العدد الذري نفسه','لأن لها الكتلة الذرية نفسها','لأنها تقع في الدورة نفسها'], answer:0,
+     hint:'فلزات الأقلاء كلها ينتهي تركيبها بـ '+f('ns¹')+'.',
+     explain:'تتشابه بسبب تشابه تركيبها الإلكتروني؛ فمثلًا فلزات الأقلاء ينتهي تركيبها بـ '+f('ns¹')+'، والغازات النبيلة بـ '+f('np⁶')+' ما عدا الهيليوم.'},
+    {type:'sort', title:'تصنيف الدورات',
+     prompt:'اختاري كل دورة ثم ضعيها في الدرج الصحيح.',
+     buckets:['دورات قصيرة','دورات طويلة'],
+     items:[['الأولى',0],['الثانية',0],['الثالثة',0],['الرابعة',1],['الخامسة',1],['السادسة',1],['السابعة',1]],
+     hint:'الدورات القصيرة ثلاث فقط، وهي أول ثلاث دورات.',
+     explain:'القصيرة: الأولى والثانية والثالثة. الطويلة: الرابعة والخامسة والسادسة والسابعة.'},
+    {type:'mcq', title:'ملف الدورة',
+     prompt:'كل دورة تبدأ بعنصر من ______ وتتتابع فيها العناصر حتى تنتهي بعنصر من ______.',
+     options:['فلزات الأقلاء … الغازات النبيلة','الهالوجينات … فلزات الأقلاء','الغازات النبيلة … فلزات الأقلاء','أشباه الفلزات … الهالوجينات'], answer:0,
+     hint:'تبدأ الدورة بملء مستوى طاقة رئيسي جديد بالإلكترونات (المجموعة 1).',
+     explain:'تبدأ كل دورة بعنصر من فلزات الأقلاء وتنتهي بالعنصر الأخير من الغازات النبيلة.'},
+    {type:'mcq', title:'ملف مستويات الطاقة',
+     prompt:'عدد مستويات الطاقة الرئيسية في الدورة الواحدة ثابت ويساوي…',
+     options:['رقم الدورة','رقم المجموعة','عدد عناصر الدورة','8 دائمًا'], answer:0,
+     hint:'الصوديوم في الدورة الثالثة ولديه 3 مستويات طاقة رئيسية.',
+     explain:'عدد مستويات الطاقة الرئيسية في الدورة الواحدة ثابت ويساوي رقم الدورة.'},
+    {type:'mcq', title:'الخط المتعرّج',
+     prompt:'على خريطة الجدول خط متعرّج مرسوم بالأحمر. ماذا يفصل؟ وأين تقع أشباه الفلزات؟',
+     options:['يفصل الفلزات (يساره) عن اللافلزات (يمينه)، وأشباه الفلزات على جانبيه مباشرة','يفصل الفلزات (يمينه) عن اللافلزات (يساره)، وأشباه الفلزات بعيدة عنه','يفصل الدورات القصيرة عن الدورات الطويلة','يفصل الهالوجينات عن الغازات النبيلة'], answer:0,
+     hint:'فلزات الأقلاء في يسار الجدول، فأين تكون الفلزات إذن؟',
+     explain:'تُصنَّف العناصر إلى فلزات ولافلزات وأشباه فلزات: الفلزات يسار الخط المتعرج، واللافلزات يمينه، وأشباه الفلزات على جانبيه مباشرة.'},
+    {type:'keypad', title:'خزنة الأرشيف', code:'2832',
+     prompt:'جدول عدد العناصر ممزق… والخزنة تطلب:<br>«عدد عناصر <b>الدورة الأولى</b>، ثم <b>الثالثة</b>، ثم <b>السادسة</b>».',
+     hint:'الأولى 2، والثالثة 8… والسادسة من أطول الدورات.',
+     explain:'عدد العناصر: 2، 8، 8، 18، 18، 32، 32. الرمز 2832.'}
+  ],
+  note:{title:'ملف سري — مشروع X-21',
+        body:'الهدف: دمج جينات عدة كائنات في كائن واحد.\nالنتيجة: كائن يرى في الظلام… ويسمع نبض القلب من بعيد.\nتعليمات للموظفين: حافظوا على هدوء نبضكم.\n— تم إلغاء المشروع. لم يُلغَ الكائن.'}
+},
+{
+  name:'غرفة العيّنات', sub:'الجناح C · الحجر البيولوجي',
+  intro:'أنابيب عملاقة تملأ الغرفة،\nوفي كل أنبوب شيء… يتحرك.\nنظام الحجر معطّل، ولن يُفتح الباب\nحتى تعيدي كل عيّنة إلى قطاعها الصحيح في الجدول الدوري.',
+  puzzles:[
+    {type:'sort', title:'إعادة العيّنات إلى قطاعاتها',
+     prompt:'على كل أنبوب آخر تحت مستوى طاقة تشغله الإلكترونات. اختاري الأنبوب ثم القطاع.',
+     buckets:['قطاع s','قطاع p','قطاع d','قطاع f'],
+     items:[['4s¹',0],['3p⁴',2-1],['3d⁵',2],['4f⁷',3],['2s²',0],['5p⁶',1],['4d¹⁰',2],['5f³',3]], tubes:true,
+     hint:'يُقسَّم الجدول حسب نوع تحت مستوى الطاقة الذي تشغله إلكترونات المستوى الخارجي. انظري إلى الحرف.',
+     explain:'القطاع يُحدَّد بنوع تحت المستوى: '+f('s')+' أو '+f('p')+' أو '+f('d')+' أو '+f('f')+'.'},
+    {type:'match', title:'ملصقات الأجنحة',
+     prompt:'سقطت الملصقات عن الأجنحة! صِلي كل وصف باسمه.',
+     pairs:[['عناصر قطاعَي s و p','العناصر الممثلة'],['عناصر قطاع d','العناصر الانتقالية الرئيسية'],['عناصر قطاع f','العناصر الانتقالية الداخلية'],['يبدأ فيها امتلاء 4f','اللانثانيدات'],['يبدأ فيها امتلاء 5f','الأكتينيدات']],
+     hint:'«الداخلية» هي التي في أسفل الجدول. واللانثانيدات في الدورة السادسة (4f).',
+     explain:'s و p: الممثلة. d: الانتقالية الرئيسية. f: الانتقالية الداخلية، وهي سلسلتا اللانثانيدات (4f) والأكتينيدات (5f).'},
+    {type:'mcq', title:'حجرة قطاع d',
+     prompt:'تقع عناصر قطاع d في وسط الجدول الدوري. كم عمودًا رأسيًا تضم؟',
+     options:['10','8','14','6'], answer:0,
+     hint:'يمتلئ تحت المستوى d من '+f('nd¹')+' إلى '+f('nd¹⁰')+'.',
+     explain:'تتكون العناصر الانتقالية الرئيسية من 10 أعمدة رأسية.'},
+    {type:'mcq', title:'سرّ الاسم',
+     prompt:'لماذا سُمّيت اللانثانيدات بهذا الاسم؟',
+     options:['لأنها تأتي مباشرة بعد عنصر اللانثانيوم '+f('₅₇La'),'لأنها في الدورة السابعة','لأنها يمتلئ فيها تحت المستوى 5f','لأنها غازات نبيلة'], answer:0,
+     hint:'ابحثي عن عنصر في الدورة السادسة يشبه اسمه اسمها.',
+     explain:'سُمّيت باللانثانيدات لأنها تأتي مباشرة بعد عنصر اللانثانيوم '+f('₅₇La')+'، والأكتينيدات بعد الأكتينيوم '+f('₈₉Ac')+'.'},
+    {type:'mcq', title:'الصفّان المعزولان',
+     prompt:'لماذا وُضعت اللانثانيدات والأكتينيدات في صفّين أفقيين أسفل الجدول الدوري؟',
+     options:['توفيرًا للمساحة وحفاظًا على تنظيم الجدول','لأنها لا تنتمي إلى أي دورة','لأنها اكتُشفت بعد كل العناصر','لأنها من العناصر الممثلة'], answer:0,
+     hint:'تخيّلي الجدول لو أُدخلت 28 عنصرًا إضافيًا في وسطه.',
+     explain:'وُضعت في صف أفقي أسفل الجدول توفيرًا للمساحة وحفاظًا على تنظيم الجدول الدوري.'},
+    {type:'grid', title:'تتبّع العيّنات الهاربة',
+     prompt:'أربع عيّنات هربت! حدّدي موقع كل واحدة على خريطة المنشأة (الجدول الدوري) من ترتيبها الإلكتروني.',
+     targets:[
+       {cfg:'[Ne] 3s¹', p:3, g:1, sym:'Na'},
+       {cfg:'[Ar] 4s²', p:4, g:2, sym:'Ca'},
+       {cfg:'[Ar] 4s² 3d¹⁰ 4p²', p:4, g:14, sym:'Ge'},
+       {cfg:'[Ne] 3s² 3p⁵', p:3, g:17, sym:'Cl'}],
+     hint:'الدورة = أكبر قيمة لعدد الكم الرئيسي n.<br>إذا انتهى بـ '+f('nsˣ')+' فالمجموعة = x.<br>إذا انتهى بـ '+f('ns² npˣ')+' فالمجموعة = 12 + x.',
+     explain:'الدورة = أكبر n. وينتهي بـ '+f('nsˣ')+' ← المجموعة x، وينتهي بـ '+f('ns² npˣ')+' ← المجموعة 12 + x.'},
+    {type:'mcq', title:'العيّنة الأخيرة',
+     prompt:'عيّنة أخيرة ينتهي ترتيبها الإلكتروني بـ '+f('3p⁵')+'. ما رمزها؟ وما نوعها؟',
+     options:['Cl، من العناصر الممثلة','Cl، من العناصر الانتقالية الرئيسية','F، من العناصر الممثلة','Ar، من الغازات النبيلة'], answer:0,
+     hint:'الدورة 3، والمجموعة 12 + 5 = ؟',
+     explain:'الدورة الثالثة والمجموعة 12 + 5 = 17، إذن هو الكلور Cl، ومن العناصر الممثلة لأنه في قطاع p.'}
+  ],
+  note:{title:'ورقة بخط مرتجف',
+        body:'إنه يقلّد الأصوات…\nسمعته ينادي د. سلمى بصوت ابنتها.\nإذا سمعتِ أحدًا ينادي اسمكِ في الممر… لا تجيبي.\n\n«{NAME}… {NAME}… تعالي…»'}
+},
+{
+  name:'مختبر التحويل', sub:'الجناح D · آلة التعديل الجيني',
+  intro:'في منتصف الغرفة آلة ضخمة تهمهم،\nوعلى شاشتها: «جاهزة لتعديل العيّنة التالية».\nالعيّنة التالية… أنتِ.\nلتعطيل الآلة يجب معايرتها بقياسات الذرات.',
+  puzzles:[
+    {type:'mcq', title:'معايرة الحجم',
+     prompt:'لماذا يصعب جدًا تحديد المسافة بين النواة وأبعد إلكترون عنها (نصف قطر الذرة)؟',
+     options:['لأن السحابة الإلكترونية ليس لها حدود واضحة، ومعظم ذرات العناصر لا توجد في الطبيعة منفردة','لأن النواة كبيرة جدًا ولا يمكن رؤيتها','لأن الذرة كرة صلبة تمامًا','لأن الإلكترونات ثابتة لا تتحرك'], answer:0,
+     hint:'سببان: طبيعة السحابة الإلكترونية، وحالة الذرات في الطبيعة.',
+     explain:'الإلكترونات تتحرك بسرعة هائلة مكوّنة سحابة تقل كثافتها كلما ابتعدنا عن النواة (انعدام الحدود الواضحة)، ومعظم الذرات لا توجد منفردة.'},
+    {type:'mcq', title:'تعريف القياس',
+     prompt:'نصف القطر الذري الفلزي هو…',
+     options:['نصف المسافة بين نواتي ذرتين متجاورتين في التركيب البلوري للعنصر','المسافة كاملة بين نواتي ذرتين متجاورتين','نصف المسافة بين نواتي ذرتين متماثلتين بينهما رابطة كيميائية في جزيء','بُعد النواة عن أقرب إلكترون'], answer:0,
+     hint:'كلمة «فلزي» مرتبطة بالتركيب البلوري.',
+     explain:'الفلزي: نصف المسافة بين نواتي ذرتين متجاورتين في التركيب البلوري. اللافلزي: نصف المسافة بين نواتي ذرتين متماثلتين بينهما رابطة كيميائية.'},
+    {type:'keypad', title:'معايرة 1 — بالبيكومتر', code:'99',
+     prompt:'المسافة بين نواتي ذرتي الكلور في جزيء '+f('Cl₂')+' هي '+f('198 pm')+'.<br>أدخلي نصف القطر الذري للكلور بوحدة البيكومتر.',
+     hint:'نصف القطر = المسافة بين النواتين ÷ 2',
+     explain:'198 ÷ 2 = 99 pm (والبيكومتر = '+f('10⁻¹² m')+').'},
+    {type:'order', title:'ترتيب الأحجام 1',
+     prompt:'رتّبي العيّنات من <b>الأكبر</b> إلى <b>الأصغر</b> في نصف القطر الذري (وهي في مجموعة واحدة).',
+     items:['₁₉K','₁₁Na','₃Li'],
+     labels:['الأكبر','الأصغر'],
+     hint:'كلما نزلنا في المجموعة يزداد عدد مستويات الطاقة الرئيسية.',
+     explain:'نزولًا في المجموعة يزداد عدد مستويات الطاقة الرئيسية ويزداد تأثير الحجب وتقل قوة الجذب، فيزداد نصف القطر: K > Na > Li.'},
+    {type:'order', title:'ترتيب الأحجام 2',
+     prompt:'هذه عناصر من الدورة الثانية. رتّبيها من <b>الأكبر</b> إلى <b>الأصغر</b> في نصف القطر الذري.',
+     items:['₃Li','₄Be','₆C','₉F'],
+     labels:['الأكبر','الأصغر'],
+     hint:'عبر الدورة تزداد شحنة النواة ويبقى الحجب ثابتًا.',
+     explain:'من اليسار إلى اليمين تزداد شحنة النواة وقوة جذبها ويبقى الحجب ثابتًا، فيقل نصف القطر: Li > Be > C > F.'},
+    {type:'mcq', title:'درع الإلكترونات',
+     prompt:'ما المقصود بالحجب؟',
+     options:['انخفاض تأثير شحنة النواة على الإلكترونات الخارجية نتيجة وجود إلكترونات داخلية تحد من قوة جذب النواة','زيادة جذب النواة للإلكترونات الخارجية','فقد الذرة لإلكترون من مستواها الخارجي','اكتساب الذرة لإلكترون إضافي'], answer:0,
+     hint:'الإلكترونات الداخلية تقف «حاجزًا» بين النواة والإلكترونات الخارجية.',
+     explain:'الحجب: انخفاض تأثير شحنة النواة على الإلكترونات الخارجية نتيجة وجود الإلكترونات الداخلية.'},
+    {type:'mcq', title:'طاقة الانتزاع',
+     prompt:'طاقة التأين هي مقدار الطاقة اللازمة لـ…',
+     options:['نزع أضعف إلكترون ارتباطًا بالنواة من ذرة متعادلة في الحالة الغازية','إضافة إلكترون إلى ذرة في الحالة الغازية','جذب إلكترونات الرابطة نحو الذرة','كسر الرابطة بين ذرتين'], answer:0,
+     hint:'تذكّري: صديقكِ يمسك الكرة، وأنتِ تحاولين نزعها منه.',
+     explain:'طاقة التأين: الطاقة اللازمة لنزع أضعف إلكترون ارتباطًا بالنواة من ذرة متعادلة في الحالة الغازية، فتتحول إلى أيون موجب (كاتيون).'},
+    {type:'mcq', title:'مقارنة التأين',
+     prompt:'لديكِ العناصر الافتراضية '+f('₄X')+' و'+f('₁₂A')+' و'+f('₂₀Z')+' (في مجموعة واحدة). أيها له <b>أعلى</b> طاقة تأين؟',
+     options:['X','A','Z','متساوية'], answer:0,
+     hint:'نزولًا في المجموعة يسهل نزع الإلكترون.',
+     explain:'نزولًا في المجموعة يزداد عدد المستويات وتأثير الحجب وتقل قوة الجذب، فتقل طاقة التأين. X في الأعلى فله أعلى طاقة تأين.'},
+    {type:'mcq', title:'أقوى قبضة',
+     prompt:'أي مجموعة لها <b>أعلى</b> طاقة تأين في دورتها؟',
+     options:['الغازات النبيلة','فلزات الأقلاء','فلزات الأقلاء الأرضية','الهالوجينات'], answer:0,
+     hint:'عبر الدورة تزداد طاقة التأين… فمن في نهاية الدورة؟',
+     explain:'الغازات النبيلة لها أعلى طاقة تأين في دورتها بسبب صغر حجم ذراتها واكتمال مستويات طاقتها الخارجية. أما فلزات الأقلاء فأقلها.'}
+  ],
+  note:{title:'تحذير آلي',
+        body:'تم رصد حركة في الممر المؤدي إلى بوابة الحجر.\nالطاقة الاحتياطية: 9%.\nبروتوكول الإغلاق النهائي: مفعّل.\n…\nالكاميرا 4 تُظهر ظلًّا أمام البوابة. الكاميرا 4 تُظهر الآن… لا شيء.'}
+},
+{
+  name:'بوابة الحجر', sub:'الجناح E · المخرج',
+  intro:'البوابة الأخيرة أمامكِ،\nونور النهار يتسلل من شقّ صغير.\nلكن الطاقة الاحتياطية تنفد…\nوخلفكِ في الممر صوت خطوات تقترب.',
+  puzzles:[
+    {type:'mcq', title:'رمز البوابة 1',
+     prompt:'عندما تكتسب ذرة في الحالة الغازية إلكترونًا تنطلق أو تُمتص طاقة تسمى…',
+     options:['طاقة الميل الإلكتروني، ويتكوّن أيون سالب (أنيون)','طاقة التأين، ويتكوّن أيون موجب (كاتيون)','السالبية الكهربائية، ويتكوّن كاتيون','طاقة التأين، ويتكوّن أنيون'], answer:0,
+     hint:'إضافة إلكترون تعطي شحنة سالبة.',
+     explain:'طاقة الميل الإلكتروني: مقدار الطاقة المنطلقة أو الممتصة من الذرة وهي في الحالة الغازية عندما تكتسب إلكترونًا أو أكثر، فتصبح أنيونًا.'},
+    {type:'mcq', title:'رمز البوابة 2',
+     prompt:'أي عنصر يمتلك <b>أعلى</b> قيمة ميل إلكتروني في الجدول الدوري الحديث؟',
+     options:['الكلور '+f('₁₇Cl'),'الفلور '+f('₉F'),'النيون '+f('₁₀Ne'),'الفرانسيوم Fr'], answer:0,
+     hint:'هذا هو «الاستثناء» في طاقة الميل الإلكتروني.',
+     explain:'الكلور '+f('₁₇Cl')+' يمتلك أعلى ميل إلكتروني في الجدول، وليس الفلور.'},
+    {type:'mcq', title:'رمز البوابة 3',
+     prompt:'علّلي: الميل الإلكتروني للفلور أقل من الميل الإلكتروني للكلور.',
+     options:['بسبب صغر حجم ذرة الفلور، يتنافر الإلكترون المضاف بشدة مع إلكتروناتها التسعة','لأن ذرة الفلور أكبر حجمًا من الكلور','لأن الفلور من الغازات النبيلة','لأن الفلور فلز'], answer:0,
+     hint:'فكّري في حجم ذرة الفلور الصغير جدًا وتنافر الإلكترونات.',
+     explain:'صغر حجم ذرة الفلور يجعل الإلكترون المضاف يتنافر بشدة مع إلكتروناتها التسعة، فيقل استقرارها، بينما ذرة الكلور أكبر فيكون التنافر أقل.'},
+    {type:'mcq', title:'رمز البوابة 4',
+     prompt:'السالبية الكهربائية هي…',
+     options:['مقياس قدرة الذرة على جذب الإلكترونات نحوها من ذرة أخرى مرتبطة معها برابطة كيميائية','الطاقة اللازمة لنزع أضعف إلكترون من الذرة','الطاقة المنطلقة عندما تكتسب الذرة إلكترونًا','نصف المسافة بين نواتي ذرتين متماثلتين'], answer:0,
+     hint:'تذكّري نشاط شدّ الحبل بين ذرتين مترابطتين.',
+     explain:'السالبية الكهربائية: مقياس قدرة الذرة على جذب الإلكترونات نحوها من ذرة أخرى مرتبطة معها برابطة كيميائية، وتُقاس بمقياس باولنج.'},
+    {type:'mcq', title:'رمز البوابة 5',
+     prompt:'أي العبارات صحيحة؟',
+     options:['الفلور F أعلى العناصر سالبية كهربائية، والفرانسيوم Fr أقلها','الكلور Cl أعلى العناصر سالبية كهربائية، والصوديوم Na أقلها','الفرانسيوم Fr أعلى العناصر سالبية كهربائية، والفلور F أقلها','الهيليوم He أعلى العناصر سالبية كهربائية'], answer:0,
+     hint:'أعلى عنصر في الهالوجينات… وأسفل عنصر في فلزات الأقلاء.',
+     explain:'الفلور F أعلى عناصر الجدول في السالبية الكهربائية (4.0)، والفرانسيوم Fr أقلها (0.7).'},
+    {type:'mcq', title:'رمز البوابة 6',
+     prompt:'علّلي: بصورة عامة ليس للغازات النبيلة قيم سالبية كهربائية.',
+     options:['لأن الغازات النبيلة مستقرة وغالبًا لا تكوّن روابط كيميائية','لأن ذراتها أكبر العناصر حجمًا','لأنها من الفلزات','لأن طاقة تأينها منخفضة جدًا'], answer:0,
+     hint:'السالبية الكهربائية تُقاس للذرة وهي مرتبطة برابطة كيميائية.',
+     explain:'الغازات النبيلة مستقرة وغالبًا لا تكوّن روابط كيميائية، لذلك ليس لها قيم سالبية كهربائية.'},
+    {type:'levers', title:'لوحة البوابة — القفل الأخير',
+     prompt:'آخر قفل! اضبطي اتجاه كل خاصية في الجدول الدوري ثم شغّلي البوابة.',
+     rows:[['نصف القطر الذري','down','up'],['طاقة التأين الأولى','up','down'],['طاقة الميل الإلكتروني','up','down'],['السالبية الكهربائية','up','down']],
+     hint:'نصف القطر هو «العكس» من الخواص الثلاث الأخرى.<br>عبر الدورة تزداد شحنة النواة، وخلال المجموعة يزداد الحجب.',
+     explain:'عبر الدورة: يقل نصف القطر وتزداد طاقة التأين والميل الإلكتروني والسالبية. خلال المجموعة: يزداد نصف القطر وتقل الثلاث الأخرى.'}
+  ],
+  note:null
+}];
+
+/* ============ الحالة ============ */
+const S = { name:'', time:CFG.TIME, room:0, pz:0, mistakes:0, hints:0, paused:true, pzWrong:0, hintShown:false, keyHandler:null, running:false };
+const $ = id => document.getElementById(id);
+const stage = $('stage');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const mmss = t => `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============ الصوت ============ */
+const A = { ctx:null, master:null, muted:false, beatT:0 };
+function audioInit(){
+  if (A.ctx) return;
+  try{
+    A.ctx = new (window.AudioContext||window.webkitAudioContext)();
+    A.master = A.ctx.createGain(); A.master.gain.value = .55; A.master.connect(A.ctx.destination);
+    // drone
+    const lp = A.ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=170;
+    const g = A.ctx.createGain(); g.gain.value=.06; lp.connect(g); g.connect(A.master);
+    [55,55.6,82.4].forEach(fq=>{const o=A.ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=fq; o.connect(lp); o.start();});
+    const lfo=A.ctx.createOscillator(), lg=A.ctx.createGain(); lfo.frequency.value=.08; lg.gain.value=60; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+  }catch(e){ A.ctx=null; }
+}
+function tone(fq, dur=.15, type='sine', vol=.2, to=null, delay=0){
+  if(!A.ctx) return; const t=A.ctx.currentTime+delay;
+  const o=A.ctx.createOscillator(), g=A.ctx.createGain(); o.type=type; o.frequency.setValueAtTime(fq,t);
+  if(to) o.frequency.exponentialRampToValueAtTime(to,t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g); g.connect(A.master); o.start(t); o.stop(t+dur+.02);
+}
+function noise(dur=.4, freq=1000, vol=.2, type='bandpass', to=null){
+  if(!A.ctx) return; const t=A.ctx.currentTime;
+  const b=A.ctx.createBuffer(1,A.ctx.sampleRate*dur,A.ctx.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const s=A.ctx.createBufferSource(); s.buffer=b; const fl=A.ctx.createBiquadFilter(); fl.type=type; fl.frequency.setValueAtTime(freq,t);
+  if(to) fl.frequency.exponentialRampToValueAtTime(to,t+dur);
+  const g=A.ctx.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(fl); fl.connect(g); g.connect(A.master); s.start(t);
+}
+const sfx = {
+  ok(){ tone(660,.12,'triangle',.18,990); tone(1320,.18,'sine',.12,null,.1); },
+  tick(){ tone(880,.06,'square',.05); },
+  type(){ tone(1800+Math.random()*400,.015,'square',.015); },
+  wrong(){ tone(110,.4,'square',.14,70); noise(.3,400,.12); },
+  alarm(){ for(let i=0;i<3;i++){ tone(880,.22,'sawtooth',.08,null,i*.5); tone(620,.22,'sawtooth',.08,null,i*.5+.25);} },
+  door(){ noise(1.6,180,.25,'lowpass',2200); tone(60,1.4,'sine',.25,40); },
+  beat(){ tone(62,.14,'sine',.45,40); tone(55,.16,'sine',.35,38,.2); },
+  whisper(){ noise(1.4,2800,.07,'bandpass',1200); },
+  win(){ [523,659,784,1046].forEach((n,i)=>tone(n,.5,'triangle',.14,null,i*.15)); },
+  lose(){ tone(220,2,'sawtooth',.12,40); noise(2,600,.15,'lowpass',80); }
+};
+$('muteBtn').onclick = () => {
+  audioInit(); A.muted=!A.muted; if(A.master) A.master.gain.value = A.muted?0:.55;
+  $('muteIcon').innerHTML = A.muted ? '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/>' : '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/>';
+};
+
+/* ============ المؤثرات البصرية ============ */
+(function particles(){
+  const c=$('fx'), x=c.getContext('2d'); let W,H,P=[];
+  const size=()=>{ W=c.width=innerWidth; H=c.height=innerHeight; P=Array.from({length:Math.min(70,Math.floor(W/16))},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+.4,v:Math.random()*.35+.08,o:Math.random()*.5+.1,d:Math.random()*6.28})); };
+  size(); addEventListener('resize',size);
+  const draw=()=>{ x.clearRect(0,0,W,H);
+    for(const p of P){ p.y-=p.v; p.d+=.01; p.x+=Math.sin(p.d)*.2; if(p.y<-5){p.y=H+5;p.x=Math.random()*W;}
+      x.beginPath(); x.arc(p.x,p.y,p.r,0,6.28); x.fillStyle=`rgba(63,224,197,${p.o})`; x.fill(); }
+    if(!reduced) requestAnimationFrame(draw); };
+  draw();
+})();
+function flash(){ const el=$('flash'); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
+function flicker(){ document.body.classList.remove('flicker'); void document.body.offsetWidth; document.body.classList.add('flicker'); }
+let eyesT=null;
+function scheduleEyes(){
+  clearTimeout(eyesT);
+  eyesT=setTimeout(()=>{
+    if(S.running && !S.paused){
+      const e=$('eyes'), side=Math.random()<.5;
+      e.style.top=(15+Math.random()*65)+'%'; e.style.left=side?'3%':'auto'; e.style.right=side?'auto':'3%';
+      e.classList.add('on'); sfx.whisper(); if(Math.random()<.5) flicker();
+      setTimeout(()=>e.classList.remove('on'),2600);
+    }
+    scheduleEyes();
+  }, 38000+Math.random()*40000);
+}
+
+/* ============ HUD والمؤقت ============ */
+function hud(){
+  $('timer').firstChild ? $('timer').childNodes[0].nodeValue = mmss(S.time) : $('timer').textContent = mmss(S.time);
+  const r=ROOMS[S.room]; $('wingName').textContent=r.name; $('wingSub').textContent=`${r.sub} · ${S.room+1}/${ROOMS.length}`;
+  $('contam').style.width = Math.min(100, S.mistakes*5)+'%';
+  document.body.classList.toggle('critical', S.time<=180);
+}
+let timerId=null;
+function startTimer(){
+  clearInterval(timerId);
+  timerId=setInterval(()=>{
+    if(!S.running || S.paused) return;
+    S.time=Math.max(0,S.time-1); hud();
+    if(S.time<=180){ const step = S.time<=60 ? 1 : 2; if(S.time%step===0) sfx.beat(); }
+    if(S.time===300 || S.time===60){ sfx.alarm(); flicker(); }
+    if(S.time<=0) lose();
+  },1000);
+}
+function penalty(sec){
+  if(sec<=0) return;
+  S.time=Math.max(0,S.time-sec); hud();
+  const p=document.createElement('span'); p.className='pen'; p.textContent='−'+sec; $('timer').appendChild(p); setTimeout(()=>p.remove(),1200);
+  if(S.time<=0) lose();
+}
+
+/* ============ أداة الكتابة الآلية ============ */
+function typeText(el, text, done){
+  let i=0; el.innerHTML='<span></span><i class="cur"></i>'; const s=el.firstChild;
+  if(reduced){ s.textContent=text; done&&done(); return ()=>{}; }
+  const id=setInterval(()=>{ s.textContent=text.slice(0,++i); if(i%2===0) sfx.type(); if(i>=text.length){clearInterval(id); done&&done();} },28);
+  return ()=>{ clearInterval(id); s.textContent=text; done&&done(); };
+}
+
+/* ============ الشاشات ============ */
+function showIntro(){
+  S.running=false; S.paused=true; $('hud').hidden=true; document.body.classList.remove('playing','critical');
+  stage.innerHTML=`
+  <section class="panel stack">
+    <span class="tag">GENOVA BIOSYSTEMS · LEVEL −4 · RESTRICTED</span>
+    <h1><span class="glitch" data-t="المنشأة X-21">المنشأة X-21</span></h1>
+    <p class="lead">غرفة هروب كيميائية في مختبر سري لتعديل الجينات. خمسة أجنحة مقفلة، وكل قفل لا يُفتح إلا بمعلومة من درس <b style="color:var(--ink)">الجدول الدوري</b>. أمامكِ ${CFG.TIME/60} دقيقة قبل الإغلاق النهائي.</p>
+    <div class="room-meta"><span class="pill">5 أجنحة</span><span class="pill">${ROOMS.reduce((n,r)=>n+r.puzzles.length,0)} قفلًا</span><span class="pill r">الخطأ: −${CFG.BIG} ثانية</span><span class="pill">التلميح: −${CFG.HINT} ثانية</span></div>
+    <form id="startForm" class="stack" style="gap:12px">
+      <label for="pname" style="font-weight:700">اسم الناجية</label>
+      <input class="name" id="pname" maxlength="24" autocomplete="off" placeholder="اكتبي اسمكِ" value="${esc(S.name)}" required>
+      <div class="row"><button class="btn danger" type="submit">ادخلي إن تجرّأتِ</button><small style="color:var(--mute)">يُفضَّل تشغيل الصوت 🎧</small></div>
+    </form>
+  </section>`;
+  $('startForm').onsubmit = e => { e.preventDefault(); const n=$('pname').value.trim(); if(!n){$('pname').focus();return;} S.name=n; audioInit(); if(A.ctx&&A.ctx.state==='suspended')A.ctx.resume(); sfx.alarm(); flash(); showBrief(); };
+}
+
+function showBrief(){
+  Object.assign(S,{time:CFG.TIME,room:0,pz:0,mistakes:0,hints:0,paused:true,running:true});
+  $('hud').hidden=false; document.body.classList.add('playing'); hud(); startTimer(); scheduleEyes();
+  const text=`${S.name}… هل تسمعينني؟\nتحذير: تم اختراق الحجر الصحي.\nالعيّنة X-21 خارج حاويتها.\nسيتم إغلاق المنشأة نهائيًا خلال ${CFG.TIME/60} دقيقة.\nالأبواب لا تُفتح إلا لمن يعرف أسرار الجدول الدوري.\nأي خطأ… يرفع نسبة التلوث ويسرق من وقتكِ.`;
+  stage.innerHTML=`<section class="panel stack"><span class="tag">SYSTEM://BROADCAST</span><div class="term" id="term"></div><div class="row" id="go" hidden><button class="btn danger" id="goBtn">ابدئي الهروب</button></div></section>`;
+  const skip=typeText($('term'),text,()=>{$('go').hidden=false; $('goBtn').focus();});
+  $('term').onclick=skip;
+  $('goBtn').onclick=()=>showRoom();
+}
+
+function showRoom(){
+  S.paused=true; S.pz=0; hud(); const r=ROOMS[S.room];
+  stage.innerHTML=`<section class="panel stack">
+    <span class="tag">WING ${'ABCDE'[S.room]} · ${S.room+1}/${ROOMS.length}</span>
+    <h2>${r.name}</h2>
+    <div class="room-meta"><span class="pill">${r.sub}</span><span class="pill">${r.puzzles.length} أقفال</span><span class="pill r">${S.room<2?'مستوى: سهل':S.room<4?'مستوى: متوسط':'مستوى: متوسط+'}</span></div>
+    <div class="term" id="term"></div>
+    <div class="row" id="go" hidden><button class="btn" id="goBtn">ادخلي الجناح</button></div>
+  </section>`;
+  const skip=typeText($('term'),r.intro,()=>{$('go').hidden=false;});
+  $('term').onclick=skip;
+  $('goBtn').onclick=()=>{ flicker(); showPuzzle(); };
+}
+
+function showPuzzle(){
+  if(S.keyHandler){ removeEventListener('keydown',S.keyHandler); S.keyHandler=null; }
+  const r=ROOMS[S.room], p=r.puzzles[S.pz];
+  S.pzWrong=0; S.hintShown=false; S.paused=false;
+  stage.innerHTML=`<section class="panel" id="pzPanel">
+    <div class="pz-head"><div class="locks">${r.puzzles.map((_,i)=>`<span class="lk ${i<S.pz?'done':i===S.pz?'cur':''}"></span>`).join('')}</div><span class="pz-count">قفل ${S.pz+1} / ${r.puzzles.length}</span></div>
+    <div class="pz-title">${p.title}</div>
+    <div class="pz-prompt">${p.prompt}</div>
+    <div class="widget" id="widget"></div>
+    <div class="fb" id="fb" role="status"></div>
+    <div class="pz-foot" id="foot"><button class="btn ghost" id="hintBtn">تلميح <small>(−${CFG.HINT} ث)</small></button></div>
+    <div class="hint" id="hintBox" hidden></div>
+  </section>`;
+  $('hintBtn').onclick=useHint;
+  W[p.type](p,$('widget'));
+}
+
+function useHint(){
+  if(S.hintShown) return;
+  const p=ROOMS[S.room].puzzles[S.pz], free=S.pzWrong>=2;
+  if(!free){ penalty(CFG.HINT); } S.hints++; S.hintShown=true;
+  $('hintBox').innerHTML=p.hint; $('hintBox').hidden=false; $('hintBtn').disabled=true; $('hintBtn').style.opacity=.4; sfx.tick();
+}
+
+const TAUNTS=['خطأ… نسبة التلوث ترتفع.','النظام رفض الإجابة.','هل سمعتِ ذلك؟ شيء ما انتبه للإنذار.','لا… ليس هذا. ركّزي.','الوقت يتسرّب…'];
+function wrong(small){
+  S.mistakes++; S.pzWrong++; penalty(small?CFG.SMALL:CFG.BIG); sfx.wrong(); flash();
+  const pnl=$('pzPanel'); if(pnl){ pnl.classList.remove('shake'); void pnl.offsetWidth; pnl.classList.add('shake'); }
+  if(!small) $('fb').innerHTML=`<span class="bad">${TAUNTS[Math.floor(Math.random()*TAUNTS.length)]}</span>`;
+  if(S.pzWrong>=2 && !S.hintShown){ const b=$('hintBtn'); b.classList.add('free'); b.innerHTML='تلميح مجاني'; }
+  hud();
+}
+
+function correct(){
+  S.paused=true; sfx.ok();
+  if(S.keyHandler){ removeEventListener('keydown',S.keyHandler); S.keyHandler=null; }
+  const r=ROOMS[S.room], p=r.puzzles[S.pz], last=S.pz===r.puzzles.length-1;
+  $('widget').classList.add('locked'); $('foot').hidden=true;
+  document.querySelectorAll('.lk')[S.pz].className='lk done';
+  $('fb').innerHTML=`<div class="good"><b>تم فتح القفل</b><span>${p.explain}</span><div><button class="btn" id="nextBtn">${last?'افتحي الباب':'القفل التالي'}</button></div></div>`;
+  $('nextBtn').focus({preventScroll:true});
+  $('fb').scrollIntoView({behavior:reduced?'auto':'smooth',block:'nearest'});
+  $('nextBtn').onclick=()=>{ if(last) roomDone(); else { S.pz++; showPuzzle(); } };
+}
+
+function roomDone(){
+  S.paused=true; const r=ROOMS[S.room], final=S.room===ROOMS.length-1;
+  stage.innerHTML=`<section class="panel stack"><span class="tag">ACCESS GRANTED</span><h2>${final?'البوابة الأخيرة تُفتح…':'تم فتح باب '+r.name}</h2><div class="doors" id="doors"><i></i><i></i></div></section>`;
+  sfx.door(); setTimeout(()=>$('doors').classList.add('open'),250);
+  setTimeout(()=>{ if(final) win(); else showNote(); }, 2100);
+}
+
+function showNote(){
+  const n=ROOMS[S.room].note; S.room++; hud();
+  if(!n){ showRoom(); return; }
+  const body=esc(n.body).replace(/\{NAME\}/g,`<span class="glitch" data-t="${esc(S.name)}">${esc(S.name)}</span>`).replace(/\n/g,'<br>');
+  stage.innerHTML=`<section class="stack" style="animation:enter .5s"><span class="tag" style="text-align:center;display:block">FOUND ON FLOOR</span>
+    <div class="note"><h3>${n.title}</h3>${body}</div>
+    <div class="row" style="justify-content:center"><button class="btn" id="goBtn">تابعي إلى الجناح التالي</button></div></section>`;
+  if(n.body.includes('{NAME}')) sfx.whisper();
+  $('goBtn').onclick=showRoom;
+}
+
+function stats(){
+  const used=CFG.TIME-S.time;
+  const stars = S.mistakes<=4 && S.hints<=2 ? 3 : S.mistakes<=10 ? 2 : 1;
+  return {used,stars};
+}
+function win(){
+  S.running=false; clearInterval(timerId); document.body.classList.remove('critical','playing'); sfx.win();
+  const {used,stars}=stats(); const rank=['','ناجية بأعجوبة','ناجية ذكية','ناجية أسطورية'][stars];
+  stage.innerHTML=`<section class="panel stack" style="background:linear-gradient(180deg,#14282b,var(--panel))">
+    <span class="tag" style="color:var(--ok)">EXIT · SURFACE LEVEL</span>
+    <div class="term" style="min-height:0">ضوء النهار… هواء نقي.\nخلفكِ تُغلق البوابة الفولاذية بقوة،\nوخلفها صرخة غاضبة لن تسمعيها مرة أخرى.</div>
+    <div class="cert">
+      <div style="color:var(--mute);font-size:14px">شهادة نجاة من المنشأة X-21</div>
+      <div class="who">${esc(S.name)}</div>
+      <div style="color:var(--fluid);font-weight:700">${rank}</div>
+      <div class="stars" aria-label="${stars} نجوم">${'★'.repeat(stars)}<span class="off">${'★'.repeat(3-stars)}</span></div>
+      <div class="stats"><div><b>${mmss(S.time)}</b><small>الوقت المتبقي</small></div><div><b>${S.mistakes}</b><small>الأخطاء</small></div><div><b>${S.hints}</b><small>التلميحات</small></div></div>
+    </div>
+    <p style="color:var(--mute);font-size:14px;text-align:center">صوّري الشهادة وأريها لمعلمتكِ.</p>
+    <div class="row" style="justify-content:center"><button class="btn" id="again">العبي مرة أخرى</button></div>
+  </section>`;
+  $('again').onclick=showIntro;
+}
+function lose(){
+  if(!S.running) return;
+  S.running=false; S.paused=true; clearInterval(timerId); sfx.lose(); flash();
+  if(S.keyHandler){ removeEventListener('keydown',S.keyHandler); S.keyHandler=null; }
+  document.body.classList.remove('critical');
+  stage.innerHTML=`<section class="panel stack" style="border-color:var(--alarm)">
+    <span class="tag">LOCKDOWN COMPLETE</span>
+    <h2 style="color:var(--alarm)">فشل الهروب…</h2>
+    <div class="term" style="min-height:0">انطفأت كل الأضواء.\nأُغلقت المنشأة X-21 إلى الأبد.\nوفي الظلام… فتحت العيّنة عينيها.</div>
+    <p class="lead">وصلتِ إلى: <b style="color:var(--ink)">${ROOMS[S.room].name}</b> (الجناح ${S.room+1} من ${ROOMS.length}) · الأخطاء: ${S.mistakes}</p>
+    <div class="row"><button class="btn danger" id="again">حاولي مرة أخرى</button></div>
+  </section>`;
+  const e=$('eyes'); e.style.top='42%'; e.style.left='50%'; e.style.right='auto'; e.style.transform='translateX(-50%) scale(2)'; e.classList.add('on');
+  $('again').onclick=()=>{ e.classList.remove('on'); e.style.transform=''; showIntro(); };
+}
+
+/* ============ أنواع الألغاز ============ */
+const W = {
+  mcq(p,el){
+    const order=shuffle(p.options.map((t,i)=>i)); const keys='أبجد';
+    el.innerHTML=order.map((i,k)=>`<button class="opt" data-i="${i}"><span class="k">${keys[k]}</span><span>${p.options[i]}</span></button>`).join('');
+    el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+      if(+b.dataset.i===p.answer){ b.classList.add('ok'); correct(); }
+      else { b.classList.add('bad'); b.disabled=true; wrong(false); }
+    });
+  },
+  keypad(p,el){
+    const n=p.code.length; let v='';
+    el.innerHTML=`<div class="kp"><div class="kp-screen">${'<span></span>'.repeat(n)}</div>
+      <div class="kp-keys">${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-d="${d}">${d}</button>`).join('')}<button class="del" data-d="del" aria-label="حذف">⌫</button><button data-d="0">0</button><button class="go" data-d="go" aria-label="إدخال">✓</button></div></div>`;
+    const cells=el.querySelectorAll('.kp-screen span');
+    const draw=()=>cells.forEach((c,i)=>c.textContent=v[i]||'');
+    const press=d=>{
+      if(d==='del'){ v=v.slice(0,-1); }
+      else if(d==='go'){ if(v.length<n) return; if(v===p.code){ correct(); return; } wrong(false); v=''; }
+      else if(v.length<n){ v+=d; sfx.tick(); }
+      draw();
+    };
+    el.querySelectorAll('.kp-keys button').forEach(b=>b.onclick=()=>press(b.dataset.d));
+    S.keyHandler=e=>{ const map={'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'}; const k=map[e.key]||e.key;
+      if(/^[0-9]$/.test(k)) press(k); else if(e.key==='Backspace') press('del'); else if(e.key==='Enter') press('go'); };
+    addEventListener('keydown',S.keyHandler);
+  },
+  match(p,el){
+    const L=p.pairs.map((x,i)=>({t:x[0],i})), R=shuffle(p.pairs.map((x,i)=>({t:x[1],i})));
+    el.innerHTML=`<div class="match"><div class="col">${L.map(x=>`<button class="chip" data-s="L" data-i="${x.i}">${x.t}</button>`).join('')}</div>
+      <div class="col">${R.map(x=>`<button class="chip" data-s="R" data-i="${x.i}">${x.t}</button>`).join('')}</div></div>`;
+    let sel=null, left=p.pairs.length;
+    el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
+      if(!sel || sel.dataset.s===b.dataset.s){ if(sel) sel.classList.remove('sel'); sel=b; b.classList.add('sel'); sfx.tick(); return; }
+      const a=sel; sel=null; a.classList.remove('sel');
+      if(a.dataset.i===b.dataset.i){ a.classList.add('ok'); b.classList.add('ok'); sfx.tick(); if(--left===0) correct(); }
+      else { [a,b].forEach(x=>{x.classList.add('bad'); setTimeout(()=>x.classList.remove('bad'),400);}); wrong(true); }
+    });
+  },
+  sort(p,el){
+    el.innerHTML=`<div class="buckets">${p.buckets.map((b,i)=>`<div class="bucket" data-b="${i}" role="button" tabindex="0"><h4>${b}</h4><div class="in"></div></div>`).join('')}</div>
+      <div class="pool">${shuffle(p.items.map((x,i)=>i)).map(i=>`<button class="chip ${p.tubes?'tube':''}" data-i="${i}">${p.tubes?f(p.items[i][0]):p.items[i][0]}</button>`).join('')}</div>`;
+    let sel=null, left=p.items.length;
+    const buckets=el.querySelectorAll('.bucket');
+    el.querySelectorAll('.pool .chip').forEach(c=>c.onclick=()=>{ if(sel) sel.classList.remove('sel'); sel=c; c.classList.add('sel'); buckets.forEach(b=>b.classList.add('armed')); sfx.tick(); });
+    const drop=b=>{
+      if(!sel) return; const it=p.items[+sel.dataset.i];
+      if(it[1]===+b.dataset.b){ sel.classList.remove('sel'); sel.classList.add('ok'); b.querySelector('.in').appendChild(sel); sel=null; buckets.forEach(x=>x.classList.remove('armed')); sfx.tick(); if(--left===0) correct(); }
+      else { b.classList.add('bad'); setTimeout(()=>b.classList.remove('bad'),400); wrong(true); }
+    };
+    buckets.forEach(b=>{ b.onclick=()=>drop(b); b.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();drop(b);} }; });
+  },
+  order(p,el){
+    const n=p.items.length; let k=0;
+    el.innerHTML=`<div class="order-lbl"><span>${p.labels[0]}</span><span>${p.labels[1]}</span></div>
+      <div class="slots">${'<div class="slot"></div>'.repeat(n)}</div>
+      <div class="order-pool">${shuffle(p.items.map((t,i)=>i)).map(i=>`<button class="chip" data-i="${i}">${p.items[i]}</button>`).join('')}</div>`;
+    const slots=el.querySelectorAll('.slot'), chips=el.querySelectorAll('.order-pool .chip');
+    chips.forEach(c=>c.onclick=()=>{
+      if(+c.dataset.i===k){ slots[k].textContent=p.items[k]; slots[k].classList.add('fill'); c.classList.add('used'); sfx.tick(); if(++k===n) correct(); }
+      else { k=0; slots.forEach(s=>{s.textContent='';s.classList.remove('fill');}); chips.forEach(x=>x.classList.remove('used')); c.classList.add('bad'); setTimeout(()=>c.classList.remove('bad'),400); wrong(true); }
+    });
+  },
+  grid(p,el){
+    const valid=(per,g)=> per===1 ? (g===1||g===18) : per<=3 ? (g<=2||g>=13) : true;
+    let t=0;
+    let html=`<div class="spec" id="spec"></div><div class="ptable-wrap"><div class="ptable"><span class="lbl"></span>`;
+    for(let g=1;g<=18;g++) html+=`<span class="lbl">${g}</span>`;
+    for(let per=1;per<=7;per++){ html+=`<span class="lbl">${per}</span>`;
+      for(let g=1;g<=18;g++) html+= valid(per,g)?`<button class="c" data-p="${per}" data-g="${g}" aria-label="الدورة ${per} المجموعة ${g}"></button>`:`<span class="e"></span>`; }
+    html+=`</div></div><div class="axis"><span>الأرقام في الأعلى: المجموعات</span><span>الأرقام على الجانب: الدورات</span></div>`;
+    el.innerHTML=html;
+    const spec=()=>{ $('spec').innerHTML=`<small>العيّنة ${t+1} من ${p.targets.length}</small><span class="f">${p.targets[t].cfg}</span><small>أين تقع؟</small>`; };
+    spec();
+    el.querySelectorAll('.c').forEach(c=>c.onclick=()=>{
+      const T=p.targets[t];
+      if(+c.dataset.p===T.p && +c.dataset.g===T.g){ c.classList.add('hit'); c.textContent=T.sym; sfx.tick(); if(++t===p.targets.length) correct(); else spec(); }
+      else { c.classList.add('miss'); setTimeout(()=>c.classList.remove('miss'),450); wrong(true); }
+    });
+  },
+  levers(p,el){
+    const st=p.rows.map(()=>[null,null]);
+    let html=`<div class="lev"><span class="h first"></span><span class="h">عبر الدورة<br>(من اليسار إلى اليمين)</span><span class="h">خلال المجموعة<br>(من أعلى إلى أسفل)</span>`;
+    p.rows.forEach((r,i)=>{ html+=`<span class="p">${r[0]}</span>`; [0,1].forEach(j=>html+=`<div class="seg" data-r="${i}" data-c="${j}"><button data-v="up">↑ يزداد</button><button data-v="down">↓ يقل</button></div>`); });
+    html+=`</div><div class="row" style="justify-content:center;margin-top:8px"><button class="btn danger" id="fire">شغّلي البوابة</button></div>`;
+    el.innerHTML=html;
+    el.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ const s=b.parentNode; s.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); st[+s.dataset.r][+s.dataset.c]=b.dataset.v; sfx.tick(); });
+    $('fire').onclick=()=>{
+      if(st.some(r=>r.includes(null))){ $('fb').innerHTML='<span class="bad">اضبطي كل المفاتيح أولًا.</span>'; return; }
+      let ok=0; p.rows.forEach((r,i)=>{ if(st[i][0]===r[1]) ok++; if(st[i][1]===r[2]) ok++; });
+      if(ok===p.rows.length*2) correct();
+      else { wrong(false); $('fb').innerHTML=`<span class="bad">البوابة لم تستجب… ${ok} من ${p.rows.length*2} مفاتيح صحيحة.</span>`; }
+    };
+  }
+};
+
+/* ============ تشغيل ============ */
+showIntro();
+</script>
+</body>
+</html>
