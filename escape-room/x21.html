@@ -310,6 +310,8 @@ html,body{overflow:hidden;overscroll-behavior:none}
 .opts{display:flex;flex-direction:column;gap:10px;min-width:0}
 .opts .lbl{font-size:13px;color:var(--mute);font-weight:700}
 .seg2{display:flex;gap:10px;flex-wrap:wrap}
+.credit{align-self:flex-start;font-size:15px;color:var(--mute);border-inline-start:3px solid var(--fluid);padding:2px 12px;letter-spacing:.3px}
+.credit b{color:var(--ink);font-weight:900}
 .capseg button{padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:var(--void);font-weight:700;font-size:15px}
 .capseg button.on{border-color:var(--fluid);color:var(--fluid);background:rgba(63,224,197,.1)}
 .sw{width:36px;height:36px;border-radius:50%;border:3px solid transparent;padding:0}
@@ -1394,6 +1396,7 @@ function showIntro(){
   <section class="panel stack">
     <span class="tag">GENOVA BIOSYSTEMS · LEVEL −4 · RESTRICTED</span>
     <h1><span class="glitch" data-t="المنشأة X-21">المنشأة X-21</span></h1>
+    <div class="credit">إعداد المعلمة: <b>م. أنوار الفضلي</b></div>
     <p class="lead">أنت تقود المحاربة الهاربة. تحرّك داخل منشأة سرية لتعديل الجينات: غرف وممرات ومتاهات، وكل باب لا يُفتح إلا بلغز من درس <b style="color:var(--ink)">الجدول الدوري</b>. أمامك ${CFG.TIME/60} دقيقة قبل الإغلاق النهائي.</p>
     ${HAS3D?'':'<p class="bad" style="color:var(--alarm);font-weight:700">تعذّر تحميل محرك الرسوم ثلاثية الأبعاد. تأكد من اتصال الإنترنت ثم أعد فتح الصفحة.</p>'}
     <form id="startForm" class="idcard" autocomplete="off">
