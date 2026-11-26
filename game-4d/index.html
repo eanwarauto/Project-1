@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>بوابة البُعد الرابع</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Lalezar&family=Poppins:wght@600;800&display=swap">
+<style>
+/* Layout: a full-bleed WebGL world with a thin instrument HUD at the edges; every color of the 4th axis runs cyan (W=0) → violet → pink (W=1). */
+:root{
+  --void:#05060f; --panel:rgba(12,14,34,.84); --panel-solid:#0e1028; --line:rgba(150,165,255,.24);
+  --ink:#eef1ff; --muted:#9ea6cc; --w0:#2ef2e2; --wmid:#8b6cff; --w1:#ff4fa8;
+  --gold:#ffd166; --ok:#4dffa0; --danger:#ff4d6d; --cell:#161a3c; --cell-on:#1d2a55;
+  --f-display:'Lalezar','Cairo',system-ui,sans-serif; --f-body:'Cairo',system-ui,sans-serif; --f-sym:'Poppins','Cairo',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--void);color:var(--ink);overflow:hidden;font-family:var(--f-body);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.sym{font-family:var(--f-sym);font-weight:800;direction:ltr;unicode-bidi:isolate;letter-spacing:.01em}
+.num{font-family:var(--f-sym);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+#hud[hidden]{display:none!important}
+#topbar{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));left:max(12px,env(safe-area-inset-left,0px));
+  display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"period target stats";gap:10px;align-items:start}
+.hp{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#pPanel{grid-area:period}
+#pSub{font-size:11px;color:var(--muted);letter-spacing:.04em}
+#pName{font-family:var(--f-display);font-size:20px;line-height:1.15}
+#pProg{display:flex;gap:4px;margin-top:6px;direction:ltr;justify-content:flex-end}
+#pProg i{width:18px;height:18px;border-radius:5px;background:var(--cell);border:1px solid var(--line);font-style:normal;font-size:9px;display:grid;place-items:center;font-family:var(--f-sym);color:var(--muted)}
+#pProg i.on{background:linear-gradient(135deg,var(--w0),var(--wmid));color:#05060f;border-color:transparent;font-weight:800}
+#targetBox{grid-area:target;justify-self:center;text-align:center;min-width:0;max-width:440px;width:100%;border-color:rgba(255,209,102,.45)}
+#tLabel{font-size:11px;color:var(--gold);letter-spacing:.05em}
+#targetText{font-family:var(--f-display);font-size:26px;line-height:1.2;display:flex;gap:10px;justify-content:center;align-items:baseline;flex-wrap:wrap}
+#targetText .num{font-size:22px;color:var(--gold)}
+#tHint{font-size:12px;color:var(--muted);min-height:1em}
+#statPanel{grid-area:stats;min-width:150px;pointer-events:auto}
+.bar{height:9px;border-radius:6px;background:var(--cell);overflow:hidden;margin-top:4px;direction:ltr}
+#energyFill{height:100%;width:100%;background:linear-gradient(90deg,var(--danger),var(--gold) 40%,var(--ok));transition:width .25s}
+.statrow{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}
+.statrow b{color:var(--ink);font-family:var(--f-sym);font-variant-numeric:tabular-nums}
+#tools{display:flex;gap:6px;margin-top:8px}
+.tbtn{flex:1;height:32px;border-radius:9px;background:var(--cell);border:1px solid var(--line);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px}
+.tbtn:hover{background:var(--cell-on)}
+.tbtn kbd{font-family:var(--f-sym);font-size:9px;opacity:.6}
+
+/* W gauge — the 4th axis */
+#wGauge{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);height:44vh;width:54px;display:flex;flex-direction:column;align-items:center;gap:6px}
+#wGauge .wt{font-size:10px;color:var(--muted);text-align:center;line-height:1.2}
+#wTrack{position:relative;flex:1;width:14px;border-radius:8px;background:linear-gradient(to top,var(--w0),var(--wmid),var(--w1));box-shadow:0 0 18px rgba(139,108,255,.4)}
+#wTrack .tick{position:absolute;left:-7px;width:28px;height:3px;border-radius:2px;background:#fff;opacity:.85;transform:translateY(50%)}
+#wTrack .tick.enemy{background:var(--danger);height:5px;left:-10px;width:34px;box-shadow:0 0 8px var(--danger)}
+#wTrack .tick.target{background:var(--gold);height:6px;box-shadow:0 0 10px var(--gold);animation:blink .5s infinite alternate}
+#wTrack .tick.crystal{background:var(--ok);width:10px;left:16px;height:3px}
+#wMarker{position:absolute;left:50%;width:40px;height:40px;transform:translate(-50%,50%);border-radius:50%;border:3px solid #fff;background:rgba(5,6,15,.6);display:grid;place-items:center;font-family:var(--f-sym);font-size:10px;font-weight:800;box-shadow:0 0 14px rgba(255,255,255,.6)}
+#wVal{font-family:var(--f-sym);font-size:12px;font-weight:800}
+@keyframes blink{to{opacity:.35}}
+
+#toast{position:absolute;top:calc(env(safe-area-inset-top,0px) + 128px);left:50%;transform:translateX(-50%);max-width:min(560px,86vw);text-align:center;
+  background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;padding:10px 16px;font-size:15px;font-weight:700;line-height:1.6;opacity:0;transition:opacity .3s,transform .3s}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(4px)}
+#toast.bad{border-color:var(--danger)}#toast.good{border-color:var(--ok)}#toast.info{border-color:var(--gold)}
+#arrow{position:absolute;left:50%;top:50%;width:0;height:0;display:none}
+#arrow::before{content:"";position:absolute;left:-14px;top:-108px;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:26px solid var(--gold);filter:drop-shadow(0 0 8px var(--gold))}
+#vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px 30px rgba(255,77,109,0);transition:box-shadow .2s}
+#flash{position:absolute;inset:0;background:var(--danger);opacity:0;pointer-events:none}
+
+/* touch controls */
+#touch{position:absolute;inset:0;display:none}
+.touch #touch{display:block}
+#joyZone{position:absolute;left:0;bottom:0;width:55vw;height:48vh;pointer-events:auto}
+#joyBase{position:absolute;width:120px;height:120px;border-radius:50%;border:2px solid var(--line);background:rgba(20,24,60,.35);left:max(28px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 28px)}
+#joyKnob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(238,241,255,.85)}
+#wBtns{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;flex-direction:column;gap:10px;pointer-events:auto}
+.wb{width:72px;height:60px;border-radius:16px;font-family:var(--f-sym);font-weight:800;font-size:18px;border:2px solid rgba(255,255,255,.3);touch-action:none}
+#wUpB{background:linear-gradient(135deg,var(--wmid),var(--w1))}
+#wDnB{background:linear-gradient(135deg,var(--w0),var(--wmid));color:#05060f}
+.touch #wGauge{height:34vh;top:40%}
+
+/* ---------- overlays ---------- */
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;overflow-y:auto;
+  padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:rgba(4,5,14,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);touch-action:auto}
+.sheet{width:100%;max-width:640px;min-width:0;background:var(--panel-solid);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(139,108,255,.08);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.9);opacity:0}}
+.sheet h1,.sheet h2{font-family:var(--f-display);font-weight:400;margin:0;line-height:1.15;text-wrap:balance}
+.sheet p{line-height:1.8;margin:.4em 0;color:#d7dcf5}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--gold);font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 24px;border-radius:14px;font-weight:900;font-size:17px;background:linear-gradient(120deg,var(--w0),var(--wmid) 55%,var(--w1));color:#05060f;box-shadow:0 8px 24px rgba(139,108,255,.35)}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:var(--cell);color:var(--ink);box-shadow:none;border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+#start .sheet{max-width:760px}
+.logo{font-family:var(--f-display);font-size:clamp(44px,9vw,78px);line-height:1;margin:6px 0 4px;background:linear-gradient(90deg,var(--w0),var(--wmid),var(--w1));-webkit-background-clip:text;background-clip:text;color:transparent}
+.chars{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.char{border:2px solid var(--line);border-radius:16px;padding:12px;text-align:center;background:var(--cell);transition:transform .15s}
+.char:hover{transform:translateY(-2px)}
+.char[aria-pressed="true"]{border-color:var(--gold);background:var(--cell-on);box-shadow:0 0 0 3px rgba(255,209,102,.18)}
+.char .av{width:58px;height:58px;margin:0 auto 6px;border-radius:50%;position:relative}
+.char .av::after{content:"";position:absolute;inset:14px 10px 22px;border-radius:12px;background:#0b1030;box-shadow:inset 0 0 8px var(--w0)}
+.char b{display:block;font-family:var(--f-display);font-size:22px;font-weight:400}
+.char small{color:var(--muted);font-size:12px}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0 18px}
+.how div{background:var(--cell);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.6;color:#cfd5f2;min-width:0}
+.how b{display:block;color:var(--ink);font-size:14px}
+kbd{font-family:var(--f-sym);font-size:11px;background:#262b5a;border-radius:5px;padding:1px 6px;border:1px solid var(--line)}
+
+/* element tile */
+.tile{position:relative;width:170px;height:190px;margin:4px auto 12px;border-radius:20px;background:linear-gradient(150deg,var(--cell-on),#0b0d24);border:2px solid var(--w0);box-shadow:0 0 40px rgba(46,242,226,.35),inset 0 0 30px rgba(139,108,255,.25);display:grid;place-items:center;direction:ltr}
+.tile .tn{position:absolute;top:10px;left:14px;font-family:var(--f-sym);font-weight:800;font-size:26px;color:var(--gold)}
+.tile .ts{font-family:var(--f-sym);font-weight:800;font-size:76px;line-height:1;margin-top:-6px}
+.tile .ta{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-family:var(--f-display);font-size:24px;direction:rtl}
+#card .sheet{max-width:440px;text-align:center}
+.hook{font-size:16px;background:var(--cell);border-radius:14px;padding:10px 14px}
+.trio{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.trio span{background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:4px 10px;font-size:13px;color:var(--muted)}
+.trio b{color:var(--ink)}
+
+/* quiz */
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.dots{display:flex;gap:5px}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--cell);border:1px solid var(--line)}
+.dots i.ok{background:var(--ok);border-color:var(--ok)}
+.qtext{font-size:clamp(20px,4.5vw,26px);font-weight:900;text-align:center;margin:18px 0 14px;line-height:1.6}
+.qtext b{color:var(--gold)}
+.qtext .sym{font-size:1.35em;color:var(--w0)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{min-height:62px;border-radius:14px;background:var(--cell);border:2px solid var(--line);font-size:20px;font-weight:900;padding:8px;transition:transform .1s,background .2s}
+.opt:hover:not(:disabled){background:var(--cell-on);transform:translateY(-2px)}
+.opt .sym{font-size:26px}
+.opt .k{font-family:var(--f-sym);font-size:10px;opacity:.45;margin-inline-start:6px;vertical-align:top}
+.opt.right{background:rgba(77,255,160,.18);border-color:var(--ok)}
+.opt.wrong{background:rgba(255,77,109,.18);border-color:var(--danger);animation:shake .35s}
+.opt:disabled{cursor:default}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fb{min-height:52px;margin-top:12px;text-align:center;font-size:15px;line-height:1.7}
+.fb .good{color:var(--ok);font-weight:900}.fb .bad{color:var(--danger);font-weight:900}
+
+/* periodic mini table */
+.ptwrap{overflow-x:auto;margin:12px 0;padding-bottom:4px;direction:ltr}
+.ptable{display:grid;grid-template-columns:repeat(18,minmax(30px,1fr));grid-template-rows:repeat(4,auto);gap:3px;direction:ltr;min-width:560px}
+.pc{aspect-ratio:1/1.1;border-radius:6px;background:var(--cell);border:1px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;position:relative}
+.pc .pn{font-family:var(--f-sym);font-size:9px;color:var(--muted);position:absolute;top:3px;left:4px}
+.pc .ps{font-family:var(--f-sym);font-weight:800;font-size:15px;color:var(--muted)}
+.pc.on{background:linear-gradient(150deg,#1f3a6b,#2a1d5c);border:1px solid var(--w0);box-shadow:0 0 10px rgba(46,242,226,.3)}
+.pc.on .ps{color:#fff}.pc.on .pn{color:var(--gold)}
+.pc.flash{animation:cellf .8s}
+@keyframes cellf{0%{transform:scale(1.6);background:var(--gold)}}
+.pc.ask{border:2px solid var(--gold);animation:blink .5s infinite alternate}
+button.pc{cursor:pointer;color:inherit;font:inherit;padding:0}
+#codexDetail{min-height:90px}
+.rmeta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.rmeta b{color:var(--ink);font-family:var(--f-sym)}
+.stars{font-size:46px;letter-spacing:6px;text-align:center;color:var(--gold);text-shadow:0 0 20px rgba(255,209,102,.6)}
+.stars .off{color:#2a2f5a;text-shadow:none}
+.statsgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.statsgrid div{background:var(--cell);border-radius:12px;padding:10px;text-align:center}
+.statsgrid b{display:block;font-family:var(--f-sym);font-size:22px}
+.statsgrid span{font-size:12px;color:var(--muted)}
+#nogl{display:none;position:fixed;inset:0;place-items:center;text-align:center;padding:24px;z-index:50;background:var(--void)}
+@media (max-width:640px){
+  #topbar{grid-template-columns:1fr auto;grid-template-areas:"period stats" "target target";gap:6px}
+  #pName{font-size:16px}#pProg i{width:14px;height:14px;font-size:8px}
+  #statPanel{min-width:128px}
+  #targetText{font-size:21px}
+  #toast{top:calc(env(safe-area-inset-top,0px) + 168px);font-size:13px}
+  .sheet{padding:16px;border-radius:18px}
+  .tile{width:140px;height:160px}.tile .ts{font-size:62px}
+  .opt{min-height:54px;font-size:17px}
+  .ptable{min-width:0;grid-template-columns:repeat(18,minmax(0,1fr));gap:2px}
+  .pc{border-radius:3px}.pc .ps{font-size:10px}.pc .pn{font-size:6px;top:1px;left:2px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="hud" hidden>
+  <div id="topbar">
+    <div id="pPanel" class="hp"><div id="pSub"></div><div id="pName"></div><div id="pProg"></div></div>
+    <div id="targetBox" class="hp"><div id="tLabel"></div><div id="targetText"></div><div id="tHint"></div></div>
+    <div id="statPanel" class="hp">
+      <div class="statrow"><span>الطاقة</span><b id="energyTxt">100</b></div>
+      <div class="bar"><div id="energyFill"></div></div>
+      <div class="statrow" style="margin-top:6px"><span>النقاط</span><b id="scoreTxt">0</b></div>
+      <div id="tools">
+        <button class="tbtn" id="hintBtn" title="تلميح">💡<kbd>H</kbd></button>
+        <button class="tbtn" id="codexBtn" title="الموسوعة">📖<kbd>C</kbd></button>
+        <button class="tbtn" id="soundBtn" title="الصوت">🔊</button>
+      </div>
+    </div>
+  </div>
+  <div id="wGauge">
+    <div class="wt">البُعد<br>الرابع</div>
+    <div id="wTrack"><div id="wTicks"></div><div id="wMarker">W</div></div>
+    <div id="wVal">0.50</div>
+  </div>
+  <div id="arrow"></div>
+  <div id="toast"></div>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+  <div id="touch">
+    <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div></div>
+    <div id="wBtns"><button class="wb" id="wUpB" aria-label="ارفع البعد الرابع">W ▲</button><button class="wb" id="wDnB" aria-label="اخفض البعد الرابع">W ▼</button></div>
+  </div>
+</div>
+
+<!-- start -->
+<div id="start" class="overlay">
+  <div class="sheet">
+    <div class="eyebrow">مغامرة في عالمٍ رباعيّ الأبعاد · العناصر من 1 إلى 21</div>
+    <h1 class="logo">بوابة البُعد الرابع</h1>
+    <p>انفجر مفاعل الكون الكيميائي، وتناثرت أنوية أول 21 عنصراً عبر أربعة عوالم مخفيّة في <b>البُعد الرابع W</b>. لا أحد يستطيع التنقّل بين شرائح هذا البُعد إلا «قافز الأبعاد». اجمع الأنوية بالترتيب، واهرب من ظلال الإنتروبيا، وافتح البوابات… ثم أعد تشغيل المفاعل.</p>
+    <div class="chars" role="group" aria-label="اختيار الشخصية">
+      <button class="char" id="charF" aria-pressed="true"><div class="av" style="background:radial-gradient(circle at 35% 30%,#fff,#ff8fc8 40%,#7a2a8f)"></div><b>نَوى</b><small>قافزة الأبعاد</small></button>
+      <button class="char" id="charM" aria-pressed="false"><div class="av" style="background:radial-gradient(circle at 35% 30%,#fff,#7fd8ff 40%,#24408f)"></div><b>فوتون</b><small>قافز الأبعاد</small></button>
+    </div>
+    <div class="how">
+      <div><b>الحركة</b><kbd>WASD</kbd> أو الأسهم، أو عصا اللمس</div>
+      <div><b>البُعد الرابع</b><kbd>E</kbd> للأعلى و<kbd>Q</kbd> للأسفل، أو عجلة الفأرة. الجدران والعناصر موجودة في شرائح معيّنة فقط</div>
+      <div><b>الحلقة المضيئة</b>على الأرض تعني نواة عنصر في شريحة أخرى من W. لونها يدلّك على قيمتها</div>
+      <div><b>ظلال الإنتروبيا</b>تستنزف طاقتك إذا كانت في شريحتك نفسها. غيّر W لتختفي منها</div>
+    </div>
+    <div class="row"><button class="btn" id="startBtn">ابدأ المغامرة</button><span id="bestTxt" style="color:var(--muted);font-size:13px"></span></div>
+  </div>
+</div>
+
+<!-- period intro -->
+<div id="intro" class="overlay" hidden>
+  <div class="sheet" style="text-align:center;max-width:520px">
+    <div class="eyebrow" id="iSub"></div>
+    <h2 id="iName" style="font-size:44px;margin:6px 0"></h2>
+    <p id="iDesc"></p>
+    <div class="trio" id="iRange"></div>
+    <button class="btn" id="introBtn"></button>
+  </div>
+</div>
+
+<!-- collect card -->
+<div id="card" class="overlay" hidden>
+  <div class="sheet">
+    <div class="eyebrow" id="cEyebrow"></div>
+    <div class="tile"><span class="tn" id="cN"></span><span class="ts" id="cS"></span><span class="ta" id="cA"></span></div>
+    <div class="trio" id="cTrio"></div>
+    <p class="hook" id="cHook"></p>
+    <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" id="cBtn"></button><button class="btn ghost" id="cSpeak" title="انطق">🔊</button></div>
+  </div>
+</div>
+
+<!-- quiz gate -->
+<div id="quiz" class="overlay" hidden>
+  <div class="sheet">
+    <div class="qhead"><div><div class="eyebrow">بوابة الأبعاد</div><h2 id="qTitle" style="font-size:28px"></h2></div><div class="dots" id="qDots"></div></div>
+    <div class="qtext" id="qText"></div>
+    <div class="opts" id="qOpts"></div>
+    <div class="fb" id="qFb"></div>
+  </div>
+</div>
+
+<!-- reactor -->
+<div id="reactor" class="overlay" hidden>
+  <div class="sheet" style="max-width:820px">
+    <div class="eyebrow">المهمة الأخيرة</div>
+    <h2 style="font-size:32px">إعادة تشغيل المفاعل</h2>
+    <p id="rIntro" style="font-size:14px"></p>
+    <div class="rmeta"><span>الأنوية <b id="rCount">0</b>/21</span><span>الوقت <b id="rTime">0</b> ث</span><span>الأخطاء <b id="rMiss">0</b></span></div>
+    <div class="ptwrap"><div class="ptable" id="rTable"></div></div>
+    <div class="qtext" id="rQ" style="margin-top:8px"></div>
+    <div class="opts" id="rOpts"></div>
+    <div class="fb" id="rFb"></div>
+  </div>
+</div>
+
+<!-- game over -->
+<div id="over" class="overlay" hidden>
+  <div class="sheet" style="text-align:center;max-width:480px">
+    <div class="eyebrow">نفدت الطاقة</div>
+    <h2 style="font-size:40px;color:var(--danger)">انهيار بُعدي!</h2>
+    <p id="overTxt"></p>
+    <button class="btn" id="overBtn"></button>
+  </div>
+</div>
+
+<!-- victory -->
+<div id="win" class="overlay" hidden>
+  <div class="sheet" style="max-width:820px">
+    <div class="eyebrow" style="text-align:center">عاد المفاعل إلى الحياة</div>
+    <h2 class="logo" style="text-align:center;font-size:clamp(36px,7vw,56px)" id="winTitle"></h2>
+    <div class="stars" id="wStars"></div>
+    <div class="statsgrid"><div><b id="wScore"></b><span>النقاط</span></div><div><b id="wAcc"></b><span>الدقّة</span></div><div><b id="wTime"></b><span>الوقت الكلي</span></div></div>
+    <p style="text-align:center" id="wMsg"></p>
+    <div class="ptwrap"><div class="ptable" id="wTable"></div></div>
+    <div class="row" style="justify-content:center"><button class="btn" id="againBtn"></button><button class="btn ghost" id="winCodex">📖 الموسوعة</button></div>
+  </div>
+</div>
+
+<!-- codex -->
+<div id="codex" class="overlay" hidden>
+  <div class="sheet" style="max-width:820px">
+    <div class="qhead"><div><div class="eyebrow">ما جمعته حتى الآن</div><h2 style="font-size:30px">موسوعة الأنوية</h2></div><button class="btn ghost" id="codexClose">إغلاق <kbd>C</kbd></button></div>
+    <div class="ptwrap"><div class="ptable" id="cxTable"></div></div>
+    <div id="codexDetail"></div>
+  </div>
+</div>
+
+<div id="nogl"><div><h2 style="font-family:var(--f-display);font-size:32px">المتصفح لا يدعم WebGL</h2><p>جرّب متصفحاً حديثاً مثل Chrome أو Safari أو Edge.</p></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+document.documentElement.lang='ar';document.documentElement.dir='rtl';
+
+/* ===================== DATA ===================== */
+const ELEMENTS=[
+ {n:1,s:'H',a:'هيدروجين',p:1,hook:'أخفّ العناصر وأولها، ووقود الشمس والنجوم. الرمز H أول حرف من Hydrogen.'},
+ {n:2,s:'He',a:'هيليوم',p:1,hook:'يرفع البالونات ويجعل الصوت رفيعاً مضحكاً. He من Helium، واسمه من «هيليوس» أي الشمس.'},
+ {n:3,s:'Li',a:'ليثيوم',p:2,hook:'قلب بطارية الجوال 🔋 Li من Lithium. تخيّل البطارية بثلاث شحطات = العدد 3.'},
+ {n:4,s:'Be',a:'بيريليوم',p:2,hook:'فلز خفيف وقوي صُنعت منه مرايا تلسكوب جيمس ويب. Be من Beryllium.'},
+ {n:5,s:'B',a:'بورون',p:2,hook:'رمزه حرف واحد: B من Boron. يدخل في زجاج أواني الفرن المقاوم للحرارة.'},
+ {n:6,s:'C',a:'كربون',p:2,hook:'في الألماس، وفي قلم الرصاص، وفي كل خلية من جسمك! C من Carbon.'},
+ {n:7,s:'N',a:'نيتروجين',p:2,hook:'يشكّل نحو 78٪ من الهواء الذي نتنفسه. N من Nitrogen.'},
+ {n:8,s:'O',a:'أكسجين',p:2,hook:'الرمز O دائري مثل الفم وهو يتنفس «أوه»! من Oxygen، ولا حياة بدونه.'},
+ {n:9,s:'F',a:'فلور',p:2,hook:'يُضاف إلى معجون الأسنان ليحميها من التسوس. F من Fluorine.'},
+ {n:10,s:'Ne',a:'نيون',p:2,hook:'يضيء اللافتات بالأحمر البرتقالي. Ne من Neon، وهو آخر عناصر الدورة الثانية.'},
+ {n:11,s:'Na',a:'صوديوم',p:3,hook:'رمزه Na من اسمه اللاتيني «ناتريوم» Natrium! وهو نصف ملح الطعام NaCl.'},
+ {n:12,s:'Mg',a:'مغنيسيوم',p:3,hook:'يحترق بضوء أبيض مبهر في الألعاب النارية. Mg من Magnesium.'},
+ {n:13,s:'Al',a:'ألومنيوم',p:3,hook:'علب المشروبات ورقائق التغليف اللامعة. Al من Aluminium.'},
+ {n:14,s:'Si',a:'سيليكون',p:3,hook:'رمل الشاطئ وقلب معالجات الحاسوب، ومنه اسم «وادي السيليكون». Si من Silicon.'},
+ {n:15,s:'P',a:'فوسفور',p:3,hook:'في رأس عود الثقاب وفي عظامك. P من Phosphorus.'},
+ {n:16,s:'S',a:'كبريت',p:3,hook:'أصفر اللون وتشمّ رائحته قرب البراكين. S من Sulfur.'},
+ {n:17,s:'Cl',a:'كلور',p:3,hook:'يعقّم مياه المسابح، وهو النصف الثاني من ملح الطعام NaCl. Cl من Chlorine.'},
+ {n:18,s:'Ar',a:'أرجون',p:3,hook:'غاز خامل «كسول» يملأ بعض المصابيح. Ar من Argon، وهو آخر عناصر الدورة الثالثة.'},
+ {n:19,s:'K',a:'بوتاسيوم',p:4,hook:'رمزه K من اسمه اللاتيني «كاليوم» Kalium! وتجده بكثرة في الموز 🍌.'},
+ {n:20,s:'Ca',a:'كالسيوم',p:4,hook:'يبني العظام والأسنان، وتجده في الحليب 🥛. Ca من Calcium.'},
+ {n:21,s:'Sc',a:'سكانديوم',p:4,hook:'سُمّي نسبةً إلى إسكندنافيا Scandinavia، وهو أول العناصر الانتقالية.'},
+];
+const EL=n=>ELEMENTS[n-1];
+const PERIODS=[
+ {sub:'العالم الأول · الدورة الأولى',name:'سديم الهيدروجين',desc:'سحابة غازية هادئة يسكنها أخفّ عنصرين في الكون. هنا تتعلّم القفز في البُعد الرابع.',els:[1,2],hue:.55,size:20,walls:9,enemies:1,crystals:2,gateQ:3},
+ {sub:'العالم الثاني · الدورة الثانية',name:'غابة البلّورات',desc:'أعمدة بلّورية تظهر وتختفي بين شرائح W، وثمانية عناصر تنتظر.',els:[3,4,5,6,7,8,9,10],hue:.38,size:28,walls:20,enemies:2,crystals:4,gateQ:6},
+ {sub:'العالم الثالث · الدورة الثالثة',name:'كهوف الملح والبراكين',desc:'متاهة من الملح والكبريت. انتبه: بعض الرموز لا تشبه أسماءها!',els:[11,12,13,14,15,16,17,18],hue:.08,size:30,walls:26,enemies:3,crystals:4,gateQ:7},
+ {sub:'العالم الرابع · الدورة الرابعة',name:'قلب المفاعل',desc:'أقرب نقطة إلى المفاعل المنهار. ثلاثة عناصر فقط… لكن الظلال هنا أسرع.',els:[19,20,21],hue:.78,size:26,walls:24,enemies:4,crystals:4,gateQ:6},
+];
+const SPELL={A:'إيه',B:'بي',C:'سي',E:'إي',F:'إف',H:'إتش',I:'آي',K:'كيه',L:'إل',M:'إم',N:'إن',O:'أو',P:'بي',R:'آر',S:'إس',G:'جي',a:'إيه',c:'سي',e:'إي',g:'جي',i:'آي',l:'إل',r:'آر'};
+
+/* ===================== HELPERS ===================== */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+let gender='f';
+const DEBUG=location.hash==='#debug';
+const g=(m,f)=>gender==='f'?f:m;
+const symHTML=e=>`<span class="sym">${e.s}</span>`;
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function wColor(w){return new THREE.Color().setHSL((0.5+clamp(w,0,1)*0.42)%1,0.9,0.58)}
+function wCss(w){return `hsl(${Math.round((0.5+clamp(w,0,1)*0.42)*360)%360} 90% 60%)`}
+
+/* ===================== AUDIO ===================== */
+let actx=null,master=null,drone=null,muted=false,voices=[];
+function initAudio(){
+  if(actx)return;
+  try{
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    master=actx.createGain();master.gain.value=muted?0:0.5;master.connect(actx.destination);
+    const o1=actx.createOscillator(),o2=actx.createOscillator(),f=actx.createBiquadFilter(),gn=actx.createGain();
+    o1.type='sawtooth';o2.type='sine';f.type='lowpass';f.frequency.value=400;gn.gain.value=0.035;
+    o1.connect(f);o2.connect(f);f.connect(gn);gn.connect(master);o1.start();o2.start();
+    drone={o1,o2,f};
+  }catch(e){actx=null}
+}
+function tone(freq,dur,type,vol,delay,slide){
+  if(!actx)return;
+  const t=actx.currentTime+(delay||0),o=actx.createOscillator(),gn=actx.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(freq,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+dur);
+  gn.gain.setValueAtTime(0.0001,t);gn.gain.exponentialRampToValueAtTime(vol||0.2,t+0.015);gn.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(gn);gn.connect(master);o.start(t);o.stop(t+dur+0.05);
+}
+const sfx={
+  collect(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,0.18,'triangle',0.16,i*0.06))},
+  wrong(){tone(220,0.22,'sawtooth',0.12,0,110);tone(160,0.3,'square',0.06,0.08)},
+  hit(){tone(90,0.4,'sawtooth',0.22,0,40);tone(300,0.15,'square',0.08)},
+  block(){tone(140,0.12,'square',0.08);tone(120,0.12,'square',0.08,0.08)},
+  crystal(){tone(880,0.12,'sine',0.14);tone(1320,0.2,'sine',0.12,0.06)},
+  portal(){[262,330,392,523,659,784].forEach((f,i)=>tone(f,0.5,'sine',0.1,i*0.09))},
+  right(){tone(660,0.12,'triangle',0.15);tone(990,0.2,'triangle',0.15,0.08)},
+  click(){tone(600,0.05,'square',0.05)},
+  win(){[523,659,784,1047,784,1047,1319,1568].forEach((f,i)=>tone(f,0.3,'triangle',0.13,i*0.11))}
+};
+function updateDrone(){
+  if(!drone)return;const t=actx.currentTime;
+  drone.o1.frequency.setTargetAtTime(55+W*55,t,0.15);drone.o2.frequency.setTargetAtTime(110+W*165,t,0.15);
+  drone.f.frequency.setTargetAtTime(250+W*900+(wShifting?500:0),t,0.1);
+}
+function loadVoices(){try{voices=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.toLowerCase().startsWith('ar'))}catch(e){}}
+if('speechSynthesis' in window){loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices}catch(e){}}
+function speak(e){
+  if(muted||!voices.length)return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(`${e.a}. الرمز ${e.s.split('').map(c=>SPELL[c]||c).join(' ')}. العدد الذري ${e.n}`);u.voice=voices[0];u.lang=voices[0].lang;u.rate=0.9;speechSynthesis.speak(u)}catch(err){}
+}
+
+/* ===================== THREE SETUP ===================== */
+let renderer;
+try{
+  if(typeof THREE==='undefined')throw new Error('no three');
+  renderer=new THREE.WebGLRenderer({antialias:true});
+}catch(e){$('nogl').style.display='grid';$('start').hidden=true;return}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+$('stage').appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x05060f,0.02);
+const camera=new THREE.PerspectiveCamera(52,1,0.1,500);
+scene.add(new THREE.AmbientLight(0x8890c0,0.55));
+const sun=new THREE.DirectionalLight(0xffffff,0.7);sun.position.set(10,30,12);scene.add(sun);
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+
+// stars
+{const g3=new THREE.BufferGeometry(),N=1600,p=new Float32Array(N*3);
+ for(let i=0;i<N;i++){const u=Math.random()*2-1,th=Math.random()*Math.PI*2,r=180,s=Math.sqrt(1-u*u);p[i*3]=r*s*Math.cos(th);p[i*3+1]=Math.abs(r*u)*0.9+5;p[i*3+2]=r*s*Math.sin(th)}
+ g3.setAttribute('position',new THREE.BufferAttribute(p,3));
+ scene.add(new THREE.Points(g3,new THREE.PointsMaterial({color:0xc8d0ff,size:0.7,sizeAttenuation:true,fog:false})));}
+
+// floor + grid
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(400,400),new THREE.MeshStandardMaterial({color:0x0a0c1c,roughness:0.95,metalness:0.05}));
+floor.rotation.x=-Math.PI/2;scene.add(floor);
+let grid=null;
+
+// tesseract (true 4D hypercube projected to 3D)
+const TV=[];for(let i=0;i<16;i++)TV.push([i&1?1:-1,i&2?1:-1,i&4?1:-1,i&8?1:-1]);
+const TE=[];for(let i=0;i<16;i++)for(let b=0;b<4;b++){const j=i^(1<<b);if(j>i)TE.push([i,j])}
+function makeTesseract(color,opacity){
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(TE.length*6),3));
+  return new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color,transparent:true,opacity:opacity||1,fog:false}));
+}
+function projTesseract(ls,a1,a2,a3,scale){
+  const pos=ls.geometry.attributes.position.array,P=[];
+  for(const v of TV){let[x,y,z,w]=v,c,s;
+    c=Math.cos(a1);s=Math.sin(a1);[x,w]=[x*c-w*s,x*s+w*c];
+    c=Math.cos(a2);s=Math.sin(a2);[y,w]=[y*c-w*s,y*s+w*c];
+    c=Math.cos(a3);s=Math.sin(a3);[x,z]=[x*c-z*s,x*s+z*c];
+    const k=scale/(2.8-w);P.push([x*k,y*k,z*k])}
+  let o=0;for(const[i,j]of TE){pos[o++]=P[i][0];pos[o++]=P[i][1];pos[o++]=P[i][2];pos[o++]=P[j][0];pos[o++]=P[j][1];pos[o++]=P[j][2]}
+  ls.geometry.attributes.position.needsUpdate=true;
+}
+const skyTess=makeTesseract(0x8b6cff,0.75);skyTess.position.set(0,22,-30);scene.add(skyTess);
+
+/* ===================== PLAYER ===================== */
+const PR=0.6,SLICE=0.16,ECHO=0.45,WSPEED=0.5;
+const player={x:0,z:0,vx:0,vz:0,inv:0,face:0};
+let W=0.5,wShifting=false;
+const pg=new THREE.Group();scene.add(pg);
+const suitMat=new THREE.MeshStandardMaterial({color:0xff8fc8,roughness:0.4,metalness:0.3,emissive:0x220814});
+const body=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.52,1.0,18),suitMat);body.position.y=0.75;pg.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(0.46,22,16),new THREE.MeshStandardMaterial({color:0xf4f6ff,roughness:0.25,metalness:0.2}));head.position.y=1.62;pg.add(head);
+const visorMat=new THREE.MeshStandardMaterial({color:0x061028,emissive:0x2ef2e2,emissiveIntensity:0.6,roughness:0.1,metalness:0.8});
+const visor=new THREE.Mesh(new THREE.SphereGeometry(0.36,20,12,-Math.PI/2.2,Math.PI/1.1,Math.PI/3.2,Math.PI/2.6),visorMat);visor.position.set(0,1.64,0.12);pg.add(visor);
+const pack=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.6,0.3),new THREE.MeshStandardMaterial({color:0x2a2f5a,roughness:0.5}));pack.position.set(0,0.95,-0.42);pg.add(pack);
+const ringMat=new THREE.MeshBasicMaterial({color:0x2ef2e2,transparent:true,opacity:0.85});
+const rings=[];for(let i=0;i<2;i++){const r=new THREE.Mesh(new THREE.TorusGeometry(1.0,0.03,6,48),ringMat);r.position.y=1.1;pg.add(r);
+  const e=new THREE.Mesh(new THREE.SphereGeometry(0.09,8,6),new THREE.MeshBasicMaterial({color:0xffffff}));r.add(e);e.position.x=1.0;rings.push(r)}
+const pLight=new THREE.PointLight(0x2ef2e2,1.3,14);pLight.position.y=2.2;pg.add(pLight);
+function setGender(f){gender=f?'f':'m';suitMat.color.set(f?0xff8fc8:0x6fb8ff);suitMat.emissive.set(f?0x220814:0x081628);
+  $('charF').setAttribute('aria-pressed',f);$('charM').setAttribute('aria-pressed',!f)}
+
+/* ===================== WORLD ===================== */
+let world={group:null,walls:[],orbs:[],crystals:[],enemies:[],portal:null};
+let periodIdx=0,retry=0,targetPos=0,portalOpen=false,hintT=0;
+const sphereGeo=new THREE.SphereGeometry(1,28,18),coreGeo=new THREE.SphereGeometry(0.4,12,8);
+const ringGeo=new THREE.RingGeometry(1.15,1.45,40),octGeo=new THREE.OctahedronGeometry(0.5),icoGeo=new THREE.IcosahedronGeometry(0.85,0),icoGeo2=new THREE.IcosahedronGeometry(1.2,1);
+
+function disposeGroup(g0){g0.traverse(o=>{if(o.geometry&&![sphereGeo,coreGeo,ringGeo,octGeo,icoGeo,icoGeo2].includes(o.geometry))o.geometry.dispose();
+  if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}})}
+function makeLabel(text,css){
+  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  x.beginPath();x.arc(64,64,56,0,Math.PI*2);x.fillStyle='rgba(5,6,18,.82)';x.fill();x.lineWidth=7;x.strokeStyle=css;x.stroke();
+  x.fillStyle='#fff';x.font=`800 ${text.length>1?56:64}px Poppins, Arial, sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(text,64,68);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));s.scale.set(2.1,2.1,1);s.renderOrder=10;return s;
+}
+const solidAt=(wl,w)=>w>=wl.w0&&w<=wl.w1;
+function rectDist(wl,x,z){const dx=Math.max(Math.abs(x-wl.x)-wl.sx/2,0),dz=Math.max(Math.abs(z-wl.z)-wl.sz/2,0);return Math.hypot(dx,dz)}
+function freeAt(x,z,w,m){for(const wl of world.walls)if(solidAt(wl,w)&&rectDist(wl,x,z)<m)return false;return true}
+
+function addWall(x,z,sx,sz,h,w0,w1,perm,hue){
+  const col=perm?new THREE.Color(0x3a4378):wColor((w0+w1)/2);
+  const geo=new THREE.BoxGeometry(sx,h,sz);
+  const mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:perm?0.15:0.35,transparent:true,opacity:0.8,roughness:0.35,metalness:0.2});
+  const m=new THREE.Mesh(geo,mat);m.position.set(x,h/2,z);
+  const ed=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:perm?0x7c86d8:col.clone().offsetHSL(0,0,0.2),transparent:true}));
+  m.add(ed);world.group.add(m);
+  const wl={x,z,sx,sz,w0,w1,perm,mesh:m,edges:ed,col,flash:0};world.walls.push(wl);return wl;
+}
+
+function buildPeriod(i){
+  if(world.group){scene.remove(world.group);disposeGroup(world.group)}
+  world={group:new THREE.Group(),walls:[],orbs:[],crystals:[],enemies:[],portal:null};scene.add(world.group);
+  const P=PERIODS[i],R=mulberry32(4242+i*977+retry*131),L=P.size;
+  // theme
+  if(grid){scene.remove(grid);grid.geometry.dispose();grid.material.dispose()}
+  const gc=new THREE.Color().setHSL(P.hue,0.7,0.35);
+  grid=new THREE.GridHelper(L*2+2,(L*2+2)/2,gc,gc);grid.material.transparent=true;grid.material.opacity=0.28;grid.position.y=0.01;scene.add(grid);
+  floor.material.color.setHSL(P.hue,0.45,0.05);
+  skyTess.material.color.setHSL(P.hue,0.8,0.65);
+  // boundary (exists in all W)
+  addWall(0,-L-1,L*2+4,2,3,-1,2,true);addWall(0,L+1,L*2+4,2,3,-1,2,true);
+  addWall(-L-1,0,2,L*2+4,3,-1,2,true);addWall(L+1,0,2,L*2+4,3,-1,2,true);
+  // hyper-walls: each exists only in a band of W
+  let tries=0,count=0;
+  while(count<P.walls&&tries<800){tries++;
+    const hz=R()<0.5,len=4+R()*(L*0.45),sx=hz?len:1.3,sz=hz?1.3:len;
+    const x=(R()*2-1)*(L-3),z=(R()*2-1)*(L-3);
+    const tmp={x,z,sx,sz};if(rectDist(tmp,0,0)<6.5)continue;
+    const span=0.2+R()*0.38,w0=R()*(1-span);
+    addWall(x,z,sx,sz,2.2+R()*1.6,w0,w0+span,false);count++;
+  }
+  // element orbs
+  const placed=[];
+  const place=(minC,space,mw)=>{for(let t=0;t<400;t++){const x=(R()*2-1)*(L-3),z=(R()*2-1)*(L-3),w=0.06+R()*0.88;
+      if(Math.hypot(x,z)<minC)continue;if(placed.some(p=>Math.hypot(p[0]-x,p[1]-z)<space))continue;if(!freeAt(x,z,w,mw))continue;placed.push([x,z]);return{x,z,w}}
+    return{x:(R()*2-1)*6,z:8,w:0.5}};
+  P.els.forEach((n,k)=>{
+    const e=EL(n),pos=place(7,Math.min(8,L*0.35),2);
+    const col=wColor(pos.w),css=wCss(pos.w);
+    const grp=new THREE.Group();grp.position.set(pos.x,0,pos.z);world.group.add(grp);
+    const sph=new THREE.Mesh(sphereGeo,new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.7,transparent:true,opacity:0.55,roughness:0.1,metalness:0.4}));sph.position.y=1.7;grp.add(sph);
+    const core=new THREE.Mesh(coreGeo,new THREE.MeshBasicMaterial({color:0xffffff}));sph.add(core);
+    const lab=makeLabel(e.s,css);lab.position.y=3.6;grp.add(lab);
+    const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.5,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=0.04;grp.add(ring);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,40,12,1,true),new THREE.MeshBasicMaterial({color:0xffd166,transparent:true,opacity:0.0,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=20;grp.add(beam);
+    world.orbs.push({el:e,x:pos.x,z:pos.z,w:pos.w,grp,sph,lab,ring,beam,done:false,cool:0,phase:k});
+  });
+  for(let k=0;k<P.crystals;k++){const pos=place(5,4,1.5);
+    const m=new THREE.Mesh(octGeo,new THREE.MeshStandardMaterial({color:0x4dffa0,emissive:0x1aa860,emissiveIntensity:0.8,transparent:true}));m.position.set(pos.x,1.1,pos.z);world.group.add(m);
+    world.crystals.push({x:pos.x,z:pos.z,w:pos.w,m,done:false})}
+  for(let k=0;k<P.enemies;k++){
+    let x,z;do{x=(R()*2-1)*(L-4);z=(R()*2-1)*(L-4)}while(Math.hypot(x,z)<L*0.55);
+    const grp=new THREE.Group();grp.position.set(x,1.2,z);world.group.add(grp);
+    const core=new THREE.Mesh(icoGeo,new THREE.MeshStandardMaterial({color:0x0a0008,emissive:0x400010,roughness:0.6,transparent:true}));grp.add(core);
+    const shell=new THREE.Mesh(icoGeo2,new THREE.MeshBasicMaterial({color:0xff2d55,wireframe:true,transparent:true}));grp.add(shell);
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(0.16,8,6),new THREE.MeshBasicMaterial({color:0xff6b81,transparent:true}));eye.position.set(0,0.15,0.75);grp.add(eye);
+    world.enemies.push({x,z,w:R(),grp,core,shell,eye,stun:0,speed:2.1+i*0.45+R()*0.5,wRate:0.05+i*0.025})}
+  // portal (exists in every W slice)
+  const pgp=new THREE.Group();pgp.visible=false;world.group.add(pgp);
+  const pt=makeTesseract(0xffd166,1);pt.position.y=2.6;pgp.add(pt);
+  const pr=new THREE.Mesh(new THREE.RingGeometry(2.2,2.6,48),new THREE.MeshBasicMaterial({color:0xffd166,transparent:true,opacity:0.8,side:THREE.DoubleSide}));pr.rotation.x=-Math.PI/2;pr.position.y=0.05;pgp.add(pr);
+  const pb=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,60,24,1,true),new THREE.MeshBasicMaterial({color:0xffd166,transparent:true,opacity:0.12,side:THREE.DoubleSide,depthWrite:false}));pb.position.y=30;pgp.add(pb);
+  world.portal={grp:pgp,tess:pt};
+  player.x=0;player.z=0;player.vx=player.vz=0;player.inv=0;W=0.5;targetPos=0;portalOpen=false;hintT=0;
+  buildTicks();renderProgress();updateTarget();
+}
+
+/* ===================== HUD ===================== */
+let tickEls=[];
+function buildTicks(){
+  const box=$('wTicks');box.innerHTML='';tickEls=[];
+  world.orbs.forEach(o=>{const t=document.createElement('div');t.className='tick';t.style.bottom=(o.w*100)+'%';t.style.background=wCss(o.w);box.appendChild(t);o.tick=t});
+  world.crystals.forEach(c=>{const t=document.createElement('div');t.className='tick crystal';t.style.bottom=(c.w*100)+'%';box.appendChild(t);c.tick=t});
+  world.enemies.forEach(e=>{const t=document.createElement('div');t.className='tick enemy';box.appendChild(t);e.tick=t});
+}
+function renderProgress(){
+  const P=PERIODS[periodIdx];$('pSub').textContent=P.sub;$('pName').textContent=P.name;
+  $('pProg').innerHTML=P.els.map(n=>`<i class="${collected.has(n)?'on':''}">${collected.has(n)?EL(n).s:n}</i>`).join('');
+}
+function currentTarget(){const P=PERIODS[periodIdx];return targetPos<P.els.length?EL(P.els[targetPos]):null}
+function updateTarget(){
+  const t=currentTarget();
+  if(!t){$('tLabel').textContent=g('توجّه إلى','توجّهي إلى');$('targetText').innerHTML='البوابة الذهبية';$('tHint').textContent='في مركز العالم، وموجودة في كل شرائح W';return}
+  $('tLabel').textContent=g('ابحث عن نواة','ابحثي عن نواة');
+  $('targetText').innerHTML=`<span class="num">${t.n}</span><span>${t.a}</span>`;
+  $('tHint').textContent=g('ما رمزه؟ اقترب من الكرة التي تحمل رمزه','ما رمزه؟ اقتربي من الكرة التي تحمل رمزه');
+}
+let energy=100,score=0,combo=0;
+function setEnergy(v){energy=clamp(v,0,100);$('energyTxt').textContent=Math.round(energy);$('energyFill').style.width=energy+'%'}
+function addScore(v){score=Math.max(0,score+Math.round(v));$('scoreTxt').textContent=score}
+let toastTimer=0;
+function toast(html,kind,dur){const t=$('toast');t.innerHTML=html;t.className='show '+(kind||'info');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='',dur||3200)}
+
+/* ===================== GAME STATE ===================== */
+let state='start';
+const collected=new Set();
+const stats={};ELEMENTS.forEach(e=>stats[e.n]={c:0,w:0});
+let right=0,wrongCount=0,gameStart=0,targetStart=0,shake=0;
+const tut={moved:false,shifted:false,ring:false,enemy:false,block:false,wrongOrb:false};
+
+function show(id){['start','intro','card','quiz','reactor','over','win','codex'].forEach(k=>$(k).hidden=k!==id)}
+function hideAll(){show('__none')}
+
+function startGame(){
+  initAudio();sfx.click();
+  collected.clear();ELEMENTS.forEach(e=>stats[e.n]={c:0,w:0});
+  right=0;wrongCount=0;score=0;combo=0;addScore(0);setEnergy(100);retry=0;periodIdx=0;gameStart=performance.now();
+  $('hud').hidden=false;
+  openIntro();
+}
+function openIntro(){
+  const P=PERIODS[periodIdx];buildPeriod(periodIdx);
+  $('iSub').textContent=P.sub;$('iName').textContent=P.name;$('iDesc').textContent=P.desc;
+  $('iRange').innerHTML=`<span>العناصر من <b class="num">${P.els[0]}</b> إلى <b class="num">${P.els[P.els.length-1]}</b></span><span><b class="num">${P.els.length}</b> ${P.els.length>2?'أنوية':'نواتان'}</span><span>ظلال: <b class="num">${P.enemies}</b></span>`;
+  $('introBtn').textContent=g('انطلق','انطلقي');
+  state='intro';show('intro');
+}
+function beginPeriod(){
+  sfx.click();hideAll();state='play';targetStart=performance.now();
+  if(periodIdx===0){
+    toast(g('تحرّك بـ <kbd>WASD</kbd> أو الأسهم. ابحث عن الكرة التي تحمل رمز الهيدروجين','تحرّكي بـ <kbd>WASD</kbd> أو الأسهم. ابحثي عن الكرة التي تحمل رمز الهيدروجين'),'info',4500);
+    setTimeout(()=>{if(state==='play'&&!tut.shifted)toast(g('اضغط <kbd>E</kbd> و<kbd>Q</kbd> (أو العجلة) لتغيير البُعد الرابع W… راقب الجدران!','اضغطي <kbd>E</kbd> و<kbd>Q</kbd> (أو العجلة) لتغيير البُعد الرابع W… راقبي الجدران!'),'info',5000)},5200);
+  }
+}
+
+/* ===================== INPUT ===================== */
+const keys={};let wheelAcc=0,joy={x:0,y:0},wHold=0;
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)&&state!=='start')e.preventDefault();
+  if(e.repeat)return;
+  if(state==='play'){if(e.code==='KeyH')useHint();if(e.code==='KeyC')openCodex()}
+  else if(state==='codex'&&(e.code==='KeyC'||e.code==='Escape'))closeCodex();
+  else if(state==='card'&&(e.code==='Enter'||e.code==='Space'))closeCard();
+  else if(state==='intro'&&(e.code==='Enter'||e.code==='Space'))beginPeriod();
+  else if((state==='quiz'||state==='reactor')&&/^Digit[1-4]$/.test(e.code)){const b=document.querySelectorAll(`#${state==='quiz'?'qOpts':'rOpts'} .opt`)[+e.code.slice(5)-1];if(b&&!b.disabled)b.click()}
+  else if((state==='quiz'||state==='reactor')&&(e.code==='Enter'||e.code==='Space')){const n=document.querySelector(`#${state==='quiz'?'qFb':'rFb'} .btn`);if(n){e.preventDefault();n.click()}}
+});
+addEventListener('keyup',e=>{keys[e.code]=false});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;wHold=0});
+renderer.domElement.addEventListener('wheel',e=>{if(state==='play'){wheelAcc+=-e.deltaY*0.0005;e.preventDefault()}},{passive:false});
+const isTouch=('ontouchstart' in window)||(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
+if(isTouch)document.body.classList.add('touch');
+{const zone=$('joyZone'),base=$('joyBase'),knob=$('joyKnob');let pid=null,cx=0,cy=0;
+ zone.addEventListener('pointerdown',e=>{pid=e.pointerId;zone.setPointerCapture(pid);const r=base.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;move(e)});
+ const move=e=>{if(e.pointerId!==pid)return;let dx=e.clientX-cx,dy=e.clientY-cy;const d=Math.hypot(dx,dy),m=50;if(d>m){dx*=m/d;dy*=m/d}knob.style.transform=`translate(${dx}px,${dy}px)`;joy.x=dx/m;joy.y=dy/m};
+ zone.addEventListener('pointermove',move);
+ const end=e=>{if(e.pointerId!==pid)return;pid=null;joy.x=joy.y=0;knob.style.transform=''};
+ zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end);}
+[['wUpB',1],['wDnB',-1]].forEach(([id,v])=>{const b=$(id);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();wHold=v;try{b.setPointerCapture(e.pointerId)}catch(_){}});
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>{if(wHold===v)wHold=0}))});
+
+/* ===================== GAMEPLAY ===================== */
+function collide(x,z){
+  for(let it=0;it<2;it++)for(const wl of world.walls){if(!solidAt(wl,W))continue;
+    const hx=wl.sx/2,hz=wl.sz/2,cx=clamp(x,wl.x-hx,wl.x+hx),cz=clamp(z,wl.z-hz,wl.z+hz);let dx=x-cx,dz=z-cz;const d2=dx*dx+dz*dz;
+    if(d2<PR*PR){if(d2>1e-8){const d=Math.sqrt(d2);x=cx+dx/d*PR;z=cz+dz/d*PR}
+      else{const l=x-(wl.x-hx),r=(wl.x+hx)-x,t=z-(wl.z-hz),b=(wl.z+hz)-z,m=Math.min(l,r,t,b);
+        if(m===l)x=wl.x-hx-PR;else if(m===r)x=wl.x+hx+PR;else if(m===t)z=wl.z-hz-PR;else z=wl.z+hz+PR}}}
+  return[x,z];
+}
+let blockCool=0;
+function tryShiftW(d){
+  if(!d)return;const nw=clamp(W+d,0,1);if(nw===W)return;
+  for(const wl of world.walls){if(wl.perm)continue;
+    if(!solidAt(wl,W)&&solidAt(wl,nw)&&rectDist(wl,player.x,player.z)<PR){wl.flash=1;
+      if(blockCool<=0){sfx.block();blockCool=0.6;
+        if(!tut.block){tut.block=true;toast(g('لا يمكنك القفز هنا: في تلك الشريحة من W يوجد جدار في مكانك نفسه! ابتعد قليلاً ثم حاول.','لا يمكنكِ القفز هنا: في تلك الشريحة من W يوجد جدار في مكانكِ نفسه! ابتعدي قليلاً ثم حاولي.'),'bad',4200)}}
+      return}}
+  W=nw;if(!tut.shifted&&Math.abs(W-0.5)>0.08){tut.shifted=true;toast(g('رائع! كل لون على المقياس الجانبي يمثّل شريحة من البُعد الرابع. الشُّرط البيضاء = أنوية العناصر.','رائع! كل لون على المقياس الجانبي يمثّل شريحة من البُعد الرابع. الشُّرط البيضاء = أنوية العناصر.'),'good',4500)}
+}
+function useHint(){
+  if(state!=='play'||!currentTarget()||hintT>0)return;
+  hintT=7;addScore(-25);sfx.click();
+  toast(g('شعاع ذهبي يدلّك على النواة، والسهم يشير إليها. (-25 نقطة)','شعاع ذهبي يدلّكِ على النواة، والسهم يشير إليها. (-25 نقطة)'),'info',2600);
+}
+function burst(x,y,z,color,n){for(let i=0;i<(n||28);i++){const m=new THREE.Mesh(coreGeo,new THREE.MeshBasicMaterial({color,transparent:true}));m.scale.setScalar(0.25);m.position.set(x,y,z);scene.add(m);
+  const a=Math.random()*Math.PI*2,u=Math.random()*2-1,s=4+Math.random()*6;parts.push({m,vx:Math.cos(a)*s*Math.sqrt(1-u*u),vy:Math.abs(u)*s+2,vz:Math.sin(a)*s*Math.sqrt(1-u*u),life:1})}}
+const parts=[];
+
+function update(dt){
+  // movement (screen-relative: up = -z)
+  let mx=0,mz=0;
+  if(keys.KeyW||keys.ArrowUp)mz-=1;if(keys.KeyS||keys.ArrowDown)mz+=1;if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;
+  mx+=joy.x;mz+=joy.y;const ml=Math.hypot(mx,mz);if(ml>1){mx/=ml;mz/=ml}
+  const sp=7.2;player.vx=lerp(player.vx,mx*sp,Math.min(1,dt*12));player.vz=lerp(player.vz,mz*sp,Math.min(1,dt*12));
+  if(ml>0.1){tut.moved=true;player.face=Math.atan2(player.vx,player.vz)}
+  let nx=player.x+player.vx*dt,nz=player.z+player.vz*dt;[nx,nz]=collide(nx,nz);player.x=nx;player.z=nz;
+  // 4th dimension
+  let wd=0;if(keys.KeyE||keys.PageUp)wd+=1;if(keys.KeyQ||keys.PageDown)wd-=1;wd+=wHold;
+  wShifting=wd!==0||Math.abs(wheelAcc)>0.001;
+  tryShiftW(wd*WSPEED*dt+wheelAcc);wheelAcc=0;
+  blockCool-=dt;player.inv-=dt;hintT=Math.max(0,hintT-dt);
+  // orbs
+  const tgt=currentTarget();
+  for(const o of world.orbs){if(o.done)continue;o.cool-=dt;
+    const dw=Math.abs(o.w-W),d=Math.hypot(o.x-player.x,o.z-player.z);
+    if(!tut.ring&&d<6&&dw>SLICE&&dw<ECHO&&periodIdx===0){tut.ring=true;toast(g('هذه الحلقة = نواة مخفيّة في شريحة أخرى. غيّر W حتى تظهر الكرة!','هذه الحلقة = نواة مخفيّة في شريحة أخرى. غيّري W حتى تظهر الكرة!'),'info',4500)}
+    if(d<1.8&&dw<0.1&&o.cool<=0){
+      if(tgt&&o.el.n===tgt.n)collectOrb(o);
+      else{o.cool=1.4;wrongCount++;stats[o.el.n].w+=0;combo=0;setEnergy(energy-8);addScore(-15);sfx.wrong();shake=0.25;
+        const ang=Math.atan2(player.x-o.x,player.z-o.z);[player.x,player.z]=collide(player.x+Math.sin(ang)*1.6,player.z+Math.cos(ang)*1.6);
+        toast(`هذه نواة ${symHTML(o.el)} = <b>${o.el.a}</b> (العدد الذري <span class="num">${o.el.n}</span>). ${g('أنت تبحث','أنتِ تبحثين')} عن <b>${tgt.a}</b>`,'bad',4200);
+        if(energy<=0)return gameOver()}}
+  }
+  // crystals
+  for(const c of world.crystals){if(c.done)continue;if(Math.hypot(c.x-player.x,c.z-player.z)<1.4&&Math.abs(c.w-W)<0.1){c.done=true;c.m.visible=false;c.tick.remove();setEnergy(energy+20);sfx.crystal();burst(c.x,1.1,c.z,0x4dffa0,16);toast('بلّورة طاقة +20','good',1500)}}
+  // enemies
+  let danger=0;
+  for(const e of world.enemies){
+    const dx=player.x-e.x,dz=player.z-e.z,d=Math.hypot(dx,dz)||1;
+    if(e.stun>0){e.stun-=dt}else{const s=e.speed*(d<4?1.15:1);e.x+=dx/d*s*dt;e.z+=dz/d*s*dt}
+    e.w+=clamp(W-e.w,-e.wRate*dt,e.wRate*dt);
+    const dw=Math.abs(e.w-W);
+    if(d<9&&dw<0.16)danger=Math.max(danger,(1-d/9)*(1-dw/0.16));
+    if(!tut.enemy&&d<10&&dw<0.25){tut.enemy=true;toast(g('ظلّ إنتروبيا يقترب! إذا كان في شريحتك سيستنزف طاقتك. غيّر W بسرعة لتهرب منه.','ظلّ إنتروبيا يقترب! إذا كان في شريحتكِ سيستنزف طاقتكِ. غيّري W بسرعة لتهربي منه.'),'bad',4500)}
+    if(d<1.35&&dw<0.09&&player.inv<=0){player.inv=1.5;e.stun=1.3;e.x-=dx/d*3;e.z-=dz/d*3;setEnergy(energy-18);combo=0;sfx.hit();shake=0.6;$('flash').style.opacity=0.35;setTimeout(()=>$('flash').style.opacity=0,120);
+      if(energy<=0)return gameOver()}
+    e.tick.style.bottom=(e.w*100)+'%';
+  }
+  $('vignette').style.boxShadow=`inset 0 0 140px ${30+danger*40}px rgba(255,77,109,${(danger*0.55).toFixed(2)})`;
+  // portal
+  if(portalOpen&&Math.hypot(player.x,player.z)<2.3){openGate()}
+}
+
+function collectOrb(o){
+  o.done=true;o.grp.visible=false;o.tick.remove();collected.add(o.el.n);stats[o.el.n].c++;right++;
+  const secs=(performance.now()-targetStart)/1000;combo++;addScore(100+Math.max(0,60-secs*2)+combo*10);setEnergy(energy+5);
+  sfx.collect();burst(o.x,1.7,o.z,wColor(o.w).getHex(),36);
+  targetPos++;renderProgress();openCard(o.el);
+}
+function openCard(e){
+  state='card';const P=PERIODS[periodIdx];
+  $('cEyebrow').textContent=`${g('جمعت','جمعتِ')} نواة جديدة · ${P.sub.split('·')[1].trim()}`;
+  $('cN').textContent=e.n;$('cS').textContent=e.s;$('cA').textContent=e.a;
+  $('cTrio').innerHTML=`<span>الاسم <b>${e.a}</b></span><span>الرمز <b class="sym">${e.s}</b></span><span>العدد الذري <b class="num">${e.n}</b></span>`;
+  $('cHook').textContent=e.hook;
+  $('cBtn').textContent=targetPos>=P.els.length?g('افتح البوابة','افتحي البوابة'):g('تابع المغامرة','تابعي المغامرة');
+  show('card');setTimeout(()=>speak(e),250);
+}
+function closeCard(){
+  sfx.click();hideAll();state='play';targetStart=performance.now();updateTarget();
+  if(!currentTarget()&&!portalOpen){portalOpen=true;world.portal.grp.visible=true;sfx.portal();
+    toast(g('اكتملت أنوية هذا العالم! البوابة الذهبية فُتحت في المركز — اتبع السهم.','اكتملت أنوية هذا العالم! البوابة الذهبية فُتحت في المركز — اتبعي السهم.'),'good',4200)}
+}
+function gameOver(){
+  state='over';sfx.hit();
+  const P=PERIODS[periodIdx];P.els.forEach(n=>collected.delete(n));
+  $('overTxt').textContent=g(`تبعثرت طاقتك في شرائح W. ستعيد «${P.name}» من جديد، وما جمعته في العوالم السابقة محفوظ. نصيحة: عندما يقترب ظلّ أحمر على المقياس من مؤشّرك، اقفز بعيداً في W.`,`تبعثرت طاقتكِ في شرائح W. ستعيدين «${P.name}» من جديد، وما جمعتِه في العوالم السابقة محفوظ. نصيحة: عندما يقترب ظلّ أحمر على المقياس من مؤشّركِ، اقفزي بعيداً في W.`);
+  $('overBtn').textContent=g('حاول مرة أخرى','حاولي مرة أخرى');show('over');
+}
+
+/* ===================== QUESTIONS ===================== */
+const QT=['n2s','s2n','num2s','s2num','n2num','num2n'];
+function distractors(el,numeric){
+  return ELEMENTS.filter(e=>e.n!==el.n).map(e=>{let s=Math.random()*1.2;
+    if(numeric)s+=3-Math.min(3,Math.abs(e.n-el.n))*0.9;else{if(e.s[0]===el.s[0])s+=2.6;if(e.a[0]===el.a[0])s+=0.8;if(collected.has(e.n))s+=0.9;if(Math.abs(e.n-el.n)<=2)s+=0.5}
+    return[s,e]}).sort((a,b)=>b[0]-a[0]).slice(0,3).map(x=>x[1]);
+}
+function makeQ(el,type){
+  type=type||pick(QT);const numeric=type.endsWith('num');const set=shuffle([el,...distractors(el,numeric)]);
+  const as={sym:e=>symHTML(e),name:e=>e.a,num:e=>`<span class="num">${e.n}</span>`};
+  let text,f;
+  switch(type){
+    case'n2s':text=`ما رمز عنصر <b>${el.a}</b>؟`;f=as.sym;break;
+    case's2n':text=`ما اسم العنصر ${symHTML(el)}؟`;f=as.name;break;
+    case'num2s':text=`ما رمز العنصر الذي عدده الذري <b class="num">${el.n}</b>؟`;f=as.sym;break;
+    case's2num':text=`ما العدد الذري للعنصر ${symHTML(el)}؟`;f=as.num;break;
+    case'n2num':text=`ما العدد الذري لعنصر <b>${el.a}</b>؟`;f=as.num;break;
+    default:text=`أيّ عنصر عدده الذري <b class="num">${el.n}</b>؟`;f=as.name;
+  }
+  return{el,type,text,opts:set.map(e=>({n:e.n,html:f(e)}))};
+}
+function runQ(q,ids,done){
+  const qt=$(ids[0]),ob=$(ids[1]),fb=$(ids[2]);
+  qt.innerHTML=q.text;fb.innerHTML='';ob.innerHTML='';
+  q.opts.forEach((o,i)=>{const b=document.createElement('button');b.className='opt';b.innerHTML=o.html+`<span class="k">${i+1}</span>`;
+    if(DEBUG)b.dataset.ok=o.n===q.el.n?'1':'0';
+    b.onclick=()=>{
+      [...ob.children].forEach((c,j)=>{c.disabled=true;if(q.opts[j].n===q.el.n)c.classList.add('right')});
+      const ok=o.n===q.el.n,e=q.el;
+      if(ok){b.classList.add('right');stats[e.n].c++;right++;combo++;sfx.right();
+        fb.innerHTML=`<span class="good">${pick(['صحيح!','ممتاز!','أحسنت!'].map(s=>gender==='f'&&s==='أحسنت!'?'أحسنتِ!':s))}</span> ${symHTML(e)} · ${e.a} · <span class="num">${e.n}</span>`;
+        setTimeout(()=>done(true),850)}
+      else{b.classList.add('wrong');stats[e.n].w++;wrongCount++;combo=0;sfx.wrong();
+        fb.innerHTML=`<span class="bad">الإجابة الصحيحة:</span> ${symHTML(e)} · ${e.a} · العدد الذري <span class="num">${e.n}</span><br><span style="color:var(--muted);font-size:13px">${e.hook}</span><div style="margin-top:8px"><button class="btn ghost" style="min-height:40px">التالي ⏎</button></div>`;
+        fb.querySelector('.btn').onclick=()=>{sfx.click();done(false)}}
+    };ob.appendChild(b)});
+}
+
+/* gate quiz: spaced retrieval of everything collected so far, weakest first */
+let gateQueue=[],gateTotal=0,gateOk=0;
+function openGate(){
+  state='quiz';sfx.portal();const P=PERIODS[periodIdx];
+  const pool=[...collected].map(n=>({n,wt:(1+stats[n].w*2.5)/(1+stats[n].c*0.5)+(P.els.includes(n)?0.8:0)+Math.random()*0.6})).sort((a,b)=>b.wt-a.wt);
+  gateQueue=[];for(let i=0;i<P.gateQ;i++)gateQueue.push(pool[i%pool.length].n);shuffle(gateQueue);
+  gateTotal=gateQueue.length;gateOk=0;
+  $('qTitle').textContent=g('أجب لتفتح البوابة','أجيبي لتفتحي البوابة');renderDots();show('quiz');nextGateQ();
+}
+function renderDots(){$('qDots').innerHTML=Array.from({length:gateTotal},(_,i)=>`<i class="${i<gateOk?'ok':''}"></i>`).join('')}
+let lastType='';
+function nextGateQ(){
+  if(!gateQueue.length)return passGate();
+  const n=gateQueue.shift();let t;do{t=pick(QT)}while(t===lastType);lastType=t;
+  runQ(makeQ(EL(n),t),['qText','qOpts','qFb'],ok=>{
+    if(ok){gateOk++;addScore(50+combo*10)}else{gateQueue.push(n);setEnergy(Math.max(5,energy-8))}
+    renderDots();nextGateQ()});
+}
+function passGate(){
+  addScore(200);sfx.portal();
+  if(periodIdx<PERIODS.length-1){periodIdx++;retry=0;openIntro()}
+  else openReactor();
+}
+
+/* ===================== PERIODIC TABLE ===================== */
+function cellPos(n){if(n===1)return[1,1];if(n===2)return[1,18];if(n<=10)return n<=4?[2,n-2]:[2,n+8];if(n<=18)return n<=12?[3,n-10]:[3,n];return[4,n-18]}
+function buildTable(box,opts){
+  box.innerHTML='';const cells={};
+  ELEMENTS.forEach(e=>{const[r,c]=cellPos(e.n);const d=document.createElement(opts&&opts.button?'button':'div');d.className='pc';d.style.gridRow=r;d.style.gridColumn=c;
+    d.innerHTML=`<span class="pn">${e.n}</span><span class="ps">?</span>`;box.appendChild(d);cells[e.n]=d});
+  return cells;
+}
+function lightCell(cell,e,flash){cell.classList.add('on');cell.querySelector('.ps').textContent=e.s;if(flash){cell.classList.remove('flash');void cell.offsetWidth;cell.classList.add('flash')}}
+
+/* reactor: all 21, every question type, wrong ones come back */
+let rQueue=[],rCells={},rStart=0,rMiss=0,rDone=0,rTimer=null,rIdx=0;
+function openReactor(){
+  state='reactor';rQueue=shuffle(ELEMENTS.map(e=>e.n));rMiss=0;rDone=0;rIdx=0;rStart=performance.now();
+  rCells=buildTable($('rTable'));
+  $('rIntro').textContent=g('أعد كل نواة إلى خانتها في الجدول الدوري بالإجابة عن سؤالها. الإجابة الخاطئة تعيد النواة إلى آخر الطابور.','أعيدي كل نواة إلى خانتها في الجدول الدوري بالإجابة عن سؤالها. الإجابة الخاطئة تعيد النواة إلى آخر الطابور.');
+  $('rCount').textContent=0;$('rMiss').textContent=0;show('reactor');
+  clearInterval(rTimer);rTimer=setInterval(()=>$('rTime').textContent=Math.floor((performance.now()-rStart)/1000),250);
+  nextR();
+}
+function nextR(){
+  if(!rQueue.length)return finish();
+  const n=rQueue.shift();Object.values(rCells).forEach(c=>c.classList.remove('ask'));
+  if(rIdx%2===1)rCells[n].classList.add('ask'); // sometimes the slot itself is the hint
+  const t=QT[rIdx%QT.length];rIdx++;
+  runQ(makeQ(EL(n),t),['rQ','rOpts','rFb'],ok=>{
+    rCells[n].classList.remove('ask');
+    if(ok){rDone++;lightCell(rCells[n],EL(n),true);addScore(40+combo*5);$('rCount').textContent=rDone}
+    else{rMiss++;$('rMiss').textContent=rMiss;rQueue.splice(Math.min(3,rQueue.length),0,n)}
+    nextR()});
+}
+function finish(){
+  clearInterval(rTimer);state='win';sfx.win();
+  const total=Math.round((performance.now()-gameStart)/1000),acc=Math.round(100*right/Math.max(1,right+wrongCount));
+  const stars=acc>=90?3:acc>=70?2:1;
+  const best=+(lsGet('gate4d_best')||0);if(score>best)lsSet('gate4d_best',score);
+  $('winTitle').textContent=g('أنقذت الجدول الدوري!','أنقذتِ الجدول الدوري!');
+  $('wStars').innerHTML=[1,2,3].map(i=>`<span class="${i<=stars?'':'off'}">★</span>`).join('');
+  $('wScore').textContent=score;$('wAcc').textContent=acc+'%';$('wTime').textContent=`${Math.floor(total/60)}:${String(total%60).padStart(2,'0')}`;
+  const weak=ELEMENTS.filter(e=>stats[e.n].w>0).sort((a,b)=>stats[b.n].w-stats[a.n].w).slice(0,4);
+  $('wMsg').innerHTML=(score>best&&best?'رقم قياسي جديد! ':'')+(weak.length?`${g('راجع','راجعي')} هذه الأنوية في المرة القادمة: ${weak.map(e=>`${symHTML(e)} ${e.a} (${e.n})`).join('، ')}`:g('ولا خطأ واحد! أنت سيد البُعد الرابع.','ولا خطأ واحد! أنتِ سيدة البُعد الرابع.'));
+  const cells=buildTable($('wTable'));ELEMENTS.forEach(e=>lightCell(cells[e.n],e));
+  $('againBtn').textContent=g('العب مرة أخرى','العبي مرة أخرى');
+  $('hud').hidden=true;show('win');
+}
+
+/* ===================== CODEX ===================== */
+let codexReturn='play';
+function openCodex(from){
+  codexReturn=from||state;state='codex';sfx.click();
+  const cells=buildTable($('cxTable'),{button:true});
+  ELEMENTS.forEach(e=>{const c=cells[e.n];if(collected.has(e.n)){lightCell(c,e);c.onclick=()=>{$('codexDetail').innerHTML=`<div class="row" style="justify-content:center;gap:16px"><div class="tile" style="width:110px;height:124px;margin:0"><span class="tn" style="font-size:18px">${e.n}</span><span class="ts" style="font-size:48px">${e.s}</span><span class="ta" style="font-size:17px;bottom:8px">${e.a}</span></div><p class="hook" style="flex:1;min-width:200px;margin:0">${e.hook}</p></div>`;speak(e)}}
+    else c.onclick=()=>{$('codexDetail').innerHTML=`<p style="text-align:center;color:var(--muted)">النواة رقم <span class="num">${e.n}</span> لم ${g('تجمعها','تجمعيها')} بعد.</p>`}});
+  $('codexDetail').innerHTML=`<p style="text-align:center;color:var(--muted)">${g('اضغط','اضغطي')} على أي عنصر ${g('جمعته','جمعتِه')} لترى بطاقته.</p>`;
+  show('codex');
+}
+function closeCodex(){sfx.click();if(codexReturn==='win'){state='win';show('win')}else{hideAll();state='play'}}
+
+/* ===================== BUTTONS ===================== */
+$('charF').onclick=()=>{setGender(true);initAudio();sfx.click()};
+$('charM').onclick=()=>{setGender(false);initAudio();sfx.click()};
+$('startBtn').onclick=startGame;
+$('introBtn').onclick=beginPeriod;
+$('cBtn').onclick=closeCard;
+$('cSpeak').onclick=()=>{const t=$('cS').textContent;const e=ELEMENTS.find(x=>x.s===t);if(e){if(!voices.length)toast('لا يتوفّر صوت عربي في هذا المتصفح','info',2000);speak(e)}};
+$('overBtn').onclick=()=>{sfx.click();retry++;setEnergy(100);openIntro()};
+$('againBtn').onclick=startGame;
+$('winCodex').onclick=()=>openCodex('win');
+$('codexClose').onclick=closeCodex;
+$('hintBtn').onclick=useHint;
+$('codexBtn').onclick=()=>{if(state==='play')openCodex()};
+$('soundBtn').onclick=()=>{muted=!muted;initAudio();if(master)master.gain.value=muted?0:0.5;$('soundBtn').textContent=muted?'🔇':'🔊';if(muted)try{speechSynthesis.cancel()}catch(e){}};
+{const b=+(lsGet('gate4d_best')||0);if(b)$('bestTxt').textContent=`أفضل نتيجة: ${b}`}
+
+/* ===================== RENDER LOOP ===================== */
+let last=performance.now(),time=0;
+const camPos=new THREE.Vector3(0,18,15),tmpC=new THREE.Color(),bgA=new THREE.Color();
+function visuals(dt){
+  time+=dt;
+  // player
+  pg.position.set(player.x,0,player.z);pg.rotation.y=lerp(pg.rotation.y,player.face,0.2);
+  const pc=wColor(W);ringMat.color.copy(pc);pLight.color.copy(pc);visorMat.emissive.copy(pc);
+  rings[0].rotation.set(time*2.2,time*1.3,0);rings[1].rotation.set(-time*1.6,0.5,time*2);
+  pg.visible=!(player.inv>0&&Math.floor(time*14)%2===0);
+  body.position.y=0.75+Math.sin(time*(Math.hypot(player.vx,player.vz)>1?12:3))*0.04;
+  // background reacts to W
+  const P=PERIODS[periodIdx];bgA.setHSL((P.hue+(W-0.5)*0.18+1)%1,0.65,0.045+0.02*Math.sin(time*0.5));scene.background=bgA;scene.fog.color.copy(bgA);
+  projTesseract(skyTess,time*0.25+W*Math.PI*1.5,time*0.13,time*0.07,9);
+  // walls: a wall exists only inside its W band
+  for(const wl of world.walls){if(wl.perm)continue;
+    let pres;if(solidAt(wl,W))pres=1;else{const d=W<wl.w0?wl.w0-W:W-wl.w1;pres=Math.max(0,1-d/0.12)*0.5}
+    wl.flash=Math.max(0,wl.flash-dt*2.5);
+    wl.mesh.visible=pres>0.01;wl.mesh.material.opacity=pres>=1?0.82:pres*0.22;wl.mesh.material.depthWrite=pres>=1;
+    wl.edges.material.opacity=pres>=1?1:pres*1.4;
+    wl.edges.material.color.copy(wl.flash>0?tmpC.set(0xff4d6d):wl.col).offsetHSL(0,0,wl.flash>0?0:0.2);
+    wl.mesh.scale.y=pres>=1?1:0.6+pres*0.8;wl.mesh.position.y=wl.mesh.geometry.parameters.height*wl.mesh.scale.y/2}
+  // orbs: 3D cross-section of a 4D hypersphere — radius grows as W approaches the orb's W
+  const tgt=currentTarget();
+  for(const o of world.orbs){if(o.done)continue;
+    const dw=Math.abs(o.w-W),r=dw<SLICE?Math.sqrt(1-(dw/SLICE)**2):0;
+    o.sph.visible=r>0.02;o.sph.scale.setScalar(Math.max(0.001,r*1.05));o.sph.position.y=1.7+Math.sin(time*2+o.phase)*0.15;o.sph.rotation.y+=dt;
+    o.lab.visible=r>0.05;o.lab.material.opacity=Math.min(1,r*1.6);o.lab.position.y=3.3+Math.sin(time*2+o.phase)*0.15;
+    const e=Math.max(0,1-dw/ECHO);o.ring.visible=e>0;o.ring.material.opacity=e*0.6*(1-r*0.6);o.ring.scale.setScalar(1+0.12*Math.sin(time*4+o.phase)+(1-e)*0.6);
+    const isT=hintT>0&&tgt&&o.el.n===tgt.n;o.beam.material.opacity=isT?0.22+0.1*Math.sin(time*8):0;o.tick.classList.toggle('target',!!isT)}
+  for(const c of world.crystals){if(c.done)continue;const dw=Math.abs(c.w-W),r=dw<SLICE?Math.sqrt(1-(dw/SLICE)**2):0;c.m.visible=r>0.02;c.m.scale.setScalar(Math.max(0.001,r));c.m.rotation.y+=dt*2;c.m.position.y=1.1+Math.sin(time*3+c.x)*0.2}
+  for(const e of world.enemies){const dw=Math.abs(e.w-W),pr=Math.max(0,1-dw/0.3);
+    e.grp.position.set(e.x,1.2+Math.sin(time*3+e.x)*0.2,e.z);e.grp.visible=pr>0.01;e.core.material.opacity=pr;e.shell.material.opacity=pr*(dw<0.09?1:0.5);e.eye.material.opacity=pr;
+    e.shell.rotation.x+=dt*1.5;e.shell.rotation.y+=dt;e.grp.lookAt(player.x,1.2,player.z);const s=dw<0.09?1.15:0.8;e.grp.scale.setScalar(s)}
+  if(world.portal&&world.portal.grp.visible){projTesseract(world.portal.tess,time*0.9,time*0.5,time*0.3,1.6);}
+  // particles
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt*1.3;p.vy-=6*dt;p.m.position.x+=p.vx*dt;p.m.position.y+=p.vy*dt;p.m.position.z+=p.vz*dt;p.m.material.opacity=Math.max(0,p.life);
+    if(p.life<=0){scene.remove(p.m);p.m.material.dispose();parts.splice(i,1)}}
+  // camera
+  const portrait=camera.aspect<0.85,h=portrait?24:17,d=portrait?17:14;
+  if(state==='start'){camPos.set(Math.sin(time*0.12)*26,16,Math.cos(time*0.12)*26);camera.position.lerp(camPos,0.05);camera.lookAt(0,1,0)}
+  else{camPos.set(player.x,h,player.z+d);camera.position.lerp(camPos,Math.min(1,dt*6));
+    if(shake>0&&!reduceMotion){camera.position.x+=(Math.random()-0.5)*shake;camera.position.y+=(Math.random()-0.5)*shake;}shake=Math.max(0,shake-dt*1.5);
+    camera.lookAt(player.x,1,player.z)}
+  // HUD gauge + arrow
+  $('wMarker').style.bottom=(W*100)+'%';$('wMarker').style.borderColor=wCss(W);$('wVal').textContent=W.toFixed(2);
+  let ax=null,az=null;
+  if(portalOpen){ax=0;az=0}else if(hintT>0&&tgt){const o=world.orbs.find(o=>o.el.n===tgt.n);if(o){ax=o.x;az=o.z}}
+  const arrow=$('arrow');
+  if(ax!==null&&state==='play'&&Math.hypot(ax-player.x,az-player.z)>3){arrow.style.display='block';arrow.style.transform=`rotate(${Math.atan2(ax-player.x,-(az-player.z))}rad)`}else arrow.style.display='none';
+  updateDrone();
+}
+const reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loop(t){
+  requestAnimationFrame(loop);
+  const dt=Math.min(0.05,(t-last)/1000);last=t;
+  if(state==='play')update(dt);
+  visuals(dt);
+  renderer.render(scene,camera);
+}
+if(DEBUG)window.__dbg={state:()=>state,collectNext(){const t=currentTarget();if(!t)return false;const o=world.orbs.find(o=>o.el.n===t.n);player.x=o.x;player.z=o.z+0.5;W=o.w;return true},toPortal(){player.x=0;player.z=0}};
+// attract-mode world behind the start screen
+buildPeriod(0);$('hud').hidden=true;
+requestAnimationFrame(loop);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(state==='start')buildPeriod(0)});
+})();
+</script>
+</body>
+</html>
