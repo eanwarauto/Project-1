@@ -366,11 +366,11 @@ function genLevel(wi){
   const P=WORLDS[wi],pool=P.enemies;let x=0;ground(0,12);x=12;
   const filler=()=>{
     const k=Math.floor(R()*5),en=()=>pick(pool);
-    if(k===0){ground(x,5);const gap=2+(wi>0&&R()<0.5?1:0);set(x+5,8,BRICK);set(x+6,8,BRICK);crysRow(x+5,7,2);x+=5+gap;ground(x,6);enemy(en()==='spike'&&wi>1?'spike':'blob',x+4,12);x+=6}
+    if(k===0){ground(x,5);const gap=2+(wi>0&&R()<0.5?1:0);set(x+1,8,BRICK);set(x+2,8,BRICK);crysRow(x+1,7,2);crysRow(x+5,9,gap);x+=5+gap;ground(x,6);enemy(en()==='spike'&&wi>1?'spike':'blob',x+4,12);x+=6}
     else if(k===1){ground(x,15);for(let i=4;i<=8;i++)set(x+i,8,BRICK);set(x+5,8,QCOIN);set(x+7,8,R()<0.45?QMUSH:QCOIN);set(x+6,4,QCOIN);enemy(en(),x+11,12);x+=15}
-    else if(k===2){ground(x,16);for(let i=0;i<4;i++)for(let h=0;h<=i;h++)set(x+3+i,11-h,STONE);for(let i=0;i<4;i++)for(let h=0;h<=3-i;h++)set(x+9+i,11-h,STONE);crysRow(x+7,6,2);enemy('blob',x+14,12);x+=16}
+    else if(k===2){ground(x,16);for(let i=0;i<4;i++)for(let h=0;h<=i;h++)set(x+3+i,11-h,STONE);for(let i=0;i<4;i++)for(let h=0;h<=3-i;h++)set(x+9+i,11-h,STONE);for(let i=7;i<=8;i++)for(let h=0;h<4;h++)set(x+i,11-h,STONE);crysRow(x+7,6,2);enemy('blob',x+14,12);x+=16}
     else if(k===3){ground(x,16);[[3,2],[10,3]].forEach(([o,h])=>{for(let y=12-h;y<12;y++){set(x+o,y,y===12-h?TUBETOP:TUBE);set(x+o+1,y,y===12-h?TUBETOP:TUBE)}});enemy(en(),x+7,12);crysRow(x+6,8,3);x+=16}
-    else{ground(x,3);set(x+4,10,STONE);set(x+5,10,STONE);set(x+8,8,STONE);set(x+9,8,STONE);set(x+12,10,STONE);set(x+13,10,STONE);crysRow(x+8,6,2);if(wi>0)enemy('fly',x+9,6);x+=15;ground(x,4);x+=4}
+    else{ground(x,3);for(let i=4;i<=6;i++)set(x+i,10,STONE);for(let i=9;i<=11;i++)set(x+i,10,STONE);crysRow(x+9,8,3);if(wi>0)enemy('fly',x+8,6);x+=14;ground(x,4);x+=4}
   };
   P.els.forEach((n,k)=>{
     filler();if(wi>1&&k%2===1)filler();
@@ -495,7 +495,7 @@ const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 function burst(x,y,col,n,spd){for(let i=0;i<(n||14);i++){const a=Math.random()*Math.PI*2,s=(spd||5)*(0.4+Math.random());L.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,life:1,col,r:0.06+Math.random()*0.08})}}
 
 function hurt(src){
-  if(P.inv>0||P.dying)return;hearts--;P.inv=1.6;combo=0;sfx.hurt();P.vy=-8;P.vx=(src&&src.x>P.x?-1:1)*6;
+  if(P.inv>0||P.dying||(DEBUG&&window.__god))return;hearts--;P.inv=1.6;combo=0;sfx.hurt();P.vy=-8;P.vx=(src&&src.x>P.x?-1:1)*6;
   if(hearts<=0)die();hud();
 }
 function die(){if(P.dying)return;P.dying=1.6;P.vy=-14;P.vx=0;sfx.die();lives--;hud()}
@@ -775,6 +775,7 @@ drawPreview('pvF',true);drawPreview('pvM',false);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{drawPreview('pvF',true);drawPreview('pvM',false)});
 
 if(DEBUG)window.__dbg={state:()=>state,P,get L(){return L},target:()=>currentTarget(),
+  load(wi){if(!gameStart)gameStart=performance.now();for(let k=0;k<wi&&k<WORLDS.length;k++)WORLDS[k].els.forEach(n=>collected.add(n));retry=0;show('none');$('hud').hidden=false;loadWorld(wi);state='play'},
   hitTarget(){const t=currentTarget();if(!t)return false;const b=Object.values(L.ebl).find(b=>b.el.n===t.n&&b.state==='idle');if(!b)return false;P.x=b.x+0.2;P.y=b.y+1.05;P.vy=-5;camX=Math.max(0,P.x-5);return true},
   toTube(){const qz=L.quiz;if(!qz.started){P.x=qz.x0+1;P.y=12-P.h;return 'start'}if(!qz.q){P.x=L.door.x+1;P.y=12-P.h;return 'door'}const i=L.tubes.findIndex(t=>t.opt&&t.opt.n===qz.q.el.n);const tb=L.tubes[i];P.x=tb.x+0.7;P.y=9-P.h;P.vy=0;P.ground=true;enterTube(tb);return 'tube'},
   bossHit(){if(!L.boss||!L.bq)return;const a=L.ans.find(a=>a.opt&&a.opt.n===L.bq.el.n);if(a){P.x=a.x+0.2;P.y=9.05;P.vy=-5}}};
