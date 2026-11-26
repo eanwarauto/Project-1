@@ -33,10 +33,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #wChips{display:flex;gap:3px;direction:ltr;justify-content:flex-end;margin-top:4px;flex-wrap:wrap;max-width:210px}
 #wChips i{min-width:20px;height:20px;padding:0 3px;border-radius:5px;background:var(--cell);font-style:normal;font-size:10px;display:grid;place-items:center;font-family:var(--f-sym);color:var(--muted)}
 #wChips i.on{background:var(--gold);color:#241a00;font-weight:800}
-#tBox{grid-area:target;justify-self:center;text-align:center;max-width:460px;width:100%;border:2px solid var(--gold)}
-#tLabel{font-size:12px;color:var(--gold);font-weight:700}
-#tText{font-family:var(--f-display);font-size:24px;line-height:1.25;display:flex;gap:8px;justify-content:center;align-items:baseline;flex-wrap:wrap}
-#tText .num{color:var(--gold);font-size:21px}
+#tBox{grid-area:target;justify-self:center;text-align:center;max-width:560px;width:100%;border:2px solid var(--gold)}
+#tLabel{font-size:14px;color:var(--gold);font-weight:700}
+#tText{font-family:var(--f-display);font-size:32px;line-height:1.25;display:flex;gap:8px;justify-content:center;align-items:baseline;flex-wrap:wrap}
+#tText .num{color:var(--gold);font-size:28px}
 #tText .sym{color:var(--teal)}
 #sPanel{grid-area:stats;pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 #hearts{font-size:17px;letter-spacing:1px;direction:ltr;text-align:left;line-height:1}
@@ -44,7 +44,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .srow b{color:var(--ink);font-family:var(--f-sym)}
 #tools{display:flex;gap:5px}
 .tb{flex:1;height:28px;border-radius:8px;background:var(--cell);border:1px solid var(--line);font-size:13px}
-#toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 96px);left:50%;transform:translateX(-50%);max-width:min(560px,88vw);text-align:center;z-index:6;
+#toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 108px);left:50%;transform:translateX(-50%);max-width:min(560px,88vw);text-align:center;z-index:6;
   background:var(--panel-solid);border:2px solid var(--gold);border-radius:14px;padding:8px 16px;font-size:15px;font-weight:700;line-height:1.7;opacity:0;transition:opacity .25s;pointer-events:none}
 #toast.show{opacity:1}#toast.bad{border-color:var(--bad)}#toast.good{border-color:var(--ok)}
 
@@ -78,6 +78,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .how{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0 16px}
 .how div{background:var(--cell);border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.6;color:#d8d3f5;min-width:0}
 .how b{display:block;color:var(--ink);font-size:14px}
+.credit{text-align:center;font-family:var(--f-display);font-size:22px;color:var(--gold);margin:0 0 14px;padding:8px 12px;border-radius:12px;background:var(--cell);border:1px solid rgba(255,207,63,.35)}
 kbd{font-family:var(--f-sym);font-size:11px;background:#3a3380;border-radius:5px;padding:1px 6px}
 .tile{position:relative;width:160px;height:180px;margin:6px auto 12px;border-radius:20px;background:linear-gradient(150deg,#7d5cff,#3b2a99);border:3px solid var(--gold);box-shadow:0 8px 0 #241a66;display:grid;place-items:center;direction:ltr}
 .tile .tn{position:absolute;top:8px;left:14px;font-family:var(--f-sym);font-weight:800;font-size:26px;color:var(--gold)}
@@ -108,9 +109,9 @@ button.pc{cursor:pointer}
 .statsgrid span{font-size:12px;color:var(--muted)}
 @media (max-width:640px){
   #hud{grid-template-columns:1fr auto;grid-template-areas:"world stats" "target target";gap:6px}
-  #wName{font-size:15px}#tText{font-size:19px}#tText .num{font-size:17px}
+  #wName{font-size:15px}#tText{font-size:25px}#tText .num{font-size:22px}#tLabel{font-size:13px}
   #sPanel{min-width:118px}
-  #toast{top:calc(env(safe-area-inset-top,0px) + 196px);font-size:13px}
+  #toast{top:calc(env(safe-area-inset-top,0px) + 210px);font-size:13px}
   .sheet{padding:16px}
   .ptable{min-width:0;grid-template-columns:repeat(18,minmax(0,1fr));gap:2px}
   .pc{border-radius:3px}.pc .ps{font-size:10px}.pc .pn{font-size:6px;top:1px;left:2px}
@@ -153,6 +154,7 @@ button.pc{cursor:pointer}
       <div><b>أنابيب الإجابة</b>قف فوق الأنبوب الصحيح واضغط <kbd>↓</kbd> لتدخله</div>
       <div><b>الأعداء</b>اقفز فوق قطرات الحمض والإلكترونات. لا تلمس قنفذ الملح!</div>
     </div>
+    <div class="credit">إعداد المعلمة: م. أنوار الفضلي</div>
     <div class="row"><button class="btn" id="startBtn">ابدأ اللعب</button><span id="bestT" style="color:var(--muted);font-size:13px"></span></div>
   </div>
 </div>
@@ -395,13 +397,13 @@ const solid=(x,y)=>{if(y<0)return x<0||x>=L.w;return SOLID[tileAt(x,y)]===1};
 const QT=['n2s','s2n','num2s','s2num','n2num','num2n'];
 const stats={};ELEMENTS.forEach(e=>stats[e.n]={c:0,w:0});
 const collected=new Set();
-function distractors(el,numeric,sameWorldFirst){
-  return ELEMENTS.filter(e=>e.n!==el.n).map(e=>{let s=Math.random()*1.2;
+function distractors(el,numeric,sameWorldFirst,prefer){
+  return ELEMENTS.filter(e=>e.n!==el.n).map(e=>{let s=Math.random()*1.2;if(prefer&&prefer.includes(e.n))s+=20;
     if(numeric)s+=3-Math.min(3,Math.abs(e.n-el.n))*0.9;else{if(e.s[0]===el.s[0])s+=2.6;if(Math.abs(e.n-el.n)<=3)s+=sameWorldFirst?1.2:0.5;if(collected.has(e.n))s+=0.6}
     return[s,e]}).sort((a,b)=>b[0]-a[0]).slice(0,3).map(x=>x[1]);
 }
-function makeQ(el,type,count){
-  type=type||pick(QT);count=count||3;const numeric=type.endsWith('num');const set=shuffle([el,...distractors(el,numeric).slice(0,count-1)]);
+function makeQ(el,type,count,prefer){
+  type=type||pick(QT);count=count||3;const numeric=type.endsWith('num');const set=shuffle([el,...distractors(el,numeric,false,prefer).slice(0,count-1)]);
   const lab={sym:e=>({t:e.s,k:'sym'}),name:e=>({t:e.a,k:'name'}),num:e=>({t:String(e.n),k:'num'})};
   let html,f;
   switch(type){
@@ -522,8 +524,9 @@ function collectEl(e,tx,ty){
 
 /* ================= QUIZ TUBES ================= */
 function newTubeQ(){
-  const qz=L.quiz;const pool=[...collected];let n=qz.retry.length?qz.retry.shift():weakPick(pool);
-  let t;do{t=pick(QT)}while(t===lastType);lastType=t;qz.q=makeQ(EL(n),t,3);
+  const qz=L.quiz;const pool=WORLDS[worldIdx].els;let n=qz.retry.length?qz.retry.shift():weakPick(pool);
+  if(!qz.retry.length&&qz.q&&pool.length>1&&n===qz.q.el.n)n=weakPick(pool.filter(x=>x!==n));
+  let t;do{t=pick(QT)}while(t===lastType);lastType=t;qz.q=makeQ(EL(n),t,3,pool);
   L.tubes.forEach((tb,i)=>tb.opt=qz.q.opts[i]);updateTarget();
 }
 function enterTube(tb){
